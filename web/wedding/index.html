@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f8f5ed">
+  <meta name="description" content="Brclio 口袋婚纱灵感图册，浏览花园与海岸主题的 AI 生成婚纱影像。仅供风格参考，非真实客片。">
+  <title>婚纱灵感图册 · Brclio 口袋</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#gallery">跳到灵感图册</a>
+  <header class="app-header">
+    <a class="brand" href="#top" aria-label="Brclio 口袋，返回顶部"><span class="brand-mark" aria-hidden="true">b.</span><span class="brand-name">Brclio <span>口袋</span></span></a>
+    <span class="header-note">美好，慢慢收集。</span>
+  </header>
+  <main id="top" class="app-content">
+    <section class="intro" aria-labelledby="page-title">
+      <div class="intro-copy"><p class="eyebrow"><span aria-hidden="true">✳</span> WEDDING INSPIRATION</p><h1 id="page-title">把浪漫，<br><span>留在这一帧。</span></h1><p class="intro-description">从一束花、一阵海风开始，<br class="mobile-break">找到喜欢的婚纱影像风格。</p></div>
+      <div class="collection-note" aria-label="婚纱灵感图册，共两幅灵感影像"><span class="note-title">婚纱灵感图册</span><span class="note-count">02<span>幅灵感影像</span></span><span class="note-source">AI 生成 · 非真实客片</span></div>
+    </section>
+    <section id="gallery" class="gallery" aria-labelledby="gallery-title">
+      <div class="gallery-toolbar"><h2 id="gallery-title">喜欢哪一种浪漫？</h2><div class="filter-bar" role="group" aria-label="按拍摄风格筛选"><button class="filter active" type="button" data-filter="all" aria-pressed="true">全部<span>02</span></button><button class="filter" type="button" data-filter="garden" aria-pressed="false">花园</button><button class="filter" type="button" data-filter="coast" aria-pressed="false">海岸</button></div></div>
+      <p class="visually-hidden" id="filter-status" role="status" aria-live="polite">显示全部 2 幅灵感影像</p>
+      <div class="gallery-grid">
+        <figure class="photo-story photo-story--garden" data-style="garden">
+          <button class="photo-button" type="button" data-preview="garden" aria-label="查看大图：花间来信，花园主题 AI 生成婚纱影像"><img src="assets/garden.jpg" width="1086" height="1448" alt="花园主题婚纱影像：白色婚纱与花束映衬在柔和的花园光线中，AI 生成" fetchpriority="high"><span class="image-label">AI 生成</span><span class="image-open"><span>查看大图</span><span aria-hidden="true">↗</span></span></button>
+          <figcaption><div class="photo-heading"><span class="photo-number">01</span><h3>花间来信</h3><span class="photo-kind">GARDEN</span></div><p>让轻盈的白纱，遇见花园里的好天气。</p><div class="photo-tags" aria-label="风格关键词"><span>花园</span><span>柔和光线</span><span>自然感</span></div></figcaption>
+        </figure>
+        <figure class="photo-story photo-story--coast" data-style="coast">
+          <button class="photo-button" type="button" data-preview="coast" aria-label="查看大图：与海相拥，海岸主题 AI 生成婚纱影像"><img src="assets/coast.jpg" width="1086" height="1448" alt="海岸主题婚纱影像：白色婚纱与海风、海岸相映，AI 生成" loading="lazy"><span class="image-label">AI 生成</span><span class="image-open"><span>查看大图</span><span aria-hidden="true">↗</span></span></button>
+          <figcaption><div class="photo-heading"><span class="photo-number">02</span><h3>与海相拥</h3><span class="photo-kind">COAST</span></div><p>风吹起裙摆，把心动交给辽阔的海。</p><div class="photo-tags" aria-label="风格关键词"><span>海岸</span><span>轻盈白纱</span><span>松弛感</span></div></figcaption>
+        </figure>
+      </div>
+      <noscript><p class="no-script">你可以直接浏览图册；开启 JavaScript 后可按风格筛选并查看大图。</p></noscript>
+    </section>
+    <section class="gallery-about" aria-labelledby="about-title"><span class="about-symbol" aria-hidden="true">✳</span><div><h2 id="about-title">一点灵感，一点想象。</h2><p>本图册中的影像均由 AI 生成，仅供婚纱风格与画面氛围参考，非真实人物客片或服务案例。</p></div><span class="about-end" aria-hidden="true">Enjoy the little things.</span></section>
+  </main>
+  <footer class="app-footer"><span>Brclio 口袋</span><span>婚纱灵感图册 · 0.1.0</span></footer>
+  <details class="privacy-note" style="max-width:1200px;margin:0 auto;padding:0 24px 28px;color:#69685f;font-size:13px;line-height:1.8"><summary style="cursor:pointer">隐私与服务说明</summary><p>本图册仅供浏览，不要求登录，不提供图片上传、交易或云备份，不使用访问行为分析或广告服务。网页与图片由 Cloudflare 分发，加载时服务方可能处理 IP 地址、请求时间与浏览器等必要网络信息。</p><p>服务提供者：莆田市荔城区黄家蓉宝电脑店。联系邮箱：<a href="mailto:aiyuechuang@gmail.com" style="color:inherit">aiyuechuang@gmail.com</a>。图片均由 AI 生成，非真实客片。</p></details>
+  <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-labelledby="preview-title" aria-describedby="preview-description" tabindex="-1">
+    <div class="lightbox-panel">
+      <div class="lightbox-header"><div><p class="eyebrow">INSPIRATION VIEW</p><h2 id="preview-title">花间来信</h2></div><button class="close-button" type="button" aria-label="关闭大图预览"><span aria-hidden="true">×</span></button></div>
+      <div class="lightbox-stage"><img id="preview-image" alt=""></div>
+      <div class="lightbox-footer"><p id="preview-description">AI 生成 · 灵感示例，非真实客片</p><div class="preview-nav" role="group" aria-label="切换灵感影像"><button type="button" id="previous-photo" aria-label="上一幅">←</button><span id="preview-position" aria-live="polite">1 / 2</span><button type="button" id="next-photo" aria-label="下一幅">→</button></div></div>
+    </div>
+  </div>
+  <!-- Adapted from Brclio Design System app template. © Brclio, CC BY-NC-SA 4.0. -->
+</body>
+</html>

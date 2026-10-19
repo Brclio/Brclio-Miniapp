@@ -1,0 +1,34 @@
+/* Adapted from Brclio Design System's app template. Brclio · CC BY-NC-SA 4.0. */
+page {
+  min-height: 100%;
+  color: #1a1a2e;
+  background: #fefcf6;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  font-size: 28rpx;
+  line-height: 1.65;
+}
+
+view, text, button, image { box-sizing: border-box; }
+button { margin: 0; border-radius: 0; font-size: inherit; line-height: inherit; }
+button::after { border: 0; }
+
+.page-shell { max-width: 920rpx; margin: 0 auto; padding: 32rpx 36rpx 56rpx; padding-bottom: calc(56rpx + env(safe-area-inset-bottom)); }
+.serif { font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; }
+.eyebrow { font-size: 21rpx; letter-spacing: 3rpx; font-weight: 700; color: #2b7fd8; }
+.muted { color: #666677; }
+.primary-button { min-height: 92rpx; padding: 22rpx 32rpx; border-radius: 16rpx; color: #fefcf6; background: #2b7fd8; font-weight: 600; text-align: center; }
+.secondary-button { min-height: 92rpx; padding: 22rpx 32rpx; border-radius: 16rpx; color: #2b7fd8; background: #edf3f9; font-weight: 600; text-align: center; }
+.button-pressed { opacity: 0.75; }
+.text-button { background: transparent; padding: 14rpx 0; color: #2b7fd8; text-align: left; font-size: 25rpx; }
+.document-title { font-size: 44rpx; font-weight: 700; line-height: 1.35; margin: 18rpx 0 16rpx; }
+.document-intro { color: #666677; font-size: 26rpx; }
+.document-section { margin-top: 40rpx; }
+.document-heading { display: block; font-size: 30rpx; font-weight: 600; margin-bottom: 12rpx; }
+.document-copy { display: block; font-size: 27rpx; color: #4a4a5a; }
+.document-copy + .document-copy { margin-top: 14rpx; }
+.document-meta { font-size: 23rpx; color: #777786; overflow-wrap: anywhere; }
+.divider { height: 1rpx; background: rgba(26, 26, 46, 0.1); margin: 38rpx 0; }
+
+@media (min-width: 900px) {
+  .page-shell { max-width: 760px; padding-left: 40px; padding-right: 40px; }
+}

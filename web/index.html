@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fefcf6">
+  <meta name="description" content="Brclio 口袋，随手打开，发现一点有趣。首个功能：双人反应挑战「举手决斗」。">
+  <meta name="color-scheme" content="light">
+  <title>Brclio 口袋</title>
+  <link rel="icon" href="./assets/avatar.png" type="image/png">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!-- Adapted from Brclio Design System's app template. Brclio · CC BY-NC-SA 4.0. -->
+  <div class="safe-area-probe" id="safe-area-probe" aria-hidden="true"></div>
+  <main class="app-content" aria-label="Brclio 口袋">
+    <div class="game-viewport" id="game-viewport">
+      <canvas id="game-canvas" role="img" tabindex="0" aria-label="Brclio 口袋正在打开，可使用鼠标或触摸操作"></canvas>
+      <p class="runtime-status" id="runtime-status" role="status" aria-live="polite">正在打开口袋…</p>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <section class="runtime-error" id="runtime-error" aria-labelledby="error-title" hidden>
+        <span class="error-eyebrow">BRCLIO / POCKET</span>
+        <h1 id="error-title">稍等，口袋还没打开。</h1>
+        <p id="error-message">请检查网络后重试。</p>
+        <button id="reload" type="button">重新打开 ↗</button>
+      </section>
+    </div>
+    <nav class="cloud-toolbar" aria-label="数据与备份">
+      <span id="cloud-toolbar-status">记录仅存本机</span>
+      <button id="cloud-open" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="cloud-panel">云备份 ○</button>
+    </nav>
+  </main>
+  <div class="backup-overlay" id="cloud-panel" hidden>
+    <section class="backup-panel" role="dialog" aria-modal="true" aria-labelledby="cloud-title">
+      <header class="backup-header"><div><span class="backup-eyebrow">YOUR LITTLE MOMENTS</span><h2 id="cloud-title">云备份</h2></div><button id="cloud-close" class="backup-close" type="button" aria-label="关闭云备份">×</button></header>
+      <p class="backup-state" id="cloud-state" role="status" aria-live="polite">默认关闭，记录只保存在本机。</p>
+      <p class="backup-summary" id="cloud-summary">备份最近 20 场完整对决，不上传赛制和触感设置。</p>
+      <div class="backup-detail">
+        <p>开启后，匿名战绩会经 Cloudflare 保存到 Brclio 的私有 GitHub 数据仓库；包含对决时间、双方称呼、比分和反应成绩，不需要微信登录。</p>
+        <p>设备凭据仅存在当前浏览器。清除浏览器缓存会丢失凭据，无法跨设备找回；本机清除不会移除云端记录，再次打开页面或开启备份时可能恢复云端战绩。</p>
+        <p>移除云端当前记录会删除现有备份文件；Git 提交历史仍可能保留先前版本。关闭备份只停止后续上传。</p>
+      </div>
+      <label class="backup-consent" id="cloud-consent-row"><input id="cloud-consent" type="checkbox"><span>我已了解备份范围与保留方式，愿意开启云备份。</span></label>
+      <div class="backup-actions">
+        <button id="cloud-enable" type="button" disabled>开启云备份</button>
+        <button id="cloud-disable" class="backup-secondary" type="button" hidden>关闭云备份</button>
+        <button id="cloud-now" type="button" hidden>立即备份</button>
+        <button id="cloud-recheck" class="backup-secondary" type="button">检查连接</button>
+      </div>
+      <button id="cloud-delete" class="backup-delete" type="button" hidden>移除云端当前记录</button>
+      <div class="backup-confirm" id="cloud-delete-confirm" hidden>
+        <p>移除后将关闭云备份，本机战绩会保留。此操作不会清除 Git 提交历史。</p>
+        <div class="backup-actions"><button id="cloud-delete-cancel" class="backup-secondary" type="button">取消</button><button id="cloud-delete-accept" class="backup-danger" type="button">确认移除并关闭备份</button></div>
+      </div>
+    </section>
+  </div>
+  <div class="modal-overlay" id="modal" hidden>
+    <section class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h2 id="modal-title"></h2>
+      <p id="modal-copy"></p>
+      <div class="modal-actions">
+        <button id="modal-cancel" type="button">取消</button>
+        <button id="modal-confirm" type="button">确定</button>
+      </div>
+    </section>
+  </div>
+  <noscript><p class="noscript">请在浏览器设置中启用 JavaScript，再打开 Brclio 口袋。</p></noscript>
+  <script src="./runtime.js"></script>
+  <script src="./config.js"></script>
+  <script src="./sync.js"></script>
+  <script src="./bundle.js"></script>
+</body>
+</html>

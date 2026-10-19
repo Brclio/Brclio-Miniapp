@@ -1,0 +1,3 @@
+.fallback { padding-top: 78rpx; }
+.fallback-mark { font-size: 86rpx; color: #2b7fd8; line-height: 1.3; margin-top: 50rpx; }
+.fallback-actions { display: flex; flex-direction: column; gap: 20rpx; margin-top: 44rpx; }

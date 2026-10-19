@@ -1,0 +1,43 @@
+.home-shell { padding-top: 24rpx; }
+.brand-row { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.brand-lockup { display: flex; align-items: center; gap: 18rpx; min-width: 0; }
+.brand-avatar { width: 72rpx; height: 72rpx; border-radius: 50%; flex-shrink: 0; }
+.brand-title { font-size: 29rpx; font-weight: 700; }
+.brand-light { font-weight: 400; color: #77746e; }
+.brand-caption { font-size: 21rpx; color: #817c72; margin-top: 2rpx; }
+.about-button { flex-shrink: 0; font-size: 23rpx; color: #596b59; padding: 12rpx 0 12rpx 12rpx; background: transparent; }
+.intro { padding: 58rpx 0 48rpx; }
+.intro .eyebrow { font-size: 18rpx; letter-spacing: 2rpx; color: #687861; }
+.intro-title { font-size: 47rpx; font-weight: 600; margin-top: 18rpx; line-height: 1.5; letter-spacing: -1rpx; color: #33372f; }
+.highlight { box-shadow: inset 0 -13rpx #e7e7d6; }
+.intro-copy { font-size: 25rpx; color: #77746e; margin-top: 24rpx; line-height: 1.9; }
+.section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12rpx; margin-bottom: 20rpx; }
+.section-title { font-size: 29rpx; font-weight: 600; color: #33372f; }
+.section-index { font-size: 17rpx; color: #8c887e; letter-spacing: 1rpx; }
+.feature-card { width: 100%; padding: 0; text-align: left; border: 1rpx solid #e6e0d5; border-radius: 18rpx; background: #fffdf8; overflow: hidden; }
+.feature-pressed { background: #f5f2e9; }
+.feature-cover { position: relative; width: 100%; height: 520rpx; background: #e8e7dd; overflow: hidden; }
+.cover-image { width: 100%; height: 100%; display: block; }
+.image-disclosure { position: absolute; left: 22rpx; bottom: 22rpx; padding: 5rpx 13rpx; border-radius: 5rpx; color: #fffdf8; background: rgba(35, 44, 34, 0.7); font-size: 19rpx; line-height: 1.7; }
+.feature-content { padding: 28rpx 30rpx 0; }
+.feature-topline { display: flex; align-items: center; justify-content: space-between; }
+.feature-category { color: #687861; font-size: 20rpx; letter-spacing: 2rpx; }
+.feature-number { font-family: 'Songti SC', 'STSong', serif; color: #989180; font-size: 23rpx; font-style: italic; }
+.feature-title { font-size: 37rpx; font-weight: 600; line-height: 1.4; margin-top: 15rpx; color: #33372f; }
+.feature-subtitle { font-size: 22rpx; color: #8c7c69; margin-top: 7rpx; }
+.feature-description { font-size: 24rpx; color: #77746e; line-height: 1.8; margin-top: 20rpx; }
+.feature-footer { margin-top: 26rpx; border-top: 1rpx solid #e9e4d9; min-height: 88rpx; display: flex; align-items: center; justify-content: space-between; font-size: 26rpx; color: #596b59; font-weight: 600; }
+.feature-arrow { font-size: 37rpx; font-weight: 400; }
+.collection-note { display: flex; align-items: flex-start; gap: 18rpx; padding: 34rpx 0; }
+.note-star { font-size: 30rpx; color: #b59a7a; line-height: 1.4; }
+.note-title { font-size: 24rpx; font-weight: 600; color: #555e4c; }
+.note-copy { font-size: 22rpx; color: #817c72; margin-top: 6rpx; line-height: 1.8; }
+.home-footer { border-top: 1rpx solid #e6e0d5; padding-top: 28rpx; }
+.signature { font-size: 21rpx; color: #8c887e; font-family: 'Songti SC', 'STSong', serif; font-style: italic; }
+.privacy-button { font-size: 22rpx; color: #687861; }
+
+@media (max-width: 350px) {
+  .page-shell { padding-left: 28rpx; padding-right: 28rpx; }
+  .intro-title { font-size: 43rpx; }
+  .brand-caption { font-size: 20rpx; }
+}

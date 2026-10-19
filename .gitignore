@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+project.private.config.json
+*.private.key
+*.pem
+artifacts/
+coverage/
+.env*
+dist/
+.wrangler/
+.dev.vars*
+!.dev.vars.example

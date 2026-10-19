@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fefcf6">
+  <base href="/minigame/">
+  <title>Brclio 口袋 · 源码预览</title>
+  <link rel="stylesheet" href="/preview/preview.css">
+</head>
+<body>
+  <!-- Adapted from the Brclio Design System app template. CC BY-NC-SA 4.0. -->
+  <header class="app-header">
+    <a class="wordmark" href="/" aria-label="重新加载 Brclio 口袋"><span class="brand-mark">b.</span><span>Brclio <span class="header-light">/ 口袋</span></span></a>
+    <div class="header-actions"><span class="preview-badge">浏览器预览</span><button class="reload-button" id="reload" type="button" aria-label="重新加载预览">重新加载 ↻</button></div>
+  </header>
+
+  <main class="app-content">
+    <aside class="preview-guide" aria-label="预览说明">
+      <div class="guide-eyebrow">THE POCKET COLLECTION</div>
+      <h1>把有趣，<br><span>装进口袋。</span></h1>
+      <p class="guide-intro">随手打开，发现一点有趣。<br>今天，从双人反应挑战开始。</p>
+      <div class="guide-rule"></div>
+      <div class="guide-heading"><span class="guide-number">01</span><h2>举手决斗</h2></div>
+      <p class="guide-copy">选择赛制，等待「GO!」信号。<br>谁先点下手掌，就把这一分带走。</p>
+      <p class="interaction-hint"><span aria-hidden="true">↗</span> 点击右侧画面即可体验<br><small>手机浏览器支持双人同时触控</small></p>
+      <div class="source-note"><span class="source-dot" aria-hidden="true"></span><div><strong>同一份功能源码</strong><p>此处运行实际入口与逻辑。微信分享及平台能力需在微信开发者工具和真机中验收。</p></div></div>
+      <footer class="guide-footer">Stay curious. Keep building.<br><a href="https://github.com/Brclio/brclio-design-system" target="_blank" rel="noopener noreferrer">Design by Brclio · CC BY-NC-SA 4.0</a></footer>
+    </aside>
+
+    <section class="preview-stage" aria-label="功能交互预览">
+      <div class="stage-caption"><span>LIVE SOURCE PREVIEW</span><span id="runtime-status" role="status">正在加载…</span></div>
+      <div class="phone-frame">
+        <div class="game-viewport" id="game-viewport"><canvas id="game-canvas" role="img" tabindex="0" aria-label="举手决斗互动界面，使用鼠标或触摸操作"></canvas><div class="toast" id="toast" role="status" aria-live="polite"></div><div class="runtime-error" id="runtime-error" hidden><strong>预览暂未启动</strong><p id="error-message"></p><button type="button" onclick="location.reload()">重新加载</button></div></div>
+      </div>
+      <p class="stage-footer">Canvas 交互预览 · 微信运行效果以真机为准</p>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="modal" hidden><section class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title"><h2 id="modal-title"></h2><p id="modal-copy"></p><div class="modal-actions"><button id="modal-cancel" type="button">取消</button><button id="modal-confirm" type="button">确定</button></div></section></div>
+  <script src="/preview/runtime.js"></script>
+  <script src="/bundle.js"></script>
+</body>
+</html>

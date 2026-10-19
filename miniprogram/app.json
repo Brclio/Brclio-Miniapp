@@ -1,0 +1,18 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/web/index",
+    "pages/about/index",
+    "pages/privacy/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#fefcf6",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "Brclio 口袋",
+    "backgroundColor": "#fefcf6",
+    "backgroundTextStyle": "dark"
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

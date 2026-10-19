@@ -1,0 +1,31 @@
+<view class="page-shell">
+  <view class="about-brand">
+    <image class="about-avatar" src="/assets/avatar.png" mode="aspectFill" aria-label="Brclio 头像" />
+    <view class="eyebrow">BRCLIO / POCKET</view>
+    <view class="document-title serif">收藏生活里的美好</view>
+    <view class="document-intro">从一本小小的婚纱灵感图册开始。</view>
+  </view>
+
+  <view class="document-section">
+    <text class="document-heading serif">本期图册</text>
+    <text class="document-copy">「婚纱灵感图册」收录花园与海岸主题的 AI 生成婚纱示意图，供你浏览婚礼氛围、色彩和造型参考。无需注册或登录。</text>
+    <text class="document-copy">本期图片均由 AI 生成，不是真实人物拍摄或客户案例。图册仅提供灵感展示，不提供预约、报价、交易或图片上传服务。</text>
+  </view>
+
+  <view class="document-section">
+    <text class="document-heading serif">设计与内容</text>
+    <text class="document-copy">界面设计参考 Brclio Design System 的品牌规范，由 Brclio 设计，CC BY-NC-SA 4.0。图片中的人物、服装与场景为 AI 生成的视觉示意。</text>
+  </view>
+
+  <view class="document-section">
+    <text class="document-heading serif">服务信息</text>
+    <text class="document-copy">服务提供者：莆田市荔城区黄家蓉宝电脑店</text>
+    <text class="document-copy">图册需要联网加载。如遇页面加载失败，请返回首页后重试。功能建议或问题可通过微信右上角菜单中的「反馈与投诉」提交。</text>
+    <text class="document-copy" selectable="true">联系邮箱：aiyuechuang@gmail.com</text>
+    <button class="text-button" bindtap="openPrivacy" hover-class="button-pressed">查看隐私与数据说明 ↗</button>
+  </view>
+
+  <view class="divider"></view>
+  <view class="document-meta">Brclio 口袋 · {{version}}</view>
+  <view class="document-meta">A small collection of beautiful moments.</view>
+</view>

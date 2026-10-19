@@ -1,0 +1,7 @@
+# Copy to .dev.vars for local testing only; never commit the populated file.
+# Production secrets: wrangler secret put GITHUB_TOKEN / DATA_HMAC_KEY
+GITHUB_TOKEN="replace-with-private-repository-contents-read-write-token"
+DATA_HMAC_KEY="replace-with-at-least-32-cryptographically-random-characters"
+PUBLIC_ORIGIN="https://pocket.brclio.com"
+EXTRA_ALLOWED_ORIGIN="https://pocket.bornforthis.cn"
+SYNC_ENABLED="false"
