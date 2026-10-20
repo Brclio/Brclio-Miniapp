@@ -9,8 +9,8 @@
       "html": "index.html",
       "assets": [
         {
-          "source": "web/wedding/assets",
-          "target": "media"
+          "source": "web/projects/firstsight/assets",
+          "target": "assets"
         }
       ]
     },

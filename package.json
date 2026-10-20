@@ -10,6 +10,7 @@
     "check:release": "node scripts/check-project.js --release",
     "configure": "node scripts/configure.js",
     "build": "node scripts/build-web.js",
+    "sync:firstsight": "node scripts/sync-firstsight.mjs --download",
     "dev:web": "wrangler pages dev dist/web",
     "deploy": "npm run build && wrangler pages deploy --project-name brclio-miniapp-wechat --branch main",
     "deploy:wechat-web": "npm run deploy",

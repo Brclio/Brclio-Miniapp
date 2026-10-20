@@ -26,17 +26,17 @@
     <text class="section-index">01 / PHOTOGRAPHY</text>
   </view>
 
-  <button class="feature-card" style="width: 100%; display: block;" data-id="firstsight" bindtap="openFeature" hover-class="feature-pressed" aria-label="打开 FirstSight 婚纱摄影灵感，图片为 AI 生成示例">
+  <button class="feature-card" style="width: 100%; display: block;" data-id="firstsight" bindtap="openFeature" hover-class="feature-pressed" aria-label="打开 FirstSight 摄影，浏览婚礼、家庭、宝宝与旅行主题图集">
     <view class="feature-cover">
-      <image class="cover-image" src="/assets/firstsight-cover.jpg" mode="aspectFill" aria-label="AI 生成的婚纱摄影灵感示例" />
-      <text class="image-disclosure">AI 生成 · 摄影灵感示例</text>
+      <image class="cover-image" src="/assets/firstsight-cover.jpg" mode="aspectFill" aria-label="FirstSight 婚礼图集中的逆光新人合影" />
+      <text class="image-disclosure">FirstSight · 影像图集</text>
     </view>
     <view class="feature-content">
       <view class="feature-topline"><text class="feature-category">{{featured.category}}</text><text class="feature-number">Vol. 01</text></view>
       <view class="feature-title serif">{{featured.title}}</view>
       <view class="feature-subtitle">{{featured.subtitle}}</view>
       <view class="feature-description">{{featured.description}}</view>
-      <view class="feature-footer"><text>浏览摄影灵感</text><text class="feature-arrow" aria-hidden="true">↗</text></view>
+      <view class="feature-footer"><text>浏览摄影图集</text><text class="feature-arrow" aria-hidden="true">↗</text></view>
     </view>
   </button>
 
@@ -46,7 +46,7 @@
 
   <view class="collection-note">
     <text class="note-star" aria-hidden="true">✦</text>
-    <view class="note-body"><view class="note-title">灵感，可以慢慢收集</view><view class="note-copy">本期摄影图片均由 AI 生成，仅供风格参考，非真实客户作品。</view></view>
+    <view class="note-body"><view class="note-title">灵感，可以慢慢收集</view><view class="note-copy">从婚礼的一束光，到旅行的一段风景，翻看不同主题里的生活片刻。</view></view>
   </view>
 
   <view class="home-footer">

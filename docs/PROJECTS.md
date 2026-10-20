@@ -2,7 +2,7 @@
 
 内容空间采用一个 Cloudflare Pages 项目 `brclio-miniapp-wechat`。首页、公开清单和所有模块统一构建到 `dist/web`，模块地址固定为 `/projects/<id>/`。以后每月增加内容或模块，都继续部署这个项目。
 
-当前 `0.1.1` 已在同一项目部署三个模块：`firstsight`、`wedding`、`ready-go-duel`；摄影两个，放松一个。最终部署为 [95a26fe5](https://95a26fe5.brclio-miniapp-wechat.pages.dev)，微信开发包已上传，审核与正式发布仍未取得证据。新增互动的后台类目和产品形态要求仍需核对，后续更新不能仅沿用摄影阶段的类目结论。
+当前 `0.1.1` 包含三个模块：`firstsight`、`wedding`、`ready-go-duel`；摄影两个，放松一个。FirstSight 原图恢复已通过 96 项测试和发布检查，修正后的微信开发包已重新上传；网页已部署为 [bf140573](https://bf140573.brclio-miniapp-wechat.pages.dev) 并通过本地交互验收，两个域名各 40 个资源的 SHA-256 与本地产物一致；审核与正式发布仍未取得证据。新增互动的后台类目和产品形态要求仍需核对，后续更新不能仅沿用摄影阶段的类目结论。
 
 ## 两份清单各管什么
 
@@ -71,7 +71,19 @@
 }
 ```
 
-esbuild 将入口及依赖打包为该模块的 `main.js`；入口导入 CSS 时另生成 `main.css`。HTML 应引用对应的 `main.js`／`main.css`，素材路径保持模块内相对地址。所需依赖加入根目录 `package.json` 并更新锁文件，不为模块单独创建 Cloudflare 项目。FirstSight 是现有 React 接入示例，来源范围见其 `SOURCE.md`。
+esbuild 将入口及依赖打包为该模块的 `main.js`；入口导入 CSS 时另生成 `main.css`。HTML 应引用对应的 `main.js`／`main.css`，素材使用模块内相对路径或受验证的同域模块路径。所需依赖加入根目录 `package.json` 并更新锁文件，不为模块单独创建 Cloudflare 项目。FirstSight 是现有 React 接入示例，来源范围见其 `SOURCE.md`。
+
+## FirstSight 原图与来源同步
+
+FirstSight 使用 `web/projects/firstsight/original-data.json` 中的摄影分组和图片清单，原始图片保存在模块自己的 `assets/original/`。当前来源固定于提交 `6fafcfd4371b00d8c956e58cb5bf689911b5fb2c`：画廊、婚纱、家庭、成长及旅行共 14 组，97 条照片记录展开为 101 个图片条目，其中 80 个可用条目复用 34 个原始图片文件。21 个不可用条目保留错误状态，不用 AI 素材替代。
+
+正常 `npm run build` 不联网，读取已提交的数据、来源快照和素材。需要更新可用性时显式执行：
+
+```sh
+node scripts/sync-firstsight.mjs --download
+```
+
+不带 `--download` 可离线重建和核对数据。文件哈希、来源地址、原始字节数、固定随机种子及重取来源快照的方法见 [来源说明](../web/projects/firstsight/SOURCE.md)。维护时保留原标题、描述、分组和多图记录，检查失效图片提示；不要重新将所有 FirstSight 图片标成 AI 示例。独立 `wedding` 模块的两张 AI 图片与 FirstSight 来源分别维护。导入范围不包括视频、信件、随笔、留言和评论。
 
 ## 当前 Canvas 模块示例
 

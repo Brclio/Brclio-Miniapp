@@ -29,7 +29,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', '0.1.1', '--desc', '综合内容入口，新增FirstSight摄影系列及同屏双人反应挑战，支持抢跑判定与本机记录，无需登录', '--info-output', path.join(root, 'artifacts/wechat-upload.json')]
+    upload: ['upload', '--project', root, '--version', '0.1.1', '--desc', '恢复FirstSight原有摄影图集与首页原图封面，提供14组相册及大图浏览；保留摄影、放松内容入口与同屏双人反应挑战，本机保存记录，无需登录。', '--info-output', path.join(root, 'artifacts/wechat-upload.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');

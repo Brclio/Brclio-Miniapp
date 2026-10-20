@@ -1,9 +1,10 @@
 // Adapted from AndersonHJB/FirstSight pages/WeddingPage.tsx.
 // Retains collection → series detail → immersive image navigation.
 import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, ArrowUpRight, Flower2, Heart, Image } from 'lucide-react';
-import { WEDDING_COLLECTIONS } from './data';
+import { ArrowLeft, ArrowUpRight, Aperture, Image } from 'lucide-react';
+import { PHOTO_COUNT, UNAVAILABLE_COUNT, WEDDING_COLLECTIONS } from './data';
 import { ImmersiveLightbox } from './ImmersiveLightbox';
+import { OriginalImage } from './OriginalImage';
 
 function readAlbumId() {
   const match = window.location.hash.match(/^#\/album\/([a-z0-9-]+)$/);
@@ -39,34 +40,33 @@ export function WeddingPage() {
       <main id="main-content" className="collection-page" tabIndex={-1}>
         <section className="collection-intro" aria-labelledby="collection-title">
           <div className="intro-heading">
-            <span className="section-kicker"><Heart size={16} strokeWidth={1.5} /> WEDDING INSPIRATION</span>
-            <h1 id="collection-title">把爱写成一册光影</h1>
+            <span className="section-kicker"><Aperture size={16} strokeWidth={1.5} /> FIRSTSIGHT · PHOTO ALBUMS</span>
+            <h1 id="collection-title">光影里，都是生活</h1>
           </div>
           <div className="intro-note">
-            <p>从花园到海岸，收藏关于光线、色彩与相伴的想象。</p>
-            <span className="ai-label">AI 生成示例 · 非真实客片</span>
+            <p>从日常、家庭到远方，沿着 FirstSight 的相册慢慢翻看。</p>
+            <span className="album-summary">{WEDDING_COLLECTIONS.length} 本相册 · {PHOTO_COUNT} 张照片</span>
           </div>
         </section>
 
-        <section className="collections-grid" aria-label="婚纱灵感系列">
+        <section className="collections-grid" aria-label="摄影相册">
           {WEDDING_COLLECTIONS.map((series, index) => (
             <article className="collection" key={series.id}>
-              <button className="collection-open" onClick={() => { window.location.hash = `/album/${series.id}`; }} aria-label={`浏览${series.title}系列，${series.photos.length} 幅 AI 灵感影像`}>
+              <button className="collection-open" onClick={() => { window.location.hash = `/album/${series.id}`; }} aria-label={`浏览${series.title}，${series.photos.length} 张照片`}>
                 <span className="book-cover">
-                  <img src={series.cover} alt={`${series.title}，AI 生成的婚纱灵感示例，非真实客片`} width={1086} height={1448} loading={index === 0 ? 'eager' : 'lazy'} />
-                  <span className="cover-label">AI 生成</span>
+                  <OriginalImage src={series.cover} alt={`${series.title}相册封面`} loading={index < 3 ? 'eager' : 'lazy'} variant="cover" />
                   <span className="cover-action">翻开这册影集 <ArrowUpRight size={17} /></span>
                 </span>
                 <span className="collection-meta">
                   <span className="collection-subtitle">{series.subtitle}</span>
                   <span className="collection-title">{series.title}</span>
-                  <span className="collection-count"><Image size={13} /> {series.photos.length} 幅灵感影像</span>
+                  <span className="collection-count"><Image size={13} /> {series.photos.length} 张照片</span>
                 </span>
               </button>
             </article>
           ))}
         </section>
-        <p className="collection-disclaimer">图册中的人物与场景均为 AI 生成，仅供婚纱造型与影像氛围参考。</p>
+        {UNAVAILABLE_COUNT > 0 && <p className="collection-disclaimer">部分图片暂不可用，已保留原相册的位置与说明。</p>}
       </main>
     );
   }
@@ -74,28 +74,31 @@ export function WeddingPage() {
   return (
     <main id="main-content" className="series-page" tabIndex={-1}>
       <nav className="series-nav" aria-label="相册导航">
-        <button className="text-button" onClick={() => { window.location.hash = '/'; }}><ArrowLeft size={18} /> 返回全部系列</button>
+        <button className="text-button" onClick={() => { window.location.hash = '/'; }}><ArrowLeft size={18} /> 返回全部相册</button>
         <span className="series-nav-title">{selectedSeries.title}</span>
-        <span className="ai-label">AI 灵感示例</span>
+        <span className="album-summary">{selectedSeries.photos.length} 张照片</span>
       </nav>
 
       <section className="series-intro" aria-labelledby="series-title">
-        <Flower2 className="series-flower" size={34} strokeWidth={1} aria-hidden="true" />
+        <Aperture className="series-symbol" size={34} strokeWidth={1} aria-hidden="true" />
         <p className="section-kicker">{selectedSeries.subtitle}</p>
         <h1 id="series-title">{selectedSeries.title}</h1>
-        <p className="series-description">{selectedSeries.description}</p>
-        <span className="ai-label">AI 生成 · 非真实客片</span>
+        {selectedSeries.description && <p className="series-description">{selectedSeries.description}</p>}
+        {selectedSeries.photos.some((photo) => !photo.available) && <p className="series-notice">部分图片暂不可用，仍可查看原有文字记录。</p>}
       </section>
 
       <section className="series-photos" aria-label={`${selectedSeries.title}影像`}>
         {selectedSeries.photos.map((photo, index) => (
-          <button className="series-photo" key={photo.id} onClick={() => setSelectedPhotoIndex(index)} aria-label={`放大查看${photo.title}，AI 生成示例`}>
-            <img src={photo.url} alt={photo.alt} width={photo.width} height={photo.height} loading="lazy" />
-            <span className="photo-view-hint"><Image size={16} /> 点击查看大图</span>
+          <button className="series-photo" key={photo.id} onClick={() => setSelectedPhotoIndex(index)} aria-label={`查看${photo.title}${photo.available ? '大图' : '的文字记录，图片暂不可用'}`}>
+            <span className="series-photo-image">
+              <OriginalImage src={photo.url} alt={photo.alt} available={photo.available} width={photo.width} height={photo.height} loading="lazy" />
+              <span className="photo-view-hint"><Image size={16} /> {photo.available ? '查看大图' : '查看记录'}</span>
+            </span>
+            <span className="series-photo-title">{photo.title}</span>
           </button>
         ))}
       </section>
-      <p className="series-end">让灵感停留，让故事慢慢发生。</p>
+      <p className="series-end">这一册看到这里，下一册再相遇。</p>
 
       {selectedPhotoIndex >= 0 && selectedSeries.photos[selectedPhotoIndex] && (
         <ImmersiveLightbox

@@ -19,7 +19,7 @@ test('inactive project paths cannot reach cached or static modules', async () =>
   let calls = 0;
   const env = { ASSETS: { fetch() { calls += 1; return new Response('asset'); } } };
   const worker = createPagesWorker({ activeProjectIds: ['firstsight'] });
-  for (const path of ['/projects/retired/', '/projects/retired/main.js', '/projects/firstsight%2fretired/', '/projects/constructor/', '/projects/']) {
+  for (const path of ['/projects/retired/', '/projects/retired/main.js', '/projects/firstsight%2fretired/', '/projects/constructor/', '/projects/', '/projects/firstsight/media/garden.jpg', '/projects/firstsight/media/coast.jpg']) {
     const response = await worker.fetch(new Request('https://pocket.example' + path), env);
     assert.equal(response.status, 404, path);
   }

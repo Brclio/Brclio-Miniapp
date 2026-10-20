@@ -45,14 +45,23 @@ try {
   check(!files.some(function (file) { return /\.(?:pem|key|env)$/.test(file); }), '小程序上传目录没有私钥或环境文件');
   const scan = scripts.concat(walk(path.join(root, 'dist/web'))).filter(function (file) { return /\.(?:js|mjs|json|html|css|txt)$/.test(file); });
   const outputRoot = path.join(root, 'dist/web');
-  check(['index.html', 'main.js', 'catalog.js', 'projects.json', '_worker.js', 'projects/firstsight/index.html', 'projects/firstsight/main.js', 'projects/firstsight/media/garden.jpg', 'projects/wedding/index.html'].every(function (file) { return fs.existsSync(path.join(outputRoot, file)); }), '综合门户与摄影项目已在同一产物构建');
+  check(['index.html', 'main.js', 'catalog.js', 'projects.json', '_worker.js', 'projects/firstsight/index.html', 'projects/firstsight/main.js', 'projects/wedding/index.html'].every(function (file) { return fs.existsSync(path.join(outputRoot, file)); }), '综合门户与摄影项目已在同一产物构建');
   check(['bundle.js', 'runtime.js', 'sync.js', 'config.js'].every(function (file) { return fs.readFileSync(path.join(outputRoot, file), 'utf8') === '/* Retired. Use the content portal and registered projects. */\n'; }), '历史脚本仅返回退役占位');
   const registry = require(path.join(root, 'web/portal/catalog.js')).validateCatalog(JSON.parse(fs.readFileSync(path.join(outputRoot, 'projects.json'), 'utf8')));
   const version = require(path.join(root, 'package.json')).version;
   check(registry.version === version && site.version === version, '门户与原生版本一致');
   check(registry.categories.find(function (item) { return item.id === 'relax'; }).status === 'active' && registry.projects.some(function (item) { return item.id === 'ready-go-duel' && item.category === 'relax' && item.status === 'active'; }) && fs.existsSync(path.join(outputRoot, 'projects/ready-go-duel/bundle.js')), '放松栏目及双人反应挑战如实登记并发布');
   check(require(path.join(appRoot, 'data/catalog.js')).features.map(function (feature) { return feature.id; }).sort().join(',') === 'content-hub,firstsight,ready-go-duel,relax,wedding-inspiration', '原生固定入口及历史分享入口登记完整');
-  check(!/comment\.bornforthis|waline|unsplash|fonts\.googleapis/.test(fs.readFileSync(path.join(outputRoot, 'projects/firstsight/main.js'), 'utf8')), 'FirstSight 未包含原站留言与外部示例图库');
+  const photoData = JSON.parse(fs.readFileSync(path.join(root, 'web/projects/firstsight/original-data.json'), 'utf8'));
+  const photoAssets = photoData.assets.filter(function (asset) { return asset.available; });
+  const crypto = require('node:crypto');
+  check(photoAssets.length > 2 && photoAssets.every(function (asset) {
+    if (!/^\/projects\/firstsight\/assets\/original\/[a-f0-9]{20}\.(?:jpg|png|webp|gif)$/.test(asset.url)) return false;
+    const file = path.join(outputRoot, asset.url.slice(1));
+    return fs.existsSync(file) && crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex') === asset.sha256;
+  }), 'FirstSight 全部可用原图已按来源字节构建到同一项目');
+  const firstsightBundle = fs.readFileSync(path.join(outputRoot, 'projects/firstsight/main.js'), 'utf8');
+  check(!/comment\.bornforthis|waline|fonts\.googleapis|\.\/media\/(?:garden|coast)\.jpg/.test(firstsightBundle) && photoAssets.every(function (asset) { return firstsightBundle.includes(asset.url); }), 'FirstSight 使用原图清单，未混入旧替代图或留言服务');
   check(!scan.some(function (file) { return /github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(fs.readFileSync(file, 'utf8')); }), '发布源码与网页产物无凭据内容');
   const hasAppId = /^wx[0-9a-f]{16}$/i.test(project.appid || '');
   check(release ? hasAppId : hasAppId || project.appid === 'touristappid', release ? '已配置真实小程序 AppID' : 'AppID 配置可用于本地开发');

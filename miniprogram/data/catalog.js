@@ -12,9 +12,9 @@ const features = Object.freeze([
   Object.freeze({
     id: 'firstsight',
     title: 'FirstSight 摄影',
-    subtitle: '光影、构图与婚纱氛围的灵感示例',
+    subtitle: '从婚礼到日常，收藏光影里的故事',
     category: '摄影',
-    description: '浏览 FirstSight 婚纱摄影灵感，图片由 AI 生成，供氛围、色彩与造型参考，非真实客片。',
+    description: '浏览 FirstSight 摄影画廊，以及婚礼、家庭、宝宝与旅行主题图集，查看完整照片与画面细节。',
     path: '/projects/firstsight/?entry=wechat'
   }),
   Object.freeze({

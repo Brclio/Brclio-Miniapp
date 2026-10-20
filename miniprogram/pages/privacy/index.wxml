@@ -5,7 +5,7 @@
 
   <view class="document-section">
     <text class="document-heading serif">1. 当前提供的服务</text>
-    <text class="document-copy">当前版本提供摄影与放松两个栏目：摄影包括 FirstSight 摄影灵感及婚纱灵感图册，支持内容浏览与图片查看；放松提供同一设备上的双人反应挑战。当前摄影图片均由 AI 生成，页面已标注，仅供风格参考，非真实客片。无需注册或登录，不提供预约、交易、评论或图片上传。</text>
+    <text class="document-copy">当前版本提供摄影与放松两个栏目：摄影包括 FirstSight 摄影图集及婚纱灵感图册，支持内容浏览与图片查看；放松提供同一设备上的双人反应挑战。FirstSight 展示画廊、婚礼、家庭、宝宝与旅行主题图片；独立的婚纱灵感图册使用已标注的 AI 生成示意图。无需注册或登录，不提供预约、交易、评论或图片上传。</text>
   </view>
 
   <view class="document-section">

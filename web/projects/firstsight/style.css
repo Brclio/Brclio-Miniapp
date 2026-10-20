@@ -40,18 +40,25 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-
 .section-kicker svg { color: var(--red); }
 .collection-intro h1 { margin-top: 12px; font-family: var(--serif); font-weight: 500; font-size: clamp(28px, 3.7vw, 45px); line-height: 1.45; letter-spacing: .04em; }
 .intro-note p { max-width: 360px; color: var(--ink-light); font-size: 13px; line-height: 1.9; }
-.ai-label { display: inline-block; font-size: 10px; line-height: 1.7; letter-spacing: .035em; color: var(--ink-light); }
-.intro-note .ai-label { margin-top: 12px; padding: 2px 8px; background: #f4edd8; }
-.collections-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(28px, 5vw, 68px); }
+.album-summary { display: inline-block; font-size: 11px; line-height: 1.7; letter-spacing: .035em; color: var(--ink-light); }
+.intro-note .album-summary { margin-top: 12px; padding: 2px 8px; background: #f4edd8; }
+.collections-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(30px, 4vw, 52px) clamp(22px, 3vw, 40px); }
 .collection-open { display: block; width: 100%; padding: 0; background: transparent; text-align: center; }
-.book-cover { display: block; position: relative; aspect-ratio: 3 / 4; padding: 8px; background: #fffdf8; box-shadow: 0 9px 26px rgba(48,47,42,.12); transition: transform .3s ease, box-shadow .3s ease; }
-.book-cover img { width: 100%; height: 100%; object-fit: cover; }
+.book-cover { display: block; position: relative; aspect-ratio: 4 / 5; padding: 8px; background: #fffdf8; box-shadow: 0 9px 26px rgba(48,47,42,.12); transition: transform .3s ease, box-shadow .3s ease; }
+.image-frame { display: block; width: 100%; background: var(--paper); }
+.image-frame img { width: 100%; height: auto; }
+.image-frame--cover { height: 100%; }
+.image-frame--cover img { width: 100%; height: 100%; object-fit: cover; }
+.image-frame--unavailable { min-height: 210px; }
+.image-frame--cover.image-frame--unavailable { min-height: 0; }
+.unavailable-image { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; height: 100%; min-height: inherit; padding: 32px 16px; color: var(--ink-light); font-size: 13px; text-align: center; background: #f4efe3; }
+.unavailable-image svg { color: #9c947f; }
+.unavailable-image small { font-size: 10px; color: var(--ink-faint); }
 .collection-open:hover .book-cover { transform: translateY(-5px); box-shadow: 0 14px 34px rgba(48,47,42,.16); }
-.cover-label { position: absolute; top: 21px; left: 21px; padding: 2px 7px; background: rgba(254,252,246,.93); color: #514c42; font-size: 9px; letter-spacing: .08em; }
 .cover-action { position: absolute; left: 24px; right: 24px; bottom: 25px; display: flex; justify-content: space-between; align-items: center; color: #fefcf6; text-shadow: 0 1px 5px rgba(48,47,42,.7); font-size: 12px; }
 .collection-meta { display: flex; flex-direction: column; align-items: center; padding-top: 23px; }
 .collection-subtitle { color: var(--ink-faint); font-size: 9px; letter-spacing: .16em; }
-.collection-title { margin-top: 8px; font-family: var(--serif); font-size: clamp(23px, 2.6vw, 29px); font-weight: 500; letter-spacing: .08em; }
+.collection-title { margin-top: 8px; font-family: var(--serif); font-size: clamp(21px, 2.3vw, 26px); font-weight: 500; letter-spacing: .04em; line-height: 1.4; }
 .collection-count { margin-top: 9px; display: flex; align-items: center; gap: 6px; color: var(--ink-light); font-size: 10px; }
 .collection-disclaimer { margin-top: 48px; padding-top: 22px; border-top: 1px solid var(--border); color: var(--ink-faint); font-size: 11px; text-align: center; line-height: 1.9; }
 .series-page { padding-bottom: 28px; }
@@ -60,15 +67,18 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-
 .text-button:hover { color: var(--blue); }
 .series-nav-title { font-family: var(--serif); font-size: 15px; }
 .series-intro { max-width: 650px; margin: 0 auto; padding: clamp(36px, 6vw, 70px) 25px 34px; text-align: center; }
-.series-flower { color: #bfae86; margin-bottom: 16px; }
+.series-symbol { color: #bfae86; margin-bottom: 16px; }
 .series-intro .section-kicker { display: block; }
 .series-intro h1 { margin-top: 13px; font-family: var(--serif); font-size: clamp(29px, 4vw, 45px); line-height: 1.4; letter-spacing: .08em; font-weight: 500; }
 .series-description { margin: 22px auto 12px; max-width: 410px; color: var(--ink-light); font-family: var(--serif); font-size: 15px; line-height: 2; }
-.series-intro .ai-label { color: var(--ink-faint); }
-.series-photos { max-width: 820px; margin: 0 auto; padding: 0 22px; }
-.series-photo { display: block; position: relative; width: 100%; padding: 0; background: var(--paper); overflow: hidden; }
-.series-photo img { width: 100%; height: auto; transition: transform .5s ease; }
+.series-notice { margin-top: 16px; color: var(--ink-faint); font-size: 11px; }
+.series-photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 30px 24px; max-width: 1100px; margin: 0 auto; padding: 0 22px; }
+.series-photo { display: block; position: relative; width: 100%; padding: 0; background: transparent; text-align: left; }
+.series-photo-image { display: block; position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--paper); }
+.series-photo .image-frame { height: 100%; min-height: 0; }
+.series-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
 .series-photo:hover img { transform: scale(1.015); }
+.series-photo-title { display: block; margin-top: 12px; font-family: var(--serif); font-size: 15px; line-height: 1.7; }
 .photo-view-hint { position: absolute; bottom: 18px; left: 18px; display: flex; align-items: center; gap: 8px; padding: 7px 10px; font-size: 11px; color: var(--ink); background: rgba(254,252,246,.94); }
 .series-end { text-align: center; margin: 37px 22px 15px; font-family: var(--serif); color: var(--ink-faint); font-size: 13px; }
 .app-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 1220px; margin: 0 auto; padding: 24px clamp(22px, 5vw, 72px) max(27px, env(safe-area-inset-bottom)); font-size: 10px; color: var(--ink-faint); }
@@ -80,13 +90,17 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-
 .icon-button { display: flex; align-items: center; justify-content: center; background: transparent; color: inherit; width: 44px; height: 44px; border-radius: 50%; }
 .icon-button:hover, .icon-button:active { background: rgba(254,252,246,.12); }
 .lightbox-image-wrap { min-height: 0; display: flex; justify-content: center; align-items: center; padding: 6px clamp(12px, 4vw, 60px); }
-.lightbox-image { object-fit: contain; max-height: 100%; max-width: 100%; width: auto; height: auto; user-select: none; }
+.image-frame--lightbox { display: flex; align-items: center; justify-content: center; min-height: 0; height: 100%; max-width: 100%; background: transparent; }
+.image-frame--lightbox img { object-fit: contain; max-height: 100%; max-width: 100%; width: auto; height: auto; user-select: none; }
+.image-frame--lightbox .unavailable-image { width: min(100%, 900px); max-height: 100%; min-height: 180px; background: #232733; color: #d4d1c8; }
+.image-frame--lightbox .unavailable-image small { color: #a49f94; }
 .lightbox-caption { width: 100%; max-width: 1060px; margin: 0 auto; padding: 20px clamp(22px, 5vw, 52px) 0; }
 .lightbox-caption-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .lightbox-caption h2 { font-family: var(--serif); font-size: clamp(21px, 3vw, 30px); font-weight: 500; letter-spacing: .06em; }
-.lightbox-caption .ai-label { color: #d0c3a5; flex-shrink: 0; }
+.photo-date { color: #d0c3a5; flex-shrink: 0; font-size: 11px; }
+.lightbox-caption .photo-location { margin-top: 4px; color: #8e918e; }
 .lightbox-caption p { margin-top: 10px; color: #b8b8b6; font-size: 11px; line-height: 1.8; max-width: 660px; }
-.photo-tags { display: flex; gap: 8px; margin-top: 12px; }
+.photo-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .photo-tags span { font-size: 9px; padding: 2px 7px; background: rgba(254,252,246,.1); color: #d4d1c8; }
 .lightbox-prev, .lightbox-next { position: absolute; top: 45%; background: rgba(21,24,33,.65); }
 .lightbox-prev { left: 8px; }
@@ -95,8 +109,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-
   .app-header { min-height: 68px; }
   .collection-intro { grid-template-columns: 1fr; gap: 18px; }
   .intro-note { display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; }
-  .intro-note .ai-label { margin-top: 2px; flex-shrink: 0; }
-  .collections-grid { gap: 28px; }
+  .intro-note .album-summary { margin-top: 2px; flex-shrink: 0; }
+  .collections-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 25px; }
   .series-nav-title { display: none; }
 }
 @media (max-width: 600px) {
@@ -110,20 +124,23 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--blue); outline-
   .collection-intro h1 { font-size: clamp(25px, 7vw, 32px); }
   .intro-note { display: block; }
   .intro-note p { font-size: 12px; }
-  .intro-note .ai-label { margin-top: 12px; }
-  .collections-grid { grid-template-columns: 1fr; gap: 36px; }
+  .intro-note .album-summary { margin-top: 12px; }
+  .collections-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 16px; }
   .book-cover { padding: 7px; max-width: 420px; margin: 0 auto; }
   .collection-meta { padding-top: 18px; }
-  .collection-title { font-size: 25px; }
+  .collection-title { font-size: 19px; letter-spacing: .02em; }
+  .collection-subtitle { font-size: 8px; letter-spacing: .04em; }
+  .cover-action { left: 16px; right: 16px; bottom: 18px; font-size: 10px; }
+  .cover-action svg { width: 14px; }
   .collection-disclaimer { margin-top: 35px; }
   .app-footer { flex-wrap: wrap; gap: 12px; padding-top: 15px; }
   .app-footer > span:nth-child(2) { order: 3; width: 100%; }
   .series-nav { padding-top: 12px; padding-bottom: 12px; }
-  .series-nav .ai-label { font-size: 9px; }
+  .series-nav .album-summary { font-size: 10px; }
   .series-intro { padding-top: 34px; }
   .series-intro h1 { font-size: 32px; }
   .series-description { font-size: 14px; }
-  .series-photos { padding: 0 13px; }
+  .series-photos { grid-template-columns: 1fr; gap: 26px; padding: 0 20px; }
   .lightbox-caption-heading { flex-wrap: wrap; gap: 6px 16px; }
   .lightbox-caption h2 { font-size: 23px; }
   .lightbox-caption { padding-top: 15px; }

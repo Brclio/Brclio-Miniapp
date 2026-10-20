@@ -14,6 +14,8 @@ return {
     if (path.startsWith('/projects/')) {
       const match = path.match(/^\/projects\/([a-z][a-z0-9-]{0,47})\//);
       if (!match || !active.has(match[1])) return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+      // The former replacement-photo directory is retired, including stale CDN assets.
+      if (path.startsWith('/projects/firstsight/media/')) return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
     }
     return env.ASSETS.fetch(request);
   }

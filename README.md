@@ -2,7 +2,7 @@
 
 微信普通小程序与网页内容空间，按「摄影」「放松」两个栏目组织独立项目。`0.1.1` 包含三个公开入口：摄影中的 FirstSight 与婚纱灵感图册，以及放松中的「双人反应挑战」。
 
-**`0.1.1` 三个网页模块已部署，微信开发版本已上传成功；93 项测试及发布检查通过。** 两个域名的已测资源与本地产物字节一致，旧独立 Worker 入口已停用。尚无微信审核提交、审核通过或正式发布证据；新增反应挑战对应的类目和产品形态仍需在后台核对。见 [验证记录](docs/VERIFICATION.md)。
+**`0.1.1` 已恢复 FirstSight 原项目已配置的图片，96 项测试及发布检查通过，修正后的微信开发包已重新上传。** 原生包约 166.3 KiB，原图版本已部署并通过本地交互验收，两个域名各 40 个资源的 SHA-256 与本地产物一致。尚无微信审核提交、审核通过或正式发布证据；新增反应挑战对应的类目和产品形态仍需在后台核对。见 [验证记录](docs/VERIFICATION.md)。
 
 - 微信入口：[pocket.bornforthis.cn](https://pocket.bornforthis.cn)，沿用已备案域名。
 - 公开网页：[pocket.brclio.com](https://pocket.brclio.com)
@@ -13,8 +13,9 @@
 ## 当前版本内容
 
 - 首页从 `projects.json` 加载栏目与卡片：摄影两个项目，放松一个项目。
-- FirstSight 保留「系列封面 → 影集详情 → 大图浏览」结构，只适配摄影部分，不导入上游家庭、儿童、个人信件或留言内容。
-- 两个摄影模块使用项目已有的花园与海岸 AI 图片，明确标注 AI 生成、非真实客片。
+- FirstSight 保留「系列封面 → 影集详情 → 大图浏览」结构，恢复上游画廊、婚纱、家庭、成长与旅行的 14 组摄影内容；不导入视频、个人信件、随笔、留言或评论服务。
+- FirstSight 的 97 条原始照片记录展开为 101 个图片条目，其中 80 个条目可用，共 34 个已下载原始图片文件、18,197,609 字节。其余 21 个条目保留失效状态与提示，不使用 AI 图片替换；图片、描述及来源清单随同一 Cloudflare 项目部署。
+- 独立的婚纱灵感图册继续使用花园与海岸两张 AI 图片，明确标注 AI 生成、非真实客片。
 - 双人反应挑战公开登记在 `/projects/ready-go-duel/`：两人在同一设备等待 GO 信号，支持先得 1／3／5 分、抢跑、平局和本机战绩。
 - 反应挑战在浏览器本地保存使用偏好与最近 20 场完整记录，可在模块内清除；记录不上传 Cloudflare 或 GitHub，不提供云备份。
 - 无注册、登录、上传、评论、预约或交易，不创建云端用户档案，也不上传浏览记录。
@@ -53,7 +54,7 @@ npm run deploy
 
 微信仅使用已备案的 `pocket.bornforthis.cn` 业务域名；`pocket.brclio.com` 作为公开网页入口。添加模块使用路径即可，仍需遵守平台实际类目、资质、隐私和审核要求，模块化部署不等于免审核。
 
-接入和停用模块见 [PROJECTS.md](docs/PROJECTS.md)，发布步骤见 [RELEASE.md](docs/RELEASE.md)。
+接入和停用模块见 [PROJECTS.md](docs/PROJECTS.md)，发布步骤见 [RELEASE.md](docs/RELEASE.md)。FirstSight 原图清单、失效地址与可重复导入步骤见 [SOURCE.md](web/projects/firstsight/SOURCE.md)；正常构建只读取已提交素材，不联网获取图片。
 
 ## 项目结构
 
@@ -61,7 +62,7 @@ npm run deploy
 miniprogram/             微信原生目录、固定入口、关于和隐私
 projects.config.json    构建登记：react／static／canvas 与素材复制
 web/portal/             内容首页与公开 projects.json 清单
-web/projects/firstsight/ FirstSight 摄影适配
+web/projects/firstsight/ FirstSight 原图、来源快照、数据清单与摄影适配
 web/wedding/            婚纱灵感图册与两张 AI 图片
 web/projects/ready-go-duel/ 双人反应挑战网页宿主
 minigame/lib/           反应挑战共享规则、Canvas 界面与本机存储

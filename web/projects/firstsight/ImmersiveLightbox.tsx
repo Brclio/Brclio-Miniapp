@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import type { Photo } from './types';
+import { OriginalImage } from './OriginalImage';
 
 interface ImmersiveLightboxProps {
   photo: Photo;
@@ -98,16 +99,17 @@ export function ImmersiveLightbox({
         </button>
       </div>
       <div className="lightbox-image-wrap" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-        <img className="lightbox-image" src={photo.url} alt={photo.alt} width={photo.width} height={photo.height} />
+        <OriginalImage src={photo.url} alt={photo.alt} available={photo.available} width={photo.width} height={photo.height} variant="lightbox" />
       </div>
       {hasPrev && <button className="icon-button lightbox-prev" onClick={onPrev} aria-label="上一张"><ChevronLeft size={32} /></button>}
       {hasNext && <button className="icon-button lightbox-next" onClick={onNext} aria-label="下一张"><ChevronRight size={32} /></button>}
       <div className="lightbox-caption">
         <div className="lightbox-caption-heading">
           <h2 id="lightbox-title">{photo.title}</h2>
-          <span className="ai-label">AI 生成 · 非真实客片</span>
+          {photo.date && <span className="photo-date">{photo.date}</span>}
         </div>
         <p id="lightbox-description">{photo.description}</p>
+        {photo.location && <p className="photo-location">{photo.location}</p>}
         <div className="photo-tags">{photo.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
       </div>
     </div>, document.body,

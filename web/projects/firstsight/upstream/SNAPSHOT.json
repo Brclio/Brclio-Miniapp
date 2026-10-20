@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/AndersonHJB/FirstSight",
+  "commit": "6fafcfd4371b00d8c956e58cb5bf689911b5fb2c",
+  "files": {
+    "types.ts": "83caf12fc305786e691483c5ba38d0bfdc48ef21af89b6928b8ee5da6b4392d9",
+    "data/gallery.ts": "63aaf1d6ab84b1d9674d0fec8bd0d56c1a6ec55ca2e5ae1648705c181ddde8fc",
+    "data/wedding.ts": "a4fe434e998e955bff88bffab0e2953397561a19f50af1d50febe720290b7aa6",
+    "data/family.ts": "b937e524a0c666161325af07343c8ffad1addee2b7d4d052131aacc5d3894552",
+    "data/baby.ts": "e4f6f09b61073703b2771bac5405e541f559fd520c866dc9e224d9cf57627b81",
+    "data/travel.ts": "1f20f562aeb35e000c8b3650ee09bc91954a077739e4de89ac036a37d06c5def"
+  },
+  "randomSeed": 1179863367,
+  "excludes": [
+    "letters",
+    "essays",
+    "comments",
+    "video entries"
+  ]
+}
