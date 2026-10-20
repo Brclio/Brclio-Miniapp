@@ -1,2 +1,8 @@
-.about-brand { padding-top: 16rpx; }
-.about-avatar { width: 108rpx; height: 108rpx; border-radius: 50%; margin-bottom: 20rpx; }
+.document-shell { padding-top: 28rpx; }
+.about-brand { padding-top: 10rpx; padding-bottom: 32rpx; border-bottom: 1rpx solid #dedbd2; }
+.about-brand-row { display: flex; align-items: center; gap: 18rpx; margin-bottom: 22rpx; }
+.about-avatar { width: 78rpx; height: 78rpx; border-radius: 50%; flex-shrink: 0; }
+.about-brand-row .eyebrow { font-size: 18rpx; letter-spacing: 2rpx; }
+.section-number { display: block; color: #2b7fd8; font-size: 18rpx; letter-spacing: 2rpx; margin-bottom: 12rpx; }
+.about-privacy { gap: 18rpx; margin-top: 12rpx; }
+.document-signature { font-style: italic; margin-top: 4rpx; }

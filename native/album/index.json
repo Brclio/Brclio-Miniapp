@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "FirstSight 相册",
+  "navigationBarBackgroundColor": "#fefcf6",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#fefcf6",
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true,
+  "disableScroll": false
+}

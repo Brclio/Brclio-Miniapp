@@ -15,6 +15,7 @@ export interface Photo {
 
 export interface WeddingSeries {
   id: string;
+  category: string;
   title: string;
   subtitle: string;
   cover: string;

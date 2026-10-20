@@ -1,52 +1,96 @@
-.home-shell { padding-top: 24rpx; }
-.brand-row { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
-.brand-lockup { display: flex; align-items: center; gap: 18rpx; min-width: 0; }
-.brand-avatar { width: 72rpx; height: 72rpx; border-radius: 50%; flex-shrink: 0; }
-.brand-title { font-size: 29rpx; font-weight: 700; }
-.brand-light { font-weight: 400; color: #77746e; }
-.brand-caption { font-size: 21rpx; color: #817c72; margin-top: 2rpx; }
-.about-button { flex-shrink: 0; font-size: 23rpx; color: #596b59; padding: 12rpx 0 12rpx 12rpx; background: transparent; }
-.category-nav { display: flex; gap: 12rpx; margin-top: 38rpx; border-bottom: 1rpx solid #e6e0d5; }
-.category-tab { display: flex; align-items: baseline; gap: 12rpx; padding: 14rpx 18rpx 18rpx; font-size: 29rpx; }
-.category-tab-active { color: #596b59; border-bottom: 4rpx solid #687861; font-weight: 600; }
-.category-tab-link { background: transparent; color: #687861; text-align: left; }
-.category-state { font-size: 18rpx; font-weight: 400; }
-.intro { padding: 42rpx 0 48rpx; }
-.intro .eyebrow { font-size: 18rpx; letter-spacing: 2rpx; color: #687861; }
-.intro-title { font-size: 47rpx; font-weight: 600; margin-top: 18rpx; line-height: 1.5; letter-spacing: -1rpx; color: #33372f; }
-.highlight { box-shadow: inset 0 -13rpx #e7e7d6; }
-.intro-copy { font-size: 25rpx; color: #77746e; margin-top: 24rpx; line-height: 1.9; }
-.section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12rpx; margin-bottom: 20rpx; }
-.section-title { font-size: 29rpx; font-weight: 600; color: #33372f; }
-.section-index { font-size: 17rpx; color: #8c887e; letter-spacing: 1rpx; }
-.feature-card { width: 100%; padding: 0; text-align: left; border: 1rpx solid #e6e0d5; border-radius: 18rpx; background: #fffdf8; overflow: hidden; }
-.feature-pressed { background: #f5f2e9; }
-.feature-cover { position: relative; width: 100%; height: 520rpx; background: #e8e7dd; overflow: hidden; }
+/* Native adaptation of Brclio Design System's app header, tabs and editorial cards. */
+.home-shell { padding-top: 12rpx; }
+.portal-header { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; min-height: 112rpx; }
+.brand-lockup { display: flex; align-items: center; gap: 16rpx; min-width: 0; }
+.brand-avatar { width: 68rpx; height: 68rpx; border-radius: 50%; flex-shrink: 0; }
+.brand-title { font-size: 28rpx; font-weight: 700; letter-spacing: 1rpx; }
+.brand-slash { color: #2b7fd8; margin: 0 5rpx; font-weight: 400; }
+.brand-caption { font-size: 20rpx; color: #75716a; margin-top: 2rpx; }
+.header-button { min-height: 44px; min-width: 44px; padding: 20rpx 0 20rpx 20rpx; background: transparent; font-size: 23rpx; color: #4a4a5a; display: flex; align-items: center; justify-content: flex-end; gap: 8rpx; flex-shrink: 0; }
+.category-nav { position: sticky; top: 0; z-index: 10; display: flex; background: #fefcf6; border-bottom: 1rpx solid #dedbd2; margin-top: 14rpx; }
+.category-tab { flex: 1; min-width: 0; min-height: 50px; display: flex; align-items: center; justify-content: center; gap: 11rpx; padding: 22rpx 8rpx; background: transparent; color: #817d76; font-size: 28rpx; border-bottom: 4rpx solid transparent; margin-bottom: -1rpx; }
+.category-tab-active { color: #2b7fd8; border-bottom-color: #2b7fd8; font-weight: 700; }
+.tab-english { font-size: 17rpx; letter-spacing: 1rpx; font-weight: 500; }
+.section-intro { padding: 42rpx 0 32rpx; }
+.intro-topline { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; }
+.intro-topline .eyebrow { font-size: 17rpx; letter-spacing: 2rpx; }
+.issue-number { font-size: 18rpx; color: #817d76; }
+.intro-title { margin-top: 22rpx; font-size: 48rpx; line-height: 1.55; font-weight: 700; letter-spacing: -1rpx; }
+.word-highlight { background: linear-gradient(transparent 68%, rgba(244, 215, 88, 0.7) 68%, rgba(244, 215, 88, 0.7) 93%, transparent 93%); }
+.intro-copy { margin-top: 12rpx; font-size: 23rpx; color: #75716a; line-height: 1.8; }
+.photo-feature { width: 100%; display: block; padding: 0; text-align: left; background: transparent; }
+.photo-cover { position: relative; height: 570rpx; overflow: hidden; background: #e7e0d4; border-radius: 8rpx; }
 .cover-image { width: 100%; height: 100%; display: block; }
-.image-disclosure { position: absolute; left: 22rpx; bottom: 22rpx; padding: 5rpx 13rpx; border-radius: 5rpx; color: #fffdf8; background: rgba(35, 44, 34, 0.7); font-size: 19rpx; line-height: 1.7; }
-.feature-content { padding: 28rpx 30rpx 0; }
-.feature-topline { display: flex; align-items: center; justify-content: space-between; }
-.feature-category { color: #687861; font-size: 20rpx; letter-spacing: 2rpx; }
-.feature-number { font-family: 'Songti SC', 'STSong', serif; color: #989180; font-size: 23rpx; font-style: italic; }
-.feature-title { font-size: 37rpx; font-weight: 600; line-height: 1.4; margin-top: 15rpx; color: #33372f; }
-.feature-subtitle { font-size: 22rpx; color: #8c7c69; margin-top: 7rpx; }
-.feature-description { font-size: 24rpx; color: #77746e; line-height: 1.8; margin-top: 20rpx; }
-.feature-footer { margin-top: 26rpx; border-top: 1rpx solid #e9e4d9; min-height: 88rpx; display: flex; align-items: center; justify-content: space-between; font-size: 26rpx; color: #596b59; font-weight: 600; }
-.feature-arrow { font-size: 37rpx; font-weight: 400; }
-.hub-button { margin-top: 22rpx; padding: 23rpx 28rpx; border: 1rpx solid #e6e0d5; border-radius: 14rpx; background: #f1f1e7; color: #596b59; align-items: center; justify-content: space-between; text-align: left; }
-.hub-button-title { font-size: 27rpx; font-weight: 600; }
-.hub-button-copy { margin-top: 3rpx; font-size: 21rpx; color: #817c72; }
-.collection-note { display: flex; align-items: flex-start; gap: 18rpx; padding: 34rpx 0; }
-.note-body { flex: 1; min-width: 0; }
-.note-star { font-size: 30rpx; color: #b59a7a; line-height: 1.4; }
-.note-title { font-size: 24rpx; font-weight: 600; color: #555e4c; }
-.note-copy { font-size: 22rpx; color: #817c72; margin-top: 6rpx; line-height: 1.8; }
-.home-footer { border-top: 1rpx solid #e6e0d5; padding-top: 28rpx; }
-.signature { font-size: 21rpx; color: #8c887e; font-family: 'Songti SC', 'STSong', serif; font-style: italic; }
-.privacy-button { font-size: 22rpx; color: #687861; }
-
+.cover-caption { position: absolute; top: 26rpx; left: 26rpx; right: 26rpx; display: flex; align-items: center; justify-content: space-between; gap: 12rpx; color: #fefcf6; font-size: 18rpx; letter-spacing: 2rpx; text-shadow: 0 1rpx 6rpx rgba(26, 26, 46, 0.5); }
+.cover-open { position: absolute; right: 26rpx; bottom: 26rpx; width: 74rpx; height: 74rpx; border-radius: 50%; background: #fefcf6; color: #2b7fd8; display: flex; align-items: center; justify-content: center; font-size: 37rpx; }
+.photo-details { display: flex; align-items: center; justify-content: space-between; gap: 18rpx; padding: 24rpx 0 29rpx; border-bottom: 1rpx solid #dedbd2; }
+.feature-title { font-size: 32rpx; font-weight: 700; line-height: 1.45; }
+.feature-subtitle { font-size: 21rpx; color: #817d76; margin-top: 5rpx; }
+.photo-action { color: #2b7fd8; font-size: 23rpx; flex-shrink: 0; display: flex; align-items: center; gap: 12rpx; }
+.photo-action text { font-size: 31rpx; }
+.inspiration-entry { width: 100%; padding: 28rpx 0; display: flex; align-items: center; gap: 22rpx; background: transparent; text-align: left; border-bottom: 1rpx solid #dedbd2; }
+.inspiration-mark { width: 114rpx; height: 132rpx; background: #f5e9b0; flex-shrink: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #847031; font-family: 'Songti SC', 'STSong', serif; font-size: 50rpx; line-height: 1.2; border-radius: 2rpx; transform: rotate(-3deg); }
+.mark-small { font-family: -apple-system, 'PingFang SC', sans-serif; font-size: 10rpx; letter-spacing: 1rpx; margin-top: 11rpx; }
+.entry-body { flex: 1; min-width: 0; }
+.entry-topline { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; flex-wrap: wrap; }
+.entry-title { font-size: 27rpx; font-weight: 700; }
+.ai-badge { font-size: 17rpx; color: #8c4439; background: #fae9e2; padding: 2rpx 10rpx; border-radius: 4rpx; white-space: nowrap; }
+.entry-copy { font-size: 22rpx; color: #75716a; line-height: 1.85; margin-top: 8rpx; }
+.entry-arrow { color: #2b7fd8; font-size: 31rpx; flex-shrink: 0; }
+.editorial-note { display: flex; align-items: center; gap: 19rpx; padding: 32rpx 0 40rpx; font-size: 22rpx; color: #817d76; }
+.note-symbol { font-size: 42rpx; color: #2b7fd8; }
+.note-emphasis { color: #4a4a5a; }
+.feature-pressed { opacity: 0.85; }
+.duel-entry { width: 100%; display: block; padding: 0; background: transparent; text-align: left; }
+.duel-visual { padding: 28rpx 26rpx 24rpx; background: #f4efd9; border-radius: 8rpx; }
+.duel-visual-top { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; }
+.game-label { color: #2b7fd8; font-size: 19rpx; letter-spacing: 2rpx; font-weight: 700; }
+.game-edition { color: #8b805c; font-size: 16rpx; letter-spacing: 1rpx; }
+.duel-court { display: flex; align-items: center; justify-content: center; padding: 46rpx 0 38rpx; }
+.duel-player { width: 216rpx; height: 216rpx; display: flex; align-items: center; justify-content: center; flex-direction: column; border-radius: 50%; font-size: 75rpx; font-family: 'Songti SC', 'STSong', serif; font-weight: 700; line-height: 1.1; }
+.player-one { color: #fefcf6; background: #2b7fd8; transform: rotate(-8deg); }
+.player-two { color: #1a1a2e; background: #f4d758; transform: rotate(8deg); }
+.player-caption { font-family: -apple-system, 'PingFang SC', sans-serif; font-size: 19rpx; font-weight: 400; margin-top: 15rpx; }
+.duel-versus { padding: 0 15rpx; font-size: 36rpx; font-style: italic; color: #817550; }
+.duel-bottom { display: flex; align-items: center; justify-content: center; gap: 11rpx; font-size: 20rpx; color: #827759; }
+.duel-dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: #e84a5f; }
+.game-details { padding: 27rpx 0 0; }
+.small-label { font-size: 19rpx; color: #2b7fd8; letter-spacing: 1rpx; }
+.game-copy { font-size: 23rpx; color: #75716a; margin-top: 12rpx; }
+.game-tags { display: flex; flex-wrap: wrap; gap: 12rpx 24rpx; margin-top: 20rpx; font-size: 20rpx; color: #817d76; }
+.game-action { display: flex; align-items: center; justify-content: space-between; margin-top: 28rpx; min-height: 96rpx; padding: 18rpx 30rpx; border-radius: 8rpx; background: #2b7fd8; color: #fefcf6; font-size: 27rpx; font-weight: 600; }
+.game-action text:last-child { font-size: 35rpx; font-weight: 400; }
+.play-note { margin: 36rpx 0 42rpx; padding-top: 26rpx; border-top: 1rpx solid #dedbd2; }
+.play-note-title { font-size: 29rpx; margin-top: 8rpx; font-weight: 600; }
+.visitor-section { padding: 8rpx 0 32rpx; }
+.visitor-topline { display: flex; align-items: center; gap: 20rpx; }
+.visitor-icon { position: relative; width: 102rpx; height: 102rpx; background: #f0e9d9; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+.visitor-head { position: absolute; width: 28rpx; height: 28rpx; top: 22rpx; left: 37rpx; border: 3rpx solid #a79c84; border-radius: 50%; }
+.visitor-body { position: absolute; width: 58rpx; height: 43rpx; top: 57rpx; left: 22rpx; border: 3rpx solid #a79c84; border-radius: 40rpx 40rpx 0 0; }
+.visitor-title { font-size: 32rpx; font-weight: 700; }
+.visitor-caption { font-size: 22rpx; color: #817d76; margin-top: 4rpx; }
+.visitor-badge { margin-left: auto; color: #817550; background: #f4efd9; font-size: 19rpx; padding: 7rpx 13rpx; border-radius: 4rpx; white-space: nowrap; }
+.account-note { margin-top: 30rpx; padding: 25rpx 26rpx; background: #f7f3e9; border-radius: 8rpx; }
+.account-title { display: flex; align-items: center; gap: 12rpx; font-size: 25rpx; font-weight: 600; }
+.status-dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: #c7ad43; }
+.personal-links { border-top: 1rpx solid #dedbd2; margin-bottom: 44rpx; }
+.personal-link { display: flex; width: 100%; min-height: 128rpx; align-items: center; justify-content: space-between; gap: 20rpx; padding: 24rpx 0; border-bottom: 1rpx solid #dedbd2; background: transparent; text-align: left; }
+.personal-link-title { font-size: 27rpx; }
+.personal-link-copy { color: #817d76; font-size: 21rpx; margin-top: 4rpx; }
+.home-footer { border-top: 1rpx solid #dedbd2; padding-top: 27rpx; }
+.footer-brand { font-size: 22rpx; color: #5f5a53; font-weight: 600; letter-spacing: 1rpx; }
+.footer-signature { font-size: 21rpx; color: #817d76; font-style: italic; margin-top: 3rpx; }
+.footer-privacy { margin-top: 6rpx; min-height: 44px; display: flex; align-items: center; font-size: 21rpx; }
 @media (max-width: 350px) {
-  .page-shell { padding-left: 28rpx; padding-right: 28rpx; }
-  .intro-title { font-size: 43rpx; }
-  .brand-caption { font-size: 20rpx; }
+  .intro-title { font-size: 44rpx; }
+  .category-tab { gap: 8rpx; }
+  .tab-english { font-size: 16rpx; }
+  .entry-topline { gap: 7rpx; }
+  .inspiration-entry { gap: 17rpx; }
+  .inspiration-mark { width: 100rpx; }
+  .duel-player { width: 200rpx; height: 200rpx; }
+}
+@media (min-width: 900px) {
+  .photo-cover { height: 640rpx; }
+  .category-tab { min-height: 104rpx; }
 }

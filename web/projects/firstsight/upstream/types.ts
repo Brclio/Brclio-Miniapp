@@ -5,6 +5,7 @@ export enum AlbumType {
   GALLERY = 'GALLERY',
   WEDDING = 'WEDDING',
   TRAVEL = 'TRAVEL',
+  PHOTO_ALBUM = 'PHOTO_ALBUM',
 }
 
 export interface ExifInfo {
@@ -39,6 +40,17 @@ export interface WeddingSeries {
   cover: string; 
   date: string;
   photographer: string;
+  description: string;
+  photos: Photo[];
+}
+
+export interface PhotoAlbumSeries {
+  id: string;
+  title: string;
+  subtitle: string;
+  cover: string;
+  date: string;
+  location: string;
   description: string;
   photos: Photo[];
 }
@@ -81,6 +93,20 @@ export interface Essay {
   images?: string[];
   video?: string[];
   link?: string;
+}
+
+export interface VideoRecord {
+  id: string;
+  title: string;
+  date: string;
+  source: string;
+  location?: string | string[];
+  /** Markdown content. Use template strings in data/videos.ts for long, multi-line copy. */
+  description: string;
+  videoUrl: string;
+  poster?: string;
+  link?: string;
+  tags?: string[];
 }
 
 export interface Letter {

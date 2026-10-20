@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "version": "0.1.1",
+  "version": "0.1.0",
   "intro": {
-    "title": "把喜欢的生活，慢慢放进口袋。",
-    "description": "翻一翻喜欢的影像，也给轻松留一点时间。",
-    "releaseNote": "摄影与放松，本期一起打开"
+    "title": "Brclio 悦创 · 生活的切片",
+    "description": "看看摄影，轻松一下。给喜欢的事，留一点时间。",
+    "releaseNote": "摄影与放松，随手打开"
   },
   "categories": [
     {
@@ -12,16 +12,16 @@
       "title": "摄影",
       "status": "active",
       "eyebrow": "PHOTOGRAPHY / 01",
-      "heading": "让目光，多停留一会。",
-      "description": "翻开一本图册，遇见一种喜欢的光。"
+      "heading": "把日常，看成风景。",
+      "description": "婚纱里的约定，孕期里的期待。"
     },
     {
       "id": "relax",
       "title": "放松",
       "status": "active",
       "eyebrow": "LIGHT MOMENTS / 02",
-      "heading": "轻松一下，比比反应。",
-      "description": "两个人，一块屏幕，等一声 GO 再出手。"
+      "heading": "认真生活，轻松一下。",
+      "description": "放下忙碌，和身边的人分享一点快乐。"
     }
   ],
   "projects": [
@@ -31,19 +31,19 @@
       "status": "active",
       "kind": "gallery",
       "title": "FirstSight · 初见",
-      "subtitle": "把一眼心动，留成一册。",
-      "description": "翻看摄影画廊与婚礼、家庭、宝宝、旅行主题图集，收藏不同画面里的生活片刻。",
+      "subtitle": "婚纱里的约定，孕期里的期待。",
+      "description": "翻看 8 组婚纱与 1 组孕期影像，169 张来自 FirstSight_Online 的实际摄影作品。",
       "path": "/projects/firstsight/",
-      "cover": "/projects/firstsight/assets/original/57b2003752710a495430.jpg",
-      "coverAlt": "FirstSight 婚礼图集中的逆光新人合影",
-      "disclosure": "摄影画廊 · 主题图集",
+      "cover": "/projects/firstsight/assets/original/a6cea33d9101838313d3.webp",
+      "coverAlt": "海边誓约的真实摄影作品",
+      "disclosure": "真实摄影 · 海边誓约",
       "label": "精选图册",
       "action": "打开 FirstSight"
     },
     {
       "id": "wedding",
       "category": "photography",
-      "status": "active",
+      "status": "planned",
       "kind": "gallery",
       "title": "婚纱灵感图册",
       "subtitle": "花园的温柔，海岸的自由。",

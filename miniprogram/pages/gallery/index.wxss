@@ -1,0 +1,51 @@
+/* © Brclio · Brclio Design System, CC BY-NC-SA 4.0. */
+page { color: #292c29; }
+.gallery-shell { max-width: 960rpx; margin: 0 auto; padding: 42rpx 42rpx 48rpx; padding-bottom: calc(48rpx + env(safe-area-inset-bottom)); }
+.gallery-kicker { display: flex; align-items: center; gap: 15rpx; color: #686b63; font-size: 16rpx; letter-spacing: 2rpx; }
+.kicker-dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: #2b7fd8; }
+.gallery-title { margin-top: 22rpx; font-size: 76rpx; font-weight: 400; line-height: 1.4; letter-spacing: 1rpx; }
+.title-accent { color: #2b7fd8; }
+.intro-bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 20rpx; margin: 32rpx 0 46rpx; }
+.intro-copy { color: #686b63; font-size: 21rpx; line-height: 1.9; }
+.album-summary { flex-shrink: 0; font-size: 17rpx; color: #686b63; text-align: right; }
+.summary-number { font-family: Georgia, 'Songti SC', serif; font-size: 44rpx; line-height: 1.2; margin-right: 10rpx; color: #292c29; }
+.summary-photos { margin-top: 6rpx; }
+.featured-album { padding: 0; background: transparent; text-align: left; }
+.featured-cover { height: 630rpx; margin: 0 -42rpx; background: #f3efe5; overflow: hidden; }
+.featured-image { display: block; width: 100%; height: 100%; }
+.featured-caption { display: flex; align-items: center; justify-content: space-between; gap: 18rpx; padding: 30rpx 0; border-bottom: 1rpx solid #deded3; }
+.featured-label { font-size: 13rpx; color: #85877d; letter-spacing: 2rpx; }
+.featured-title { margin-top: 8rpx; font-size: 26rpx; font-weight: 400; }
+.featured-action { display: flex; align-items: center; gap: 15rpx; font-size: 19rpx; color: #686b63; white-space: nowrap; }
+.featured-action text { color: #2b7fd8; font-size: 36rpx; }
+.albums-section { padding-top: 60rpx; }
+.section-heading { display: flex; align-items: baseline; gap: 22rpx; }
+.section-title { font-size: 44rpx; font-weight: 400; }
+.section-english { font-size: 14rpx; color: #85877d; letter-spacing: 2rpx; }
+.album-filters { display: flex; align-items: center; gap: 4rpx; margin: 24rpx 0 34rpx; }
+.filter-slot { flex: 1; min-width: 0; }
+.filter-button { align-items: center; justify-content: center; gap: 6rpx; min-height: 44px; padding: 14rpx 4rpx; color: #686b63; background: transparent; font-size: 22rpx; border-radius: 3rpx; }
+.filter-count { font-size: 15rpx; margin-top: -8rpx; opacity: .75; }
+.filter-active { color: #2b7fd8; background: #eaf0f2; }
+.albums-grid { display: flex; flex-wrap: wrap; justify-content: space-between; }
+.album-cell { width: 47.8%; margin-bottom: 48rpx; }
+.album-button { padding: 0; background: transparent; text-align: left; }
+.album-cover { position: relative; height: 400rpx; overflow: hidden; background: #f3efe5; }
+.cover-image { display: block; width: 100%; height: 100%; }
+.cover-arrow { position: absolute; right: 14rpx; bottom: 14rpx; display: flex; align-items: center; justify-content: center; width: 54rpx; height: 54rpx; border-radius: 50%; color: #292c29; background: #fefcf6; font-size: 31rpx; }
+.album-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 10rpx; padding-top: 20rpx; }
+.album-heading { flex: 1; min-width: 0; }
+.album-title { color: #292c29; font-size: 30rpx; font-weight: 400; line-height: 1.5; overflow-wrap: break-word; }
+.album-subtitle { margin-top: 7rpx; color: #85877d; font-size: 16rpx; line-height: 1.7; }
+.album-count { color: #686b63; font-size: 17rpx; white-space: nowrap; }
+.image-unavailable { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 15rpx; padding: 30rpx 20rpx; color: #686b63; background: #f3efe5; font-size: 22rpx; text-align: center; }
+.unavailable-mark { font-size: 48rpx; color: #989685; font-weight: 400; }
+.unavailable-note { font-size: 18rpx; color: #85877d; }
+.source-notice { padding-top: 28rpx; border-top: 1rpx solid #deded3; color: #85877d; font-size: 20rpx; line-height: 1.8; }
+.gallery-footer { padding-top: 46rpx; }
+.footer-signature { color: #85877d; font-size: 24rpx; }
+.footer-link, .privacy-link { align-items: center; justify-content: space-between; padding: 16rpx 0; min-height: 44px; background: transparent; text-align: left; font-size: 22rpx; color: #2b7fd8; }
+.footer-link text { font-size: 30rpx; }
+.privacy-link { justify-content: flex-start; color: #85877d; font-size: 19rpx; }
+.photo-pressed { opacity: .85; }
+@media (max-width: 350px) { .gallery-title { font-size: 70rpx; } .intro-copy { font-size: 20rpx; } .album-title { font-size: 28rpx; } .featured-title { font-size: 25rpx; } }

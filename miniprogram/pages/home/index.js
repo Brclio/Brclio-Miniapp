@@ -1,12 +1,28 @@
 const catalog = require('../../data/catalog');
 
 Page({
-  data: { featured: catalog.getFeature('firstsight') },
+  data: {
+    activeTab: 'photo',
+    featured: catalog.getFeature('firstsight')
+  },
+
+  onLoad(options) {
+    if (typeof wx.setNavigationBarTitle === 'function') wx.setNavigationBarTitle({ title: 'Brclio 悦创' });
+    const tab = options && options.tab;
+    if (['photo', 'relax', 'mine'].indexOf(tab) !== -1) this.setData({ activeTab: tab });
+  },
+
+  switchTab(event) {
+    const tab = event.currentTarget.dataset.tab;
+    if (['photo', 'relax', 'mine'].indexOf(tab) === -1 || tab === this.data.activeTab) return;
+    this.setData({ activeTab: tab });
+    if (typeof wx.pageScrollTo === 'function') wx.pageScrollTo({ scrollTop: 0, duration: 0 });
+  },
 
   openFeature(event) {
     const id = event.currentTarget.dataset.id;
     if (!catalog.getFeature(id)) return;
-    wx.navigateTo({ url: '/pages/web/index?id=' + encodeURIComponent(id) });
+    wx.navigateTo({ url: catalog.getFeatureRoute(id) });
   },
 
   openAbout() {
@@ -18,10 +34,10 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: 'Brclio 口袋 · 摄影与生活的内容空间', path: '/pages/home/index' };
+    return { title: 'Brclio 悦创 · 摄影与放松', path: '/pages/home/index' };
   },
 
   onShareTimeline() {
-    return { title: 'Brclio 口袋 · 摄影与生活的内容空间' };
+    return { title: 'Brclio 悦创 · 摄影与放松' };
   }
 });

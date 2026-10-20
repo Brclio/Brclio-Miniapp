@@ -2,7 +2,7 @@
 
 内容空间采用一个 Cloudflare Pages 项目 `brclio-miniapp-wechat`。首页、公开清单和所有模块统一构建到 `dist/web`，模块地址固定为 `/projects/<id>/`。以后每月增加内容或模块，都继续部署这个项目。
 
-当前 `0.1.1` 包含三个模块：`firstsight`、`wedding`、`ready-go-duel`；摄影两个，放松一个。FirstSight 原图恢复已通过 96 项测试和发布检查，修正后的微信开发包已重新上传；网页已部署为 [bf140573](https://bf140573.brclio-miniapp-wechat.pages.dev) 并通过本地交互验收，两个域名各 40 个资源的 SHA-256 与本地产物一致；审核与正式发布仍未取得证据。新增互动的后台类目和产品形态要求仍需核对，后续更新不能仅沿用摄影阶段的类目结论。
+当前 `0.1.0` 公开网页只开放 `firstsight`、`ready-go-duel` 两个模块；旧 `wedding` AI 示例已停用。原生摄影、相册与游戏均内置代码。「我的」属于门户访客界面，不是额外构建模块。当前发布状态见 [VERIFICATION.md](VERIFICATION.md)，此前 `0.1.1` 为历史记录。新增互动的实际类目和产品形态要求仍需核对。
 
 ## 两份清单各管什么
 
@@ -73,17 +73,19 @@
 
 esbuild 将入口及依赖打包为该模块的 `main.js`；入口导入 CSS 时另生成 `main.css`。HTML 应引用对应的 `main.js`／`main.css`，素材使用模块内相对路径或受验证的同域模块路径。所需依赖加入根目录 `package.json` 并更新锁文件，不为模块单独创建 Cloudflare 项目。FirstSight 是现有 React 接入示例，来源范围见其 `SOURCE.md`。
 
-## FirstSight 原图与来源同步
+## FirstSight_Online 摄影与原生分包
 
-FirstSight 使用 `web/projects/firstsight/original-data.json` 中的摄影分组和图片清单，原始图片保存在模块自己的 `assets/original/`。当前来源固定于提交 `6fafcfd4371b00d8c956e58cb5bf689911b5fb2c`：画廊、婚纱、家庭、成长及旅行共 14 组，97 条照片记录展开为 101 个图片条目，其中 80 个可用条目复用 34 个原始图片文件。21 个不可用条目保留错误状态，不用 AI 素材替代。
-
-正常 `npm run build` 不联网，读取已提交的数据、来源快照和素材。需要更新可用性时显式执行：
+当前只开放 FirstSight_Online 的实际摄影：8组婚纱128张、孕期41张。来源固定提交 `988cc8d0208ac2cae87b0e36b072007a856356ab`，逐文件路径、Git blob和SHA-256见 `original-data.json`。网页使用上游169个优化WebP（20,325,346字节），小程序使用由它们生成的本地JPEG，不改动约4GB的原始JPG；没有原图网站依赖。
 
 ```sh
-node scripts/sync-firstsight.mjs --download
+npm run sync:firstsight
+npm run prepare:photos
+npm run build
 ```
 
-不带 `--download` 可离线重建和核对数据。文件哈希、来源地址、原始字节数、固定随机种子及重取来源快照的方法见 [来源说明](../web/projects/firstsight/SOURCE.md)。维护时保留原标题、描述、分组和多图记录，检查失效图片提示；不要重新将所有 FirstSight 图片标成 AI 示例。独立 `wedding` 模块的两张 AI 图片与 FirstSight 来源分别维护。导入范围不包括视频、信件、随笔、留言和评论。
+第一步显式联网，通过现有gh认证读取固定blob；普通构建离线。第二步在macOS使用sips生成本地展示图和主包封面，按完整相册分配分包，避免跨分包资源引用。唯一相册页面模板是 `native/album/`；`miniprogram/photo-*` 是生成文件，修改模板后构建即可同步全部页面。原生目录只使用本地封面，数据中的 `nativePath` 决定相册所属分包。
+
+旧 `wedding` AI示例模块设为planned，不构建、不公开。真实摄影不混入旧FirstSight样例、重复聚合、模拟EXIF、信件、视频或留言。来源和导入维护见 [SOURCE.md](../web/projects/firstsight/SOURCE.md)。
 
 ## 当前 Canvas 模块示例
 
@@ -131,4 +133,4 @@ node scripts/sync-firstsight.mjs --download
 
 ## 素材与数据
 
-当前摄影只读；反应挑战仅在浏览器本地保存偏好和最近 20 场记录，可在模块内清除。没有云端用户档案、浏览记录或对局写入，不使用私有 GitHub 数据仓库存储用户数据。素材与网页随项目构建发布。来源署名、版权说明和 AI 标注随模块一起维护；新增外部项目时只适配授权范围内需要的部分，并记录固定上游提交与裁剪范围。
+当前摄影只读；原生与网页反应挑战分别在对应本机存储保存偏好和最近 20 场记录，可在模块内清除。没有云端用户档案、浏览记录或对局写入，不使用私有 GitHub 数据仓库存储用户数据。素材与网页随项目构建发布。来源署名、版权说明和 AI 标注随模块一起维护；新增外部项目时只适配授权范围内需要的部分，并记录固定上游提交与裁剪范围。

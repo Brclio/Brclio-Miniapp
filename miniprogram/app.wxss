@@ -9,7 +9,7 @@ page {
 }
 
 view, text, button, image { box-sizing: border-box; }
-button { margin: 0; border-radius: 0; font-size: inherit; line-height: inherit; }
+button { margin: 0; min-height: 44px; border-radius: 0; font-size: inherit; font-weight: 400; line-height: inherit; }
 button::after { border: 0; }
 
 .page-shell { max-width: 920rpx; margin: 0 auto; padding: 32rpx 36rpx 56rpx; padding-bottom: calc(56rpx + env(safe-area-inset-bottom)); }
@@ -19,15 +19,15 @@ button::after { border: 0; }
 .primary-button { min-height: 92rpx; padding: 22rpx 32rpx; border-radius: 16rpx; color: #fefcf6; background: #2b7fd8; font-weight: 600; text-align: center; }
 .secondary-button { min-height: 92rpx; padding: 22rpx 32rpx; border-radius: 16rpx; color: #2b7fd8; background: #edf3f9; font-weight: 600; text-align: center; }
 .button-pressed { opacity: 0.75; }
-.text-button { background: transparent; padding: 14rpx 0; color: #2b7fd8; text-align: left; font-size: 25rpx; }
-.document-title { font-size: 44rpx; font-weight: 700; line-height: 1.35; margin: 18rpx 0 16rpx; }
-.document-intro { color: #666677; font-size: 26rpx; }
+.text-button { min-height: 44px; display: flex; align-items: center; background: transparent; padding: 14rpx 0; color: #2b7fd8; text-align: left; font-size: 25rpx; }
+.document-title { font-size: 46rpx; font-weight: 700; line-height: 1.5; margin: 18rpx 0 16rpx; }
+.document-intro { color: #75716a; font-size: 25rpx; line-height: 1.85; }
 .document-section { margin-top: 40rpx; }
 .document-heading { display: block; font-size: 30rpx; font-weight: 600; margin-bottom: 12rpx; }
-.document-copy { display: block; font-size: 27rpx; color: #4a4a5a; }
+.document-copy { display: block; font-size: 26rpx; line-height: 1.95; color: #4a4a5a; }
 .document-copy + .document-copy { margin-top: 14rpx; }
-.document-meta { font-size: 23rpx; color: #777786; overflow-wrap: anywhere; }
-.divider { height: 1rpx; background: rgba(26, 26, 46, 0.1); margin: 38rpx 0; }
+.document-meta { font-size: 23rpx; color: #817d76; overflow-wrap: anywhere; }
+.divider { height: 1rpx; background: #dedbd2; margin: 38rpx 0; }
 
 @media (min-width: 900px) {
   .page-shell { max-width: 760px; padding-left: 40px; padding-right: 40px; }

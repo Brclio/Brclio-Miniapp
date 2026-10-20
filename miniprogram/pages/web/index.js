@@ -1,62 +1,25 @@
+// Compatibility for existing shared links. All known entries now open native pages.
 const catalog = require('../../data/catalog');
-
 Page({
-  data: {
-    src: '',
-    errorTitle: '',
-    errorMessage: '',
-    canRetry: false
-  },
-
+  data: { errorTitle: '', errorMessage: '', canRetry: false },
   onLoad(options) {
-    this.feature = catalog.getFeature(options.id);
-    if (!this.feature) {
+    this.feature = catalog.getFeature(options && options.id);
+    this.entryRoute = this.feature ? catalog.getFeatureRoute(this.feature.id) : '';
+    if (!this.entryRoute) {
       this.setData({ errorTitle: '没有找到这个体验', errorMessage: '请回到首页，选择当前已收纳的功能。' });
-      return;
-    }
-    wx.setNavigationBarTitle({ title: this.feature.title });
-    this.entryUrl = catalog.getFeatureUrl(this.feature.id);
-    if (!this.entryUrl) {
-      this.setData({ errorTitle: '功能页面尚未配置', errorMessage: '网页服务接入完成后，即可从这里打开体验。' });
       return;
     }
     this.openEntry();
   },
-
   openEntry() {
-    if (!this.entryUrl) return;
-    wx.showNavigationBarLoading();
-    this.setData({ src: '', errorTitle: '', errorMessage: '', canRetry: false }, () => {
-      this.setData({ src: this.entryUrl });
-    });
+    if (!this.entryRoute) return;
+    this.setData({ errorTitle: '', errorMessage: '', canRetry: false });
+    wx.redirectTo({ url: this.entryRoute, fail: () => {
+      this.setData({ errorTitle: '暂时无法打开', errorMessage: '请返回首页后重试。', canRetry: true });
+    } });
   },
-
-  handleLoad() {
-    wx.hideNavigationBarLoading();
-  },
-
-  handleError() {
-    wx.hideNavigationBarLoading();
-    this.setData({
-      src: '',
-      errorTitle: '暂时无法打开',
-      errorMessage: '请检查网络后重试。如果仍无法打开，可稍后再试。',
-      canRetry: true
-    });
-  },
-
-  goHome() {
-    wx.reLaunch({ url: '/pages/home/index' });
-  },
-
-  onUnload() {
-    wx.hideNavigationBarLoading();
-  },
-
+  goHome() { wx.reLaunch({ url: '/pages/home/index' }); },
   onShareAppMessage() {
-    const feature = this.feature;
-    return feature
-      ? { title: 'Brclio 口袋 · ' + feature.title, path: '/pages/web/index?id=' + encodeURIComponent(feature.id) }
-      : { title: 'Brclio 口袋', path: '/pages/home/index' };
+    return { title: this.feature ? 'Brclio 悦创 · ' + this.feature.title : 'Brclio 悦创', path: this.entryRoute || '/pages/home/index' };
   }
 });

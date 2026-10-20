@@ -1,0 +1,21 @@
+<view class="gallery-shell">
+  <view class="gallery-intro">
+    <view class="gallery-kicker"><text class="kicker-dot"></text><text>THROUGH MY LENS</text></view>
+    <view class="gallery-title serif">把日常，<view>看成<text class="title-accent">风景</text>。</view></view>
+    <view class="intro-bottom"><view class="intro-copy">婚纱里的约定，孕期里的期待。<view>一些不想忘记的瞬间，收在这里。</view></view><view class="album-summary"><view><text class="summary-number">{{albumCount}}</text><text>本相册</text></view><view class="summary-photos">{{photoCount}} 张影像</view></view></view>
+  </view>
+
+  <button wx:if="{{featured}}" class="featured-album" style="width:100%;display:block;" data-id="{{featured.id}}" bindtap="openAlbum" hover-class="photo-pressed" aria-label="翻开{{featured.title}}">
+    <view class="featured-cover"><image wx:if="{{!featured.coverFailed}}" class="featured-image" src="{{featured.cover}}" mode="aspectFill" data-id="{{featured.id}}" binderror="onCoverError" aria-label="{{featured.title}}精选影像" /><view wx:else class="image-unavailable"><text class="unavailable-mark">▧</text><text>封面暂不可用</text><text class="unavailable-note">仍可翻开相册</text></view></view>
+    <view class="featured-caption"><view><view class="featured-label">FIRSTSIGHT JOURNAL</view><view class="featured-title serif">一眼喜欢，便值得记录。</view></view><view class="featured-action">翻开影集<text>↗</text></view></view>
+  </button>
+
+  <view class="albums-section">
+    <view class="section-heading"><text class="section-title serif">慢慢翻看</text><text class="section-english">THE ALBUMS</text></view>
+    <view class="album-filters" aria-label="筛选相册主题"><view wx:for="{{categories}}" wx:key="id" class="filter-slot"><button class="filter-button {{category === item.id ? 'filter-active' : ''}}" style="width:100%;display:flex;" data-id="{{item.id}}" bindtap="selectCategory" hover-class="button-pressed" aria-label="{{item.label}}，{{item.count}}本相册{{category === item.id ? '，当前筛选' : ''}}"><text>{{item.label}}</text><text class="filter-count">{{item.count}}</text></button></view></view>
+    <view class="albums-grid"><view wx:for="{{collections}}" wx:key="id" class="album-cell"><button class="album-button" style="width:100%;display:block;" data-id="{{item.id}}" bindtap="openAlbum" hover-class="photo-pressed" aria-label="浏览{{item.title}}，{{item.photoCount}}张照片"><view class="album-cover"><image wx:if="{{!item.coverFailed}}" class="cover-image" src="{{item.cover}}" mode="aspectFill" lazy-load="{{true}}" data-id="{{item.id}}" binderror="onCoverError" aria-label="{{item.title}}相册封面" /><view wx:else class="image-unavailable"><text class="unavailable-mark">▧</text><text>封面暂不可用</text></view><text class="cover-arrow" aria-hidden="true">↗</text></view><view class="album-meta"><view class="album-heading"><view class="album-title serif">{{item.title}}</view><view class="album-subtitle">{{item.subtitle}}</view></view><text class="album-count">{{item.photoCount}} 张</text></view></button></view></view>
+    <view wx:if="{{hasUnavailable}}" class="source-notice">部分影像暂不可用，原有文字记录仍在。</view>
+  </view>
+
+  <view class="gallery-footer"><view class="footer-signature serif">生活值得，再看一眼。</view><button class="footer-link" style="width:100%;display:flex;" bindtap="returnHome" hover-class="button-pressed">回到 Brclio 悦创<text aria-hidden="true">↗</text></button><button class="privacy-link" style="width:100%;display:flex;" bindtap="openPrivacy" hover-class="button-pressed">隐私与数据说明</button></view>
+</view>

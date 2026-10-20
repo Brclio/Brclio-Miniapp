@@ -1,49 +1,60 @@
 # FirstSight 摄影来源与素材清单
 
-- 上游：[AndersonHJB/FirstSight](https://github.com/AndersonHJB/FirstSight)
-- 固定提交：`6fafcfd4371b00d8c956e58cb5bf689911b5fb2c`
-- 原始摄影数据：`data/gallery.ts`、`data/wedding.ts`、`data/family.ts`、`data/baby.ts`、`data/travel.ts`
-- 原始类型：`types.ts`
-- 来源快照：[`upstream/`](upstream/)，每个文件的 SHA-256 记录在 [`upstream/SNAPSHOT.json`](upstream/SNAPSHOT.json)
-- 标准化数据及逐图片可用性清单：[`original-data.json`](original-data.json)
+- 私有上游：[AndersonHJB/FirstSight_Online](https://github.com/AndersonHJB/FirstSight_Online)
+- 固定提交：`988cc8d0208ac2cae87b0e36b072007a856356ab`
+- 婚纱系列：`data/wedding.ts` 的 8 个原有系列，共 128 张
+- 孕期系列：`data/photoAlbums.ts` 的 `pa-pregnancy` 权威合集，共 41 张；核对其图片路径与 `data/baby.ts` 的 `BABY_PHOTOS_PREGNANCY` 完全一致，应用内固定 ID 为 `pregnancy`
+- 类型与优化规则：`types.ts`、`utils/image.ts`
+- 来源快照：[`upstream/`](upstream/)，逐文件 SHA-256 与 Git blob SHA-1 见 [`upstream/SNAPSHOT.json`](upstream/SNAPSHOT.json)
+- 原文件和优化文件的逐路径映射：[`upstream/BLOBS.json`](upstream/BLOBS.json)
+- 标准化分组和逐图片核对清单：[`original-data.json`](original-data.json)
 - 导入工具：[`scripts/sync-firstsight.mjs`](../../../../scripts/sync-firstsight.mjs)
 
-本次恢复 FirstSight 已配置的图片地址、照片标题、描述、日期、标签、同一记录中的多张图片，以及婚纱、旅行、成长影像的原有分组。图片下载后保留原始字节，部署至本 Cloudflare 项目的 `/projects/firstsight/assets/original/`，页面无需依赖外部图片站点实时加载。每张图片保留 `originalUrl`、文件 SHA-256、实际尺寸、字节数和 HTTP 状态，便于核对。
+导入仅保留真实婚纱与孕期照片。没有导入 Unsplash 图片、旧摄影画廊、家庭与旅行样例、宝宝成长样例、重复的 `pa-wedding` 聚合相册、视频或 EXIF。婚纱系列的原始标题、描述、日期、标签、作者和分组顺序保留；孕期采用 `photoAlbums.ts` 合集的标题、描述、日期与地点，不混用 `baby.ts` 中不同的示例说明，也不推测或生成拍摄参数。
 
-摄影数据没有使用此前两张 AI 婚纱素材替换。上游的婚纱及旅行图片生成器使用外部图库地址，旅行分组还包含随机选图；导入时将随机种子固定为 `0x46534947`，使相同来源快照重复生成相同数据。不导入上游模拟 EXIF，不将示例元数据作为经过核实的拍摄信息。
+## 素材版本
 
-## 导入结果
+应用使用固定提交内的 **优化 WebP 文件**，不是体积较大的原始 JPG/JPEG，也不重新压缩优化文件。映射遵循上游 `utils/image.ts`：原公开路径去除扩展名后，映射到 `/optimized` 下的同名 `.webp`。例如 `/婚纱照/海边/3Z2A0012.jpg` 对应 Git 路径 `public/optimized/婚纱照/海边/3Z2A0012.webp`。
 
-| 范围 | 分组数 | 展开的图片条目 | 可用条目 |
-| --- | ---: | ---: | ---: |
-| 摄影画廊 | 1 | 8 | 6 |
-| 婚纱系列 | 3 | 19 | 12 |
-| 家庭影像 | 1 | 17 | 12 |
-| 成长影像 | 3 | 9 | 9 |
-| 旅行系列 | 6 | 48 | 44 |
-| 合计 | 14 | 101 | 80 |
+169 个优化 WebP 共 **20,325,346 字节**，全部可用。文件通过现有 `gh` 认证、按固定 Git blob 精准读取，以四个并发下载；不克隆整个仓库，不读取或嵌入聊天中的凭据，不把认证信息放入前端。
 
-97 条原始照片记录展开为 101 个图片条目；相同图片在不同记录中出现时保留原分组和记录。44 个不同素材地址中，34 张图片已下载并通过图片格式、实际尺寸、字节数与 SHA-256 核对，共 18,197,609 字节。上游已有的两个 `ai.bornforthis.cn` PNG 也按原始字节保留。
+每张素材记录：
 
-9 个上游图片地址返回 HTTP 404；另有 `/photos/family/IMG_001.jpg` 本地路径示例，但固定提交没有对应文件。它们对应 21 个条目，保留 `originalUrl` 与错误状态，`available: false`、`loadError: true`、`url: ""`，不生成替代图片。若系列封面失效，只选用同系列中已经存在且可用的原图作为后备封面，并记录 `coverFallbackUsed` 与实际来源。
+- `originalUrl`：上游原公开路径；`sourceOriginalPath`：原 JPG/JPEG 的 Git 路径。
+- `sourceOriginalBlobSha`、`sourceOriginalBytes`：Git tree 记录的原文件标识和字节数；本应用没有下载这些大原片。
+- `sourceOptimizedPath`、`sourceBlobSha`、`sourceBytes`：实际下载的优化 WebP 路径、Git blob SHA-1 和字节数。
+- `sha256`、`bytes`、`width`、`height`：实际保存的优化 WebP 字节的 SHA-256、字节数和解析尺寸。
+- `url`：本模块 `/projects/firstsight/assets/original/<hash>.webp` 兼容路径。目录名沿用原适配结构，其中存放的是上述优化 WebP，不表示原 JPG。
 
-逐地址状态和具体失败原因以 `original-data.json` 的 `assets` 数组为准。4 条视频记录已排除；没有导入信件、随笔、留言或评论服务。
+## 导入范围
+
+| 系列 | 原分组 ID | 张数 |
+| --- | --- | ---: |
+| 海边誓约 | ws1 | 13 |
+| 法式回廊 | ws2 | 16 |
+| 韩式心动 | ws3 | 9 |
+| 喜嫁红幕 | ws4 | 8 |
+| 街角恋人 | ws5 | 14 |
+| 明制凤冠 | ws6 | 34 |
+| 古堡光影 | ws7 | 12 |
+| 主纱鎏光 | ws8 | 22 |
+| 倾听你的心跳 | pregnancy | 41 |
+| 合计 | 9 组 | 169 |
+
+所有封面均来自相应原系列，不使用替代图片。旧样例素材及旧来源快照仅在本导入器拥有的 `assets/original/` 与 `upstream/` 目录内清理，其他素材目录不受影响。
 
 ## 重复导入
 
-正常构建只读取已提交的数据和图片，不执行联网同步。
+正常构建只读取已提交的数据和素材，不联网。
 
 ```sh
-# 离线重建标准化数据；校验来源快照及已下载文件。
+# 离线校验固定来源快照、优化图片 Git blob 与尺寸，并确定性重建数据。
 node scripts/sync-firstsight.mjs
 
-# 显式联网重试缺失、失效素材，复用已校验的可用图片。
+# 显式联网：通过已登录 gh 的 Git tree/blob API 读取固定提交。
 node scripts/sync-firstsight.mjs --download
-
-# 从固定提交的本地 Git 仓库重取快照；路径可自行指定。
-node scripts/sync-firstsight.mjs --source /path/to/FirstSight --download
 ```
 
-`--source` 只接受上述固定提交，并使用 `git show` 读取提交中的原始文件，不读取尚未提交的工作区修改。导入只打包上述五个数据文件及类型，在不含文件、网络能力的隔离环境中求值。下载最多四个并发，每个请求限时 30 秒、图片上限 20 MiB；仅接受支持且能读取尺寸的图片格式。
+离线模式不会调用 `gh` 或访问网络；缺少快照或素材、内容校验失败时会明确报错。显式下载会先取得完整且未截断的固定 Git tree，核对每个来源文件与素材 blob 的 Git SHA-1；本地已有且校验正确的优化图直接复用。下载结果再次计算 SHA-256、解析 WebP 尺寸，并生成逐图片状态。源文件仅在无文件系统、网络 API 的隔离 VM 中执行受限数据导出；不导入上游应用逻辑、登录、评论或其他服务。
 
-现有系列与大图交互分别参考上游 `pages/WeddingPage.tsx` 和 `components/ImmersiveLightbox.tsx`；外层样式沿用 Brclio Design System 的 App 模板基础变量（© Brclio，CC BY-NC-SA 4.0）。本目录是摄影模块适配，不是上游全站镜像。
+外层设计采用 Brclio Design System 的暖纸色与品牌蓝（© Brclio，CC BY-NC-SA 4.0）。本目录是摄影模块适配，不是上游全站镜像。

@@ -1,0 +1,5 @@
+<view class="duel-page" style="width: {{canvasWidth}}px; height: {{canvasHeight}}px;">
+  <canvas type="2d" id="duel-canvas" class="duel-canvas" style="width: {{canvasWidth}}px; height: {{canvasHeight}}px;" disable-scroll="{{true}}" bindtouchstart="onTouchStart" catchtouchmove="onTouchMove" bindtouchend="onTouchEnd" bindtouchcancel="onTouchCancel" binderror="showCanvasError" aria-label="双人反应挑战游戏画布，两人各守红蓝一边，看到 GO 后点击自己的区域" />
+  <view wx:if="{{status === 'loading'}}" class="duel-state" aria-label="正在准备游戏"><text class="state-mark serif" aria-hidden="true">✳</text><view class="state-title serif">准备一点好玩。</view><view class="state-copy">双人反应挑战</view></view>
+  <view wx:if="{{status === 'error'}}" class="duel-state"><text class="state-mark serif" aria-hidden="true">✳</text><view class="state-title serif">先歇一下，再试试。</view><view class="state-copy">{{errorMessage}}</view><button class="primary-button state-button" style="width: 100%; display: block;" bindtap="initializeGame" hover-class="button-pressed" aria-label="重新加载双人反应挑战">重新打开</button><button class="text-button state-back" bindtap="goHome" hover-class="button-pressed" aria-label="返回小程序首页">返回首页 ↗</button></view>
+</view>

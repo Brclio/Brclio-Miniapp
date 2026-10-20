@@ -1,0 +1,60 @@
+/* © Brclio · Brclio Design System, CC BY-NC-SA 4.0. */
+page { color: #292c29; }
+.album-page { max-width: 960rpx; margin: 0 auto; padding: 42rpx 42rpx 42rpx; padding-bottom: calc(42rpx + env(safe-area-inset-bottom)); }
+.album-intro { padding: 5rpx 0 44rpx; }
+.album-eyebrow { color: #85877d; font-size: 18rpx; letter-spacing: 2rpx; }
+.album-title { margin-top: 20rpx; color: #292c29; font-size: 64rpx; font-weight: 400; line-height: 1.4; overflow-wrap: break-word; }
+.album-description { margin-top: 28rpx; color: #686b63; font-size: 26rpx; line-height: 1.95; }
+.album-reading-hint { display: flex; align-items: center; gap: 13rpx; margin-top: 24rpx; color: #2b7fd8; font-size: 20rpx; }
+.album-reading-hint > text:first-child { font-size: 27rpx; }
+.album-total { margin-left: auto; color: #85877d; font-size: 19rpx; }
+.album-notice { margin-top: 18rpx; color: #85877d; font-size: 19rpx; line-height: 1.8; }
+.photo-button { margin: 0 0 48rpx; padding: 0; background: transparent; text-align: left; }
+.photo-frame { position: relative; overflow: hidden; background: #f3efe5; }
+.photo-image { display: block; width: 100%; }
+.photo-open { position: absolute; right: 20rpx; bottom: 20rpx; display: flex; align-items: center; gap: 12rpx; color: #292c29; background: #fefcf6; padding: 10rpx 16rpx; font-size: 17rpx; border-radius: 2rpx; }
+.photo-open text { font-size: 27rpx; }
+.photo-caption { display: flex; align-items: baseline; gap: 23rpx; padding-top: 19rpx; }
+.photo-number { font-family: Georgia, serif; color: #85877d; font-size: 20rpx; }
+.photo-title { font-size: 26rpx; line-height: 1.7; font-weight: 400; }
+.image-unavailable { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16rpx; min-height: 410rpx; padding: 40rpx 20rpx; background: #f3efe5; color: #686b63; font-size: 24rpx; text-align: center; }
+.unavailable-mark { color: #989685; font-size: 51rpx; font-weight: 400; }
+.unavailable-note { color: #85877d; font-size: 18rpx; }
+.album-end { margin-top: 28rpx; color: #85877d; font-size: 23rpx; text-align: center; }
+.back-button { align-items: center; justify-content: space-between; min-height: 44px; margin-top: 28rpx; padding: 22rpx 0; color: #2b7fd8; background: transparent; font-size: 23rpx; text-align: left; }
+.back-button text { font-size: 32rpx; }
+.photo-pressed { opacity: .85; }
+.album-missing { padding: 75rpx 0; }
+.missing-title { font-size: 42rpx; }
+.missing-copy { margin-top: 22rpx; color: #686b63; font-size: 25rpx; }
+.photo-preview { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; overflow: hidden; padding-bottom: env(safe-area-inset-bottom); background: #171b1a; color: #fefcf6; }
+.preview-toolbar { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; min-height: 96rpx; padding: 8rpx 20rpx 8rpx 29rpx; }
+.preview-position { display: flex; align-items: center; gap: 25rpx; font-size: 21rpx; color: #c3c6bb; }
+.preview-brand { color: #969f93; font-size: 16rpx; letter-spacing: 2rpx; }
+.preview-actions { display: flex; gap: 7rpx; }
+.preview-action-slot { width: 84rpx; }
+.preview-tool { align-items: center; justify-content: center; min-height: 44px; height: 84rpx; padding: 0; border-radius: 50%; background: transparent; color: #fefcf6; }
+.zoom-symbol { font-size: 42rpx; font-weight: 300; line-height: 1; }
+.close-symbol { font-size: 56rpx; font-weight: 300; line-height: 1; }
+.tool-disabled { opacity: .2; }
+.preview-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.preview-swiper { width: 100%; height: 100%; }
+.preview-area { width: 100%; height: 100%; overflow: hidden; }
+.preview-movable { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.preview-image { display: block; width: 100%; height: 100%; }
+.preview-unavailable { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 19rpx; width: 100%; height: 100%; padding: 40rpx; color: #d4d8cc; background: #282f2a; font-size: 26rpx; }
+.preview-unavailable .unavailable-note { color: #a4ad9c; }
+.preview-prev-slot, .preview-next-slot { position: absolute; top: 45%; width: 62rpx; z-index: 2; }
+.preview-prev-slot { left: 0; }
+.preview-next-slot { right: 0; }
+.preview-arrow { align-items: center; justify-content: center; min-height: 44px; padding: 0; color: #fefcf6; background: #282f2a; border-radius: 2rpx; font-family: Georgia, serif; font-size: 50rpx; font-weight: 400; line-height: 1; }
+.preview-caption { height: 320rpx; flex-shrink: 0; width: 100%; }
+.preview-caption-inner { padding: 25rpx 42rpx 20rpx; }
+.preview-title-row { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8rpx 20rpx; }
+.preview-title { font-size: 37rpx; font-weight: 400; line-height: 1.45; }
+.preview-date { font-size: 18rpx; color: #c2c9b7; white-space: nowrap; }
+.preview-description { margin-top: 13rpx; color: #b4bcaf; font-size: 20rpx; line-height: 1.8; }
+.preview-location { margin-top: 6rpx; font-size: 18rpx; color: #969f93; }
+.preview-tags { display: flex; flex-wrap: wrap; gap: 6rpx 18rpx; margin-top: 13rpx; font-size: 17rpx; color: #a3ae9c; }
+.preview-help { margin-top: 15rpx; color: #8b9685; font-size: 17rpx; line-height: 1.7; }
+@media (max-width: 350px) { .album-title { font-size: 58rpx; } .preview-title { font-size: 33rpx; } }

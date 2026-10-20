@@ -1,7 +1,8 @@
 // One Pages project serves the portal and its registered modules.
 // This version is read-only; legacy record storage remains disabled.
-export function createPagesWorker({ activeProjectIds = [], version = 'unknown' } = {}) {
+export function createPagesWorker({ activeProjectIds = [], firstsightAssetPaths = [], version = 'unknown' } = {}) {
 const active = new Set(activeProjectIds);
+const firstsightAssets = new Set(firstsightAssetPaths);
 return {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
@@ -16,6 +17,13 @@ return {
       if (!match || !active.has(match[1])) return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
       // The former replacement-photo directory is retired, including stale CDN assets.
       if (path.startsWith('/projects/firstsight/media/')) return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+      // ASSETS can retain a formerly published image after its source is removed.
+      // Only this build's imported photos may reach that binding.
+      let decodedPath;
+      try { decodedPath = decodeURIComponent(path); } catch { return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } }); }
+      if (decodedPath.startsWith('/projects/firstsight/assets/original/') && !firstsightAssets.has(path)) {
+        return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+      }
     }
     return env.ASSETS.fetch(request);
   }
@@ -24,5 +32,6 @@ return {
 
 export default createPagesWorker({
   activeProjectIds: typeof __BRCLIO_ACTIVE_PROJECTS__ === 'undefined' ? [] : __BRCLIO_ACTIVE_PROJECTS__,
+  firstsightAssetPaths: typeof __BRCLIO_FIRSTSIGHT_ASSETS__ === 'undefined' ? [] : __BRCLIO_FIRSTSIGHT_ASSETS__,
   version: typeof __BRCLIO_VERSION__ === 'undefined' ? 'unknown' : __BRCLIO_VERSION__
 });

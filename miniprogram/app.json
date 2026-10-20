@@ -1,6 +1,8 @@
 {
   "pages": [
     "pages/home/index",
+    "pages/gallery/index",
+    "pages/duel/index",
     "pages/web/index",
     "pages/about/index",
     "pages/privacy/index"
@@ -8,11 +10,45 @@
   "window": {
     "navigationBarBackgroundColor": "#fefcf6",
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "Brclio 口袋",
+    "navigationBarTitleText": "Brclio 悦创",
     "backgroundColor": "#fefcf6",
     "backgroundTextStyle": "dark"
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "subPackages": [
+    {
+      "root": "photo-1",
+      "pages": [
+        "pages/album/index"
+      ]
+    },
+    {
+      "root": "photo-2",
+      "pages": [
+        "pages/album/index"
+      ]
+    },
+    {
+      "root": "photo-3",
+      "pages": [
+        "pages/album/index"
+      ]
+    },
+    {
+      "root": "photo-4",
+      "pages": [
+        "pages/album/index"
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/gallery/index": {
+      "network": "all",
+      "packages": [
+        "photo-1"
+      ]
+    }
+  }
 }

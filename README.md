@@ -1,76 +1,74 @@
-# Brclio 口袋
+# Brclio 悦创
 
-微信普通小程序与网页内容空间，按「摄影」「放松」两个栏目组织独立项目。`0.1.1` 包含三个公开入口：摄影中的 FirstSight 与婚纱灵感图册，以及放松中的「双人反应挑战」。
+`0.1.0` 微信普通小程序，以摄影为主题，提供「摄影 / 放松 / 我的」三个原生入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
 
-**`0.1.1` 已恢复 FirstSight 原项目已配置的图片，96 项测试及发布检查通过，修正后的微信开发包已重新上传。** 原生包约 166.3 KiB，原图版本已部署并通过本地交互验收，两个域名各 40 个资源的 SHA-256 与本地产物一致。尚无微信审核提交、审核通过或正式发布证据；新增反应挑战对应的类目和产品形态仍需在后台核对。见 [验证记录](docs/VERIFICATION.md)。
+摄影与游戏均直接内置于小程序代码，不加载外部网页。摄影包含正确来源 [FirstSight_Online](https://github.com/AndersonHJB/FirstSight_Online) 的 8 组婚纱、1 组孕期影像，共 169 张实际照片；放松提供 ReadyGoDuel 同屏双人反应挑战。「我的」目前为访客中心，注册与登录筹备中。
 
-- 微信入口：[pocket.bornforthis.cn](https://pocket.bornforthis.cn)，沿用已备案域名。
-- 公开网页：[pocket.brclio.com](https://pocket.brclio.com)
-- 源码仓库：[Brclio/Brclio-Miniapp](https://github.com/Brclio/Brclio-Miniapp)
-- 服务提供者：莆田市荔城区黄家蓉宝电脑店
-- 联系邮箱：aiyuechuang@gmail.com
+## 当前实现
 
-## 当前版本内容
+- 摄影：全部／婚纱／孕期筛选，9 本相册，原生详情、滑动切图、双击／按钮放大、双指缩放、拖动与关闭。
+- 展示图片为本地 JPEG 压缩版本，随四个摄影分包上传；主包包含 9 张封面缩略图。没有远程原图查看或原图网站依赖。
+- 照片来自固定提交 `988cc8d0208ac2cae87b0e36b072007a856356ab` 的实际摄影，排除旧仓库样例、重复聚合、模拟 EXIF、信件、留言与视频。169 个上游优化 WebP 共 20,325,346 字节，逐文件校验来源；原始大 JPG 不修改、不随包发布。
+- 双人反应挑战：1／3／5 分、抢跑判定、近同时触碰平局、超时与后台暂停。本机保留最近 20 场完整记录，可清除，不上传 Cloudflare 或 GitHub。
+- 不提供注册、登录、上传、评论、预约、交易或云端收藏，不申请头像、手机号、相册、相机或定位权限。
 
-- 首页从 `projects.json` 加载栏目与卡片：摄影两个项目，放松一个项目。
-- FirstSight 保留「系列封面 → 影集详情 → 大图浏览」结构，恢复上游画廊、婚纱、家庭、成长与旅行的 14 组摄影内容；不导入视频、个人信件、随笔、留言或评论服务。
-- FirstSight 的 97 条原始照片记录展开为 101 个图片条目，其中 80 个条目可用，共 34 个已下载原始图片文件、18,197,609 字节。其余 21 个条目保留失效状态与提示，不使用 AI 图片替换；图片、描述及来源清单随同一 Cloudflare 项目部署。
-- 独立的婚纱灵感图册继续使用花园与海岸两张 AI 图片，明确标注 AI 生成、非真实客片。
-- 双人反应挑战公开登记在 `/projects/ready-go-duel/`：两人在同一设备等待 GO 信号，支持先得 1／3／5 分、抢跑、平局和本机战绩。
-- 反应挑战在浏览器本地保存使用偏好与最近 20 场完整记录，可在模块内清除；记录不上传 Cloudflare 或 GitHub，不提供云备份。
-- 无注册、登录、上传、评论、预约或交易，不创建云端用户档案，也不上传浏览记录。
+主包及每个分包均检查低于 2 MiB。首次获取和更新小程序／分包仍需要微信正常联网；代码包获取后，浏览和挑战不请求外部照片网站或 API。
 
-网页与图片由 Cloudflare 分发，微信可能产生正常加载缓存；服务方可能处理完成网络请求所需的信息。客户端不持有服务凭据，不接入广告或访问行为分析。清理缓存或网页存储可能清除本机记录与偏好。
-
-## 本地运行
-
-需要 Node.js 20 或更新版本。
+## 开发与构建
 
 ```sh
 npm ci
 npm run build
-npm run dev:web
-```
-
-构建将首页与状态为 `active` 的模块统一输出到 `dist/web`。检查两个栏目、三个模块、返回路径与本机记录清除。
-
-```sh
 npm test
 npm run check:release
 npm run wechat:open
 ```
 
-开发者工具导入项目根目录，代码目录为 `miniprogram/`，AppID `wx59aa532fbf6fa540`。原生 `web-view` 只接受登记 ID，映射到配置域名的固定路径；放松入口打开 `/?category=relax`，不接受任意网址。
+微信开发者工具导入项目根目录，`compileType` 为普通小程序，代码目录为 `miniprogram/`。`npm run build` 离线生成共享游戏模块、摄影分包页面和数据，再构建独立网页。旧 `/pages/web/index?id=…` 分享入口仅按白名单跳转到原生页面，不包含 web-view。
 
-## 一个 Cloudflare 项目
-
-`0.1.1` 统一使用 Pages 项目 `brclio-miniapp-wechat`：首页在 `/`，各模块在 `/projects/<id>/`。后续增加模块仍使用同一构建与部署，无需新增 Cloudflare 项目或微信业务域名。
+更新摄影时：
 
 ```sh
+# 显式联网，用现有 gh 认证精准读取固定私有源 blob；不克隆含 node_modules 的整个仓库。
+npm run sync:firstsight
+# macOS sips 生成本地展示图、封面与分包；原图不改动。
+npm run prepare:photos
+npm run build
+npm test
+npm run check:release
+```
+
+正常构建只读取已提交的摄影素材、来源清单与原生展示文件，不需要 GitHub token 或网络。增加来源提交须先审查源数据和固定提交，不能直接把仓库内所有素材视为应发布内容。详细来源见 [SOURCE.md](web/projects/firstsight/SOURCE.md)。
+
+## 独立网页
+
+同一工程保留公开网页，包含 FirstSight 摄影和反应挑战两个已开放模块：
+
+- [pocket.bornforthis.cn](https://pocket.bornforthis.cn)
+- [pocket.brclio.com](https://pocket.brclio.com)
+
+```sh
+npm run dev:web
 npm run deploy
 ```
 
-`npm run deploy:wechat-web` 是同一命令的别名。Pages 服务在访问静态资源前核对构建生成的开放项目清单；未开放项目不构建，直接访问其模块路径返回 404。旧云端记录接口保持不可用。历史独立 Worker 已解除公开域名绑定，`workers.dev` 和预览入口均已停用；源码归档保留，当前发布命令不部署它。
+网页统一部署至 Pages 项目 `brclio-miniapp-wechat`，与微信原生页面独立。已停用的 AI 婚纱示例模块不构建、不公开；旧记录 API 仍返回 503。小程序当前无需配置 web-view 业务域名；未来接入网络 API 时优先使用已备案的 `bornforthis.cn`，另按微信要求核对小程序本身备案。
 
-微信仅使用已备案的 `pocket.bornforthis.cn` 业务域名；`pocket.brclio.com` 作为公开网页入口。添加模块使用路径即可，仍需遵守平台实际类目、资质、隐私和审核要求，模块化部署不等于免审核。
+## 发布与维护
 
-接入和停用模块见 [PROJECTS.md](docs/PROJECTS.md)，发布步骤见 [RELEASE.md](docs/RELEASE.md)。FirstSight 原图清单、失效地址与可重复导入步骤见 [SOURCE.md](web/projects/firstsight/SOURCE.md)；正常构建只读取已提交素材，不联网获取图片。
+当前准确状态见 [VERIFICATION.md](docs/VERIFICATION.md)，发布步骤见 [RELEASE.md](docs/RELEASE.md)。开发包上传、网页部署、微信审核与正式发布分别记录。内置竞技玩法仍须按实际内容核对微信类目，不能仅凭「放松」栏目名称推断可审核通过。
 
-## 项目结构
+未来账号与指定私有数据仓库 `BrclioData/Brclio-Miniapp-Data` 的边界见 [ACCOUNT_PLAN.md](docs/ACCOUNT_PLAN.md)。本轮未使用聊天中提供的 token，没有新增云端用户数据写入。
 
 ```text
-miniprogram/             微信原生目录、固定入口、关于和隐私
-projects.config.json    构建登记：react／static／canvas 与素材复制
-web/portal/             内容首页与公开 projects.json 清单
-web/projects/firstsight/ FirstSight 原图、来源快照、数据清单与摄影适配
-web/wedding/            婚纱灵感图册与两张 AI 图片
-web/projects/ready-go-duel/ 双人反应挑战网页宿主
-minigame/lib/           反应挑战共享规则、Canvas 界面与本机存储
-web/pages-worker.mjs    健康检查、停用记录 API 和开放项目路径控制
-web/public/             微信业务域名校验文件
-cloudflare/             历史部署配置
-scripts/                统一构建、开发者工具和发布检查
-docs/                   项目接入、发布步骤与验证记录
+miniprogram/pages/          原生首页、图库、挑战、关于、隐私与旧链接转接
+miniprogram/photo-*/        自动生成的摄影分包：相册页、本包数据、展示图片
+miniprogram/data/           原生目录与图片来源清单
+native/album/              原生相册页唯一维护模板
+minigame/lib/              共享挑战逻辑与本机存储
+scripts/                  摄影导入、分包构建、网页构建与发布检查
+web/projects/firstsight/    正确摄影来源快照、优化 WebP 与网页适配
+web/portal/                独立网页门户
 ```
 
-来源与使用要求见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+署名与使用范围见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。联系邮箱：aiyuechuang@gmail.com。

@@ -1,4 +1,5 @@
 const config = require('../config');
+const photos = require('./photos');
 
 const features = Object.freeze([
   Object.freeze({
@@ -12,9 +13,9 @@ const features = Object.freeze([
   Object.freeze({
     id: 'firstsight',
     title: 'FirstSight 摄影',
-    subtitle: '从婚礼到日常，收藏光影里的故事',
+    subtitle: '婚纱里的约定，孕期里的期待',
     category: '摄影',
-    description: '浏览 FirstSight 摄影画廊，以及婚礼、家庭、宝宝与旅行主题图集，查看完整照片与画面细节。',
+    description: '浏览 FirstSight_Online 的 8 组婚纱与 1 组孕期影像，共 169 张实际摄影照片。',
     path: '/projects/firstsight/?entry=wechat'
   }),
   Object.freeze({
@@ -35,11 +36,11 @@ const features = Object.freeze([
   }),
   Object.freeze({
     id: 'wedding-inspiration',
-    title: '婚纱灵感图册',
-    subtitle: '为重要的一天，收集一点灵感',
-    category: '婚礼灵感',
-    description: '浏览花园与海岸主题的 AI 生成婚纱示意图，发现喜欢的氛围、色彩与造型。',
-    path: '/projects/wedding/?entry=wechat'
+    title: '孕期影像',
+    subtitle: '倾听你的心跳',
+    category: '孕期摄影',
+    description: '翻开 41 张孕期实际摄影，留住期待新生命的时光。',
+    path: '/projects/firstsight/?entry=wechat#/album/pregnancy'
   })
 ]);
 
@@ -58,4 +59,16 @@ function getFeatureUrl(id) {
   return origin + feature.path;
 }
 
-module.exports = { features, getFeature, getFeatureUrl };
+function getFeatureRoute(id) {
+  if (!getFeature(id)) return '';
+  const routes = {
+    'content-hub': '/pages/home/index',
+    firstsight: '/pages/gallery/index',
+    relax: '/pages/home/index?tab=relax',
+    'ready-go-duel': '/pages/duel/index',
+    'wedding-inspiration': (photos.collections.find(function (album) { return album.id === 'pregnancy'; }) || {}).nativePath || '/pages/gallery/index'
+  };
+  return routes[id];
+}
+
+module.exports = { features, getFeature, getFeatureUrl, getFeatureRoute };

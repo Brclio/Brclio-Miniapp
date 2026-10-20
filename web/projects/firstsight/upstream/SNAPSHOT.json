@@ -1,19 +1,54 @@
 {
-  "repository": "https://github.com/AndersonHJB/FirstSight",
-  "commit": "6fafcfd4371b00d8c956e58cb5bf689911b5fb2c",
+  "repository": "https://github.com/AndersonHJB/FirstSight_Online",
+  "commit": "988cc8d0208ac2cae87b0e36b072007a856356ab",
+  "sourceFiles": [
+    "types.ts",
+    "data/wedding.ts",
+    "data/baby.ts",
+    "data/photoAlbums.ts",
+    "utils/image.ts"
+  ],
   "files": {
-    "types.ts": "83caf12fc305786e691483c5ba38d0bfdc48ef21af89b6928b8ee5da6b4392d9",
-    "data/gallery.ts": "63aaf1d6ab84b1d9674d0fec8bd0d56c1a6ec55ca2e5ae1648705c181ddde8fc",
-    "data/wedding.ts": "a4fe434e998e955bff88bffab0e2953397561a19f50af1d50febe720290b7aa6",
-    "data/family.ts": "b937e524a0c666161325af07343c8ffad1addee2b7d4d052131aacc5d3894552",
-    "data/baby.ts": "e4f6f09b61073703b2771bac5405e541f559fd520c866dc9e224d9cf57627b81",
-    "data/travel.ts": "1f20f562aeb35e000c8b3650ee09bc91954a077739e4de89ac036a37d06c5def"
+    "types.ts": "6da267f9fe43536ba0e66882e24c1de0f581c4729ea17151815b6a7964e33964",
+    "data/wedding.ts": "48fd8ae7027d69f159381db8305e3ddef1fd1e83fbaa8066d2edffc0eaa6d256",
+    "data/baby.ts": "97428838fab41efa310ac45e49ecd75b3b08f70a1ca8d3ce568791f94bc563e7",
+    "data/photoAlbums.ts": "0433df629b8eb60cdbb1a3f0260560347565bcff707e8f01b82f561e0aa10274",
+    "utils/image.ts": "5d0d28e77030ccd590673320e193d8ba5603a8df09e6f9c3a2816d6b07187371",
+    "BLOBS.json": "78af1f9a58e46a8affdefc0faea0a827c5962b5fb8e69cc0caeee077d0d1cea5"
   },
-  "randomSeed": 1179863367,
+  "sourceBlobs": {
+    "types.ts": {
+      "blobSha": "93b64771fe20c5a03a80e681e35a702f4655acc4",
+      "bytes": 2190,
+      "sha256": "6da267f9fe43536ba0e66882e24c1de0f581c4729ea17151815b6a7964e33964"
+    },
+    "data/wedding.ts": {
+      "blobSha": "40e08839aada76ca5f6e133e1f7de0d94fa54ace",
+      "bytes": 55735,
+      "sha256": "48fd8ae7027d69f159381db8305e3ddef1fd1e83fbaa8066d2edffc0eaa6d256"
+    },
+    "data/baby.ts": {
+      "blobSha": "513d7d6f97ea5f5bff64222e6e73cc12ee753709",
+      "bytes": 18267,
+      "sha256": "97428838fab41efa310ac45e49ecd75b3b08f70a1ca8d3ce568791f94bc563e7"
+    },
+    "data/photoAlbums.ts": {
+      "blobSha": "1168410e5f9da46c74cc3a97d0c7eea7aac8be29",
+      "bytes": 26056,
+      "sha256": "0433df629b8eb60cdbb1a3f0260560347565bcff707e8f01b82f561e0aa10274"
+    },
+    "utils/image.ts": {
+      "blobSha": "afc034f9de0d4f6f9090676d60a9773a4a776072",
+      "bytes": 2058,
+      "sha256": "5d0d28e77030ccd590673320e193d8ba5603a8df09e6f9c3a2816d6b07187371"
+    }
+  },
   "excludes": [
-    "letters",
-    "essays",
-    "comments",
-    "video entries"
+    "Unsplash images",
+    "gallery/family/travel examples",
+    "baby growth examples",
+    "duplicate pa-wedding aggregate",
+    "video entries",
+    "EXIF"
   ]
 }

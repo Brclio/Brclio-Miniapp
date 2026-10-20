@@ -1,11 +1,10 @@
-<web-view wx:if="{{src}}" src="{{src}}" bindload="handleLoad" binderror="handleError" />
-<view wx:else class="page-shell fallback">
-  <view class="eyebrow">BRCLIO / POCKET</view>
+<view class="page-shell fallback">
+  <view class="eyebrow">BRCLIO / YUECHUANG</view>
   <view class="fallback-mark" aria-hidden="true">↗</view>
   <view class="document-title serif">{{errorTitle || '正在打开体验'}}</view>
   <view class="document-intro">{{errorMessage || '即将进入功能页面。'}}</view>
   <view class="fallback-actions" wx:if="{{errorTitle}}">
     <button wx:if="{{canRetry}}" class="primary-button" bindtap="openEntry" hover-class="button-pressed">重新打开</button>
-    <button class="secondary-button" bindtap="goHome" hover-class="button-pressed">返回口袋首页</button>
+    <button class="secondary-button" bindtap="goHome" hover-class="button-pressed">返回悦创首页</button>
   </view>
 </view>

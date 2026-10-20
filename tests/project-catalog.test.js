@@ -7,11 +7,11 @@ const { validateCatalog, activeProjects, imagePath } = require('../web/portal/ca
 const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, '../web/portal/projects.json'), 'utf8'));
 const copy = () => JSON.parse(JSON.stringify(fixture));
 
-test('released portal exposes two photography projects and the same active relax entry to everyone', () => {
+test('released portal exposes one real photography project and the same active relax entry to everyone', () => {
   const catalog = validateCatalog(fixture);
   assert.deepEqual(catalog.categories.map(item => item.title), ['摄影', '放松']);
-  assert.deepEqual(activeProjects(catalog).map(item => item.path), ['/projects/firstsight/', '/projects/wedding/', '/projects/ready-go-duel/']);
-  assert.deepEqual(activeProjects(catalog, 'photography').map(item => item.id), ['firstsight', 'wedding']);
+  assert.deepEqual(activeProjects(catalog).map(item => item.path), ['/projects/firstsight/', '/projects/ready-go-duel/']);
+  assert.deepEqual(activeProjects(catalog, 'photography').map(item => item.id), ['firstsight']);
   assert.deepEqual(activeProjects(catalog, 'relax').map(item => item.id), ['ready-go-duel']);
 });
 
@@ -38,7 +38,7 @@ test('planned categories cannot silently publish active project entries', () => 
   assert.throws(() => validateCatalog(candidate), /Invalid project catalog/);
   candidate.projects.find(item => item.category === 'relax').status = 'planned';
   const catalog = validateCatalog(candidate);
-  assert.deepEqual(activeProjects(catalog).map(item => item.id), ['firstsight', 'wedding']);
+  assert.deepEqual(activeProjects(catalog).map(item => item.id), ['firstsight']);
   assert.deepEqual(activeProjects(catalog, 'relax'), []);
 });
 
@@ -59,7 +59,7 @@ test('a new same-origin project can be registered within an active category', ()
   const candidate = copy();
   candidate.projects.push({ ...candidate.projects[0], id: 'new-collection', path: '/projects/new-collection/', title: '新图册' });
   const catalog = validateCatalog(candidate);
-  assert.equal(activeProjects(catalog, 'photography').length, 3);
-  assert.equal(activeProjects(catalog, 'photography')[2].path, '/projects/new-collection/');
+  assert.equal(activeProjects(catalog, 'photography').length, 2);
+  assert.equal(activeProjects(catalog, 'photography')[1].path, '/projects/new-collection/');
   assert.ok(Object.isFrozen(catalog.projects));
 });

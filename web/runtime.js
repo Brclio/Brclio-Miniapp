@@ -198,7 +198,7 @@
     shareAppMessage: function (options) {
       const message = options || (shareHandler && shareHandler()) || {};
       if (/MicroMessenger/i.test(navigator.userAgent)) { toast({ title: '点击微信右上角「···」，选择转发。' }); return message; }
-      if (navigator.share) return navigator.share({ title: message.title || 'Brclio 口袋', url: location.href }).catch(function () {});
+      if (navigator.share) return navigator.share({ title: message.title || 'Brclio 悦创', url: location.href }).catch(function () {});
       return clipboard({ data: location.href, success: function () { toast({ title: '链接已复制，可以发给朋友了。' }); } });
     },
     setClipboardData: clipboard,

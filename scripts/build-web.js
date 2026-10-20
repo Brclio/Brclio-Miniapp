@@ -38,6 +38,10 @@ for (const item of registry.projects) {
 }
 
 const published = config.projects.filter(function (project) { return registry.projects.some(function (item) { return item.id === project.id && item.status === 'active'; }); });
+const firstsightAssetPaths = published.some(function (project) { return project.id === 'firstsight'; }) ?
+  JSON.parse(fs.readFileSync(path.join(root, 'web/projects/firstsight/original-data.json'), 'utf8')).assets.filter(function (asset) { return asset.available === true; }).map(function (asset) { return asset.url; }).sort() : [];
+if (new Set(firstsightAssetPaths).size !== firstsightAssetPaths.length || firstsightAssetPaths.some(function (url) { return typeof url !== 'string' || !/^\/projects\/firstsight\/assets\/original\/[a-f0-9]{20}\.(?:jpe?g|png|webp|gif|avif)$/.test(url); })) throw new Error('Invalid FirstSight asset paths');
+if (published.some(function (project) { return project.id === 'firstsight'; }) && firstsightAssetPaths.length === 0) throw new Error('Published FirstSight has no imported photos');
 // Only generated output is cleared; credentials and source remain outside it.
 fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });
@@ -63,9 +67,9 @@ const publicRoot = path.join(root, 'web/public');
 for (const item of fs.readdirSync(publicRoot, { withFileTypes: true })) {
   if (item.isFile() && /^(?:MP_verify_)?[A-Za-z0-9_-]{6,64}\.txt$/.test(item.name)) fs.copyFileSync(path.join(publicRoot, item.name), path.join(output, item.name));
 }
-fs.writeFileSync(path.join(output, '404.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>页面未找到 · Brclio 口袋</title><body style="background:#fefcf6;color:#303128;padding:48px;font-family:system-ui"><p>页面未找到。</p><a href="/" style="color:inherit">返回内容空间</a></body></html>');
+fs.writeFileSync(path.join(output, '404.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>页面未找到 · Brclio 悦创</title><body style="background:#fefcf6;color:#303128;padding:48px;font-family:system-ui"><p>页面未找到。</p><a href="/" style="color:inherit">返回内容空间</a></body></html>');
 for (const file of ['bundle.js', 'runtime.js', 'sync.js', 'config.js']) fs.writeFileSync(path.join(output, file), retired);
-esbuild.buildSync({ entryPoints: [path.join(root, 'web/pages-worker.mjs')], outfile: path.join(output, '_worker.js'), bundle: true, format: 'esm', target: ['es2020'], define: { __BRCLIO_ACTIVE_PROJECTS__: JSON.stringify(published.map(function (item) { return item.id; })), __BRCLIO_VERSION__: JSON.stringify(version) } });
+esbuild.buildSync({ entryPoints: [path.join(root, 'web/pages-worker.mjs')], outfile: path.join(output, '_worker.js'), bundle: true, format: 'esm', target: ['es2020'], define: { __BRCLIO_ACTIVE_PROJECTS__: JSON.stringify(published.map(function (item) { return item.id; })), __BRCLIO_FIRSTSIGHT_ASSETS__: JSON.stringify(firstsightAssetPaths), __BRCLIO_VERSION__: JSON.stringify(version) } });
 fs.writeFileSync(path.join(output, '_routes.json'), JSON.stringify({ version: 1, include: ['/api/*', '/projects/*'], exclude: [] }));
 fs.writeFileSync(path.join(output, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n  Cache-Control: public, no-cache, no-transform\n/projects.json\n  Cache-Control: no-store, no-transform\n');
 console.log('Built one content portal and ' + published.length + ' published projects in ' + output);

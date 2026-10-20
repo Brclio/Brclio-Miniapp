@@ -1,38 +1,44 @@
-# 验证记录
+# Brclio 悦创 0.1.0 验证记录
 
-日期：2026-10-20（Asia/Shanghai）。版本：`0.1.1` Brclio 内容空间，含摄影与放松。
+日期：2026-10-20（Asia/Shanghai）。AppID `wx59aa532fbf6fa540`，普通小程序。当前摄影、放松、我的均为原生页面；本记录替代此前错误来源与 0.1.1 的验收结论。[历史记录](archive/VERIFICATION-before-native-redesign.md) 仅供追溯。
 
-## 当前原图恢复修正
+## 名称统一更新
 
-FirstSight 已恢复原项目的 14 组摄影内容、97 条原始照片记录、101 个展开图片条目。34 个下载成功的原始图片文件共 18,197,609 字节，对应 80 个可用条目；9 个上游 404 地址和 1 个没有文件的本地路径示例对应 21 个失效条目，保留状态，不以 AI 图片替换。来源快照、哈希及逐图片状态见 [FirstSight 来源清单](../web/projects/firstsight/SOURCE.md)。
+用户在微信后台将名称改为「Brclio 悦创」后，已同步原生导航、首页、分享标题、关于与隐私、返回入口、共享游戏品牌以及独立网页标题。AppID、法律服务主体、照片、玩法与本机存储键保持不变。构建、120项既有测试与发布检查通过；本次日志为 `artifacts/rename-build.txt`、`artifacts/rename-tests.txt`、`artifacts/rename-release-check.txt`。
 
-- `npm test`：96／96 项通过；`npm run check:release` 通过，原生包约 166.3 KiB。
-- 离线重新导入生成的 `original-data.json` 字节一致；正常构建不联网获取图片。
-- 微信开发者工具已成功重新上传 `0.1.1`，使用原图封面，上传说明包含 14 组影集。界面为 0 Errors／5 Warnings，代码质量良好。本机证据为 `artifacts/wechat-upload-0.1.1-original-photos.png`，不提交截图目录到源码仓库。
-- 原图版本已部署为 [bf140573](https://bf140573.brclio-miniapp-wechat.pages.dev)。`pocket.bornforthis.cn` 与 `pocket.brclio.com` 各 40 个资源均返回成功，SHA-256 与本地产物一致：全部 34 个原图文件、根首页、`projects.json`、FirstSight HTML／JS／CSS 及业务域名校验文件。两域名健康接口均返回 `0.1.1`、`syncAvailable: false`，未知项目及 FirstSight 旧替代图路径返回 404，旧记录接口返回 503。最终部署仅增加旧替代图路径的缓存拦截，静态资源保持同一哈希，并复核页面、清单、脚本、原图封面与校验文件。
-- 本地概览显示 14 组、101 个图片条目；画廊 8 个条目中 2 个失效、家庭 17 个中 5 个失效、云南旅行 8 个中 3 个失效，提示与清单一致。大图可在原图、失效条目和下一张原图之间前后切换，键盘切换、Escape 关闭及返回影集通过，未发现相关控制台错误。390 × 844 移动视口页面宽度为 390，无横向溢出；原图大图正确加载，显示尺寸 390 × 260，说明和按钮完整，控制台无错误或警告。截图为 `artifacts/firstsight-original-photos-mobile.png` 与 `artifacts/firstsight-original-photos-desktop.png`。
+网页已更新为 [06e54fb2](https://06e54fb2.brclio-miniapp-wechat.pages.dev)，两个现有域名各11个核心资源与本地产物哈希匹配，品牌检查及各4个接口/停用路径状态通过，总计30／30。没有重新处理照片；最终报告为 `artifacts/rename-production-check.json`。微信开发者工具中已确认首页与原生顶部标题均为「Brclio 悦创」，最终0.1.0开发包界面显示“代码上传成功”。上传备注以「Brclio 悦创 0.1.0」开头，截图为 `artifacts/wechat-upload-0.1.0-yuechuang.png`；上传目录234个文件的指纹为 `artifacts/rename-native-manifest.json`。本次未代替用户提交审核。以下旧部署和截图为此次名称同步前的验收记录。
 
-## 部署架构与既有验收
+## 当前摄影与游戏
 
-- 同一 Pages 项目 `brclio-miniapp-wechat` 包含 `firstsight`、`wedding`、`ready-go-duel`；摄影两个，放松一个。
-- `pocket.bornforthis.cn`、`pocket.brclio.com` 的 Cloudflare 域名此前已核验 active，用户已确认 DNS 修改，微信业务域名此前已确认保存。
-- 历史独立 Worker 的公开域名绑定已移除，域名列表为空；`workers.dev` 与预览入口已停用，当前发布命令只部署 Pages 项目。
-- 未修改的反应挑战此前完成本地先得 1 分抢跑流程：红方抢跑、蓝方获胜，记录核对后通过界面清除；返回放松栏目正常，390 px 移动和 2240 px 桌面视口无横向溢出，控制台无错误。
+- 摄影来源为 `AndersonHJB/FirstSight_Online` 固定提交 `988cc8d0208ac2cae87b0e36b072007a856356ab`。9 组真实相册、169 张照片：婚纱 8 组128张，孕期 1 组41张；没有旧网站样例或 AI 图片。
+- 上游优化 WebP 共 20,325,346 字节，169 个文件均核验 Git blob 与 SHA-256。原生端另行生成最长边1024的 JPEG，并随四个摄影分包发布；封面随主包发布。原始 JPG 不进入客户端。
+- 已取消“查看原图”、远程原图地址、复制链接和相关网络调用。大图预览始终使用包内压缩文件；相册模板只维护 `native/album/` 一份，构建复制到分包。
+- 放松中的同屏双人反应挑战直接使用原生 Canvas；支持 1／3／5 分、抢跑和平局。偏好与最近20场战绩保存在微信本机缓存，可清除，没有账号或云备份。我的页为访客状态，注册登录尚未实现。
 
-本地浏览器结果不作为微信客户端真机或线上完整交互通过的证据。
+## 构建、自动检查与界面
 
-## 实际功能与数据范围
+完整测试120／120通过，`npm run check:release` 通过。日志为 `artifacts/redesign-tests.txt`、`artifacts/redesign-release-check.txt`。普通构建离线运行；显示图片、来源字节和清单分别校验各自哈希。最终主包600.8 KiB，四个摄影分包1631.3／1213.0／1584.4／1750.0 KiB，均低于2 MiB；全部代码及素材6779.5 KiB。
 
-- 两个栏目及三个模块均为公开入口，不按审核身份或时间隐藏、替换功能。
-- 原生固定 ID 为 `content-hub`、`firstsight`、`wedding-inspiration`、`relax`、`ready-go-duel`，只映射到配置域名的固定路径。
-- 构建只输出 `active` 模块，Pages 服务在读取静态资源前按编译清单拒绝其他模块路径，不以隐藏卡片代替停用。
-- FirstSight 适配来源为上游提交 `6fafcfd4371b00d8c956e58cb5bf689911b5fb2c`。当前修正恢复 `gallery`、`wedding`、`family`、`baby`、`travel` 的原有图片地址、分组与照片元数据；可用图片以原始下载字节随同一 Cloudflare 项目分发，失效图片保留提示，不使用此前两张 AI 图片替换。独立婚纱灵感图册仍使用两张已标注的 AI 图片。没有导入视频、信件、随笔、留言、评论或模拟 EXIF。
-- 反应挑战支持同屏双人 GO、1／3／5 分、抢跑和平局；浏览器本地保存偏好及最近 20 场记录，可由用户清除，不上传 Cloudflare 或 GitHub，不提供云备份。
+微信开发者工具中已验证：摄影列表9／169、婚纱8与孕期1筛选、孕期41张，进入本地大图、放大、切换后还原、关闭及返回；原生游戏Canvas正常渲染。未将模拟器当作微信客户端真机证据。相关截图：
 
-## 尚未取得的微信发布证据
+- `artifacts/native-gallery-final.png`
+- `artifacts/native-local-photo-final.png`
+- `artifacts/native-duel-ready.png`
 
-- 最新开发包的体验版设置与 iOS／Android 微信客户端真机验收。
-- 已知后台类目为「生活服务 → 婚庆服务」，尚未确认覆盖本次新增双人反应互动。提交前需按真实玩法核对对应类目、资质与产品形态要求。
-- 微信后台最终提交审核、审核通过及正式发布。
+## 开发包上传与正式发布范围
 
-当前原图修正已完成测试、网页部署、本地交互验收和微信开发包重新上传，两个域名的原图、页面、健康接口与停用路径均已核验。开发包上传不能表述为小程序审核已提交或已上线。具体步骤与可复制的如实审核说明见 [RELEASE.md](RELEASE.md)。
+微信开发者工具使用版本 `0.1.0` 和九组169张、内置反应游戏的准确备注上传，界面明确显示“代码上传成功”。首次上传的成功截图为 `artifacts/wechat-upload-0.1.0-native-final.png`。区分源图与JPEG哈希字段后，18:06再次上传同版本；工具后台在18:06:41记录 `progressSuccess`，最终证据为 `artifacts/wechat-upload-0.1.0-final-result.json`。命令行服务端口保持关闭，通过工具界面完成上传。
+
+开发包上传完成不代表体验版已设置、审核已提交、审核通过或正式上线。尚需微信后台设置体验版、iOS／Android真机验收，并按真实反应玩法确认类目与资质。历史“生活服务 → 婚庆服务”不能作为覆盖该玩法的依据。小程序备案也需单独核对。
+
+## 改名前的独立网页验收
+
+同一 Pages 项目 `brclio-miniapp-wechat` 仅输出两个 active 模块：FirstSight、Ready GO Duel。改名前功能验收部署为 [1aaaac97](https://1aaaac97.brclio-miniapp-wechat.pages.dev)，访问域名为 [pocket.bornforthis.cn](https://pocket.bornforthis.cn) 与 [pocket.brclio.com](https://pocket.brclio.com)。网页部署与微信小程序发布分别处理。
+
+两个域名各178个资源的正文 SHA-256 均与构建产物匹配，共356项：全部169张WebP、门户5项、摄影HTML／JS／CSS3项及业务校验文件1项。最终部署仅增加当前169图片路径白名单，以上静态文件零字节变化；复核每域11个核心资源及当前WebP，共22项仍匹配。
+
+旧来源JPG缓存路径已被明确拦截，两个域名均返回404；健康接口版本0.1.0、`syncAvailable: false`，旧记录API返回503，停用AI模块、未知模块及旧替代图目录均返回404。最终状态复核共34／34通过。证据为 `artifacts/redesign-final-production-hashes.json`（完整静态哈希）与 `artifacts/redesign-final-cache-retirement-recheck.json`（旧缓存修复后的最终复核）。
+
+## 数据边界
+
+本轮没有使用聊天中提供的token，没有访问 `BrclioData/Brclio-Miniapp-Data`，也没有新增任何云端用户记录。客户端和构建产物凭据检查通过。未来账号方案与数据边界见 [ACCOUNT_PLAN.md](ACCOUNT_PLAN.md)，正式发布步骤见 [RELEASE.md](RELEASE.md)。

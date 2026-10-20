@@ -1,56 +1,64 @@
 <view class="page-shell home-shell">
-  <view class="brand-row">
+  <view class="portal-header">
     <view class="brand-lockup">
-      <image class="brand-avatar" src="/assets/avatar.png" mode="aspectFill" aria-label="Brclio 头像" />
-      <view>
-        <view class="brand-title">Brclio <text class="brand-light">/ 口袋</text></view>
-        <view class="brand-caption">摄影与生活的内容空间</view>
-      </view>
+      <image class="brand-avatar" src="/assets/avatar.png" mode="aspectFill" aria-label="Brclio 品牌头像" />
+      <view><view class="brand-title">Brclio <text class="brand-slash">悦创</text></view><view class="brand-caption">收藏影像，轻松片刻。</view></view>
     </view>
-    <button class="about-button" bindtap="openAbout" hover-class="button-pressed" aria-label="关于 Brclio 口袋">关于 ↗</button>
+    <button class="header-button" bindtap="openAbout" hover-class="button-pressed" aria-label="查看关于 Brclio 悦创">关于 <text aria-hidden="true">↗</text></button>
   </view>
 
   <view class="category-nav" aria-label="内容栏目">
-    <view class="category-tab category-tab-active" aria-label="摄影，当前栏目"><text>摄影</text><text class="category-state">已开放</text></view>
-    <button class="category-tab category-tab-link" data-id="relax" bindtap="openFeature" hover-class="button-pressed" aria-label="打开放松栏目，双人反应挑战已开放"><text>放松</text><text class="category-state">已开放</text></button>
+    <button class="category-tab {{activeTab === 'photo' ? 'category-tab-active' : ''}}" data-tab="photo" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'photo' ? '摄影，当前栏目' : '切换到摄影栏目'}}"><text>摄影</text><text class="tab-english">PHOTO</text></button>
+    <button class="category-tab {{activeTab === 'relax' ? 'category-tab-active' : ''}}" data-tab="relax" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'relax' ? '放松，当前栏目' : '切换到放松栏目'}}"><text>放松</text><text class="tab-english">PLAY</text></button>
+    <button class="category-tab {{activeTab === 'mine' ? 'category-tab-active' : ''}}" data-tab="mine" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'mine' ? '我的，当前栏目' : '切换到我的栏目'}}"><text>我的</text><text class="tab-english">ME</text></button>
   </view>
 
-  <view class="intro">
-    <view class="eyebrow">A SPACE FOR WHAT MOVES US</view>
-    <view class="intro-title serif">从第一眼开始，<view>收藏<text class="highlight">生活的表达。</text></view></view>
-    <view class="intro-copy">从一束自然光、一抹温柔的色彩开始，<view>先收集一份喜欢的影像灵感。</view></view>
-  </view>
-
-  <view class="section-heading">
-    <text class="section-title serif">本期摄影</text>
-    <text class="section-index">01 / PHOTOGRAPHY</text>
-  </view>
-
-  <button class="feature-card" style="width: 100%; display: block;" data-id="firstsight" bindtap="openFeature" hover-class="feature-pressed" aria-label="打开 FirstSight 摄影，浏览婚礼、家庭、宝宝与旅行主题图集">
-    <view class="feature-cover">
-      <image class="cover-image" src="/assets/firstsight-cover.jpg" mode="aspectFill" aria-label="FirstSight 婚礼图集中的逆光新人合影" />
-      <text class="image-disclosure">FirstSight · 影像图集</text>
+  <view wx:if="{{activeTab === 'photo'}}" class="tab-content">
+    <view class="section-intro">
+      <view class="intro-topline"><text class="eyebrow">A WAY OF SEEING</text><text class="issue-number">01 / 摄影</text></view>
+      <view class="intro-title serif">把日常，看成<text class="word-highlight">风景。</text></view>
+      <view class="intro-copy">光经过的地方，都有值得停留的瞬间。</view>
     </view>
-    <view class="feature-content">
-      <view class="feature-topline"><text class="feature-category">{{featured.category}}</text><text class="feature-number">Vol. 01</text></view>
-      <view class="feature-title serif">{{featured.title}}</view>
-      <view class="feature-subtitle">{{featured.subtitle}}</view>
-      <view class="feature-description">{{featured.description}}</view>
-      <view class="feature-footer"><text>浏览摄影图集</text><text class="feature-arrow" aria-hidden="true">↗</text></view>
+    <button class="photo-feature" style="width: 100%; display: block;" data-id="firstsight" bindtap="openFeature" hover-class="feature-pressed" aria-label="打开 FirstSight 摄影，浏览婚纱与孕期真实摄影图集">
+      <view class="photo-cover">
+        <image class="cover-image" src="/assets/firstsight-cover.jpg" mode="aspectFill" aria-label="海边誓约真实婚纱摄影封面" />
+        <view class="cover-caption"><text>FIRSTSIGHT</text><text>光影里的故事</text></view>
+        <view class="cover-open" aria-hidden="true">↗</view>
+      </view>
+      <view class="photo-details"><view><view class="feature-title serif">{{featured.title}}</view><view class="feature-subtitle">婚纱 · 孕期 · 真实影像</view></view><view class="photo-action">进入图集 <text aria-hidden="true">→</text></view></view>
+    </button>
+    <button class="inspiration-entry" style="width: 100%; display: flex;" data-id="wedding-inspiration" bindtap="openFeature" hover-class="button-pressed" aria-label="打开孕期影像，41 张真实摄影照片">
+      <view class="inspiration-mark" aria-hidden="true"><text>41</text><text class="mark-small">MOMENTS</text></view>
+      <view class="entry-body"><view class="entry-topline"><text class="entry-title serif">孕期影像</text><text class="ai-badge">真实摄影</text></view><view class="entry-copy">倾听你的心跳。<view>把期待，留在这一刻。</view></view></view><text class="entry-arrow" aria-hidden="true">↗</text>
+    </button>
+    <view class="editorial-note"><text class="note-symbol" aria-hidden="true">✳</text><view>不赶路的时候，<text class="note-emphasis">让目光多停留一会儿。</text></view></view>
+  </view>
+
+  <view wx:elif="{{activeTab === 'relax'}}" class="tab-content">
+    <view class="section-intro"><view class="intro-topline"><text class="eyebrow">A LITTLE BREAK</text><text class="issue-number">02 / 放松</text></view><view class="intro-title serif">认真生活，<text class="word-highlight">轻松一下。</text></view><view class="intro-copy">把手机放在中间，叫上身边的那个人。</view></view>
+    <button class="duel-entry" style="width: 100%; display: block;" data-id="ready-go-duel" bindtap="openFeature" hover-class="feature-pressed" aria-label="开始双人反应挑战，两人在同一设备上游玩，无需注册或登录">
+      <view class="duel-visual" aria-hidden="true">
+        <view class="duel-visual-top"><text class="game-label">READY. GO. DUEL.</text><text class="game-edition">NO. 001</text></view>
+        <view class="duel-court"><view class="duel-player player-one"><text>01</text><text class="player-caption">准备好了吗</text></view><view class="duel-versus serif">vs.</view><view class="duel-player player-two"><text>02</text><text class="player-caption">就等你了</text></view></view>
+        <view class="duel-bottom"><text class="duel-dot"></text><text>注意信号，看看谁更快。</text></view>
+      </view>
+      <view class="game-details"><view class="entry-topline"><text class="feature-title serif">双人反应挑战</text><text class="small-label">同屏双人</text></view><view class="game-copy">一部手机，两个人。等待信号，再出手。</view><view class="game-tags"><text>1 / 3 / 5 分赛制</text><text>抢跑判定</text><text>本机记录</text></view><view class="game-action"><text>来一局</text><text aria-hidden="true">↗</text></view></view>
+    </button>
+    <view class="play-note"><text class="small-label">玩法很简单</text><view class="play-note-title serif">面对面，才好玩。</view><view class="entry-copy">两人在同一部设备上操作，无需匹配。<view>对局记录留在本机，随时可以清空。</view></view></view>
+  </view>
+
+  <view wx:else class="tab-content">
+    <view class="section-intro"><view class="intro-topline"><text class="eyebrow">YOUR LITTLE CORNER</text><text class="issue-number">03 / 我的</text></view><view class="intro-title serif">给喜欢的事，<view><text class="word-highlight">留个位置。</text></view></view></view>
+    <view class="visitor-section">
+      <view class="visitor-topline"><view class="visitor-icon" aria-hidden="true"><view class="visitor-head"></view><view class="visitor-body"></view></view><view><view class="visitor-title serif">你好，访客。</view><view class="visitor-caption">现在，随心逛逛。</view></view><text class="visitor-badge">访客模式</text></view>
+      <view class="account-note"><view class="account-title"><text class="status-dot" aria-hidden="true"></text>注册与登录筹备中</view><view class="entry-copy">当前无需账号，即可浏览摄影和体验放松。<view>账号功能开放后，会在这里与你见面。</view></view></view>
     </view>
-  </button>
-
-  <button class="hub-button" style="width: 100%; display: flex;" data-id="content-hub" bindtap="openFeature" hover-class="button-pressed" aria-label="浏览 Brclio 内容空间">
-    <view><view class="hub-button-title">浏览内容空间</view><view class="hub-button-copy">查看已发布的项目与内容</view></view><text class="feature-arrow" aria-hidden="true">↗</text>
-  </button>
-
-  <view class="collection-note">
-    <text class="note-star" aria-hidden="true">✦</text>
-    <view class="note-body"><view class="note-title">灵感，可以慢慢收集</view><view class="note-copy">从婚礼的一束光，到旅行的一段风景，翻看不同主题里的生活片刻。</view></view>
+    <view class="personal-links">
+      <button class="personal-link" style="width: 100%; display: flex;" data-id="content-hub" bindtap="openFeature" hover-class="button-pressed" aria-label="浏览全部已发布的内容与项目"><view><view class="personal-link-title">全部内容</view><view class="personal-link-copy">摄影与放松，随时回来看看</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
+      <button class="personal-link" style="width: 100%; display: flex;" bindtap="openAbout" hover-class="button-pressed" aria-label="查看关于 Brclio 悦创与服务信息"><view><view class="personal-link-title">关于悦创</view><view class="personal-link-copy">从摄影开始，慢慢生长</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
+      <button class="personal-link" style="width: 100%; display: flex;" bindtap="openPrivacy" hover-class="button-pressed" aria-label="查看隐私、权限与本机数据说明"><view><view class="personal-link-title">隐私与数据</view><view class="personal-link-copy">了解权限与本机记录</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
+    </view>
   </view>
 
-  <view class="home-footer">
-    <text class="signature">A small space for stories worth keeping.</text>
-    <button class="text-button privacy-button" bindtap="openPrivacy" hover-class="button-pressed">隐私与数据说明</button>
-  </view>
+  <view class="home-footer"><view class="footer-brand">Brclio / 悦创</view><view class="footer-signature serif">A small space for everyday wonders.</view><button class="text-button footer-privacy" bindtap="openPrivacy" hover-class="button-pressed" aria-label="查看隐私与数据说明">隐私与数据说明</button></view>
 </view>

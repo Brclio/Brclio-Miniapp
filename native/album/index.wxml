@@ -1,0 +1,33 @@
+<view class="album-page {{previewOpen ? 'album-page-covered' : ''}}">
+  <view wx:if="{{notFound}}" class="album-missing"><view class="missing-title serif">还没有这本相册</view><view class="missing-copy">回到图集，继续翻看生活里的风景。</view><button class="back-button" style="width:100%;display:flex;" bindtap="returnToAlbums" hover-class="button-pressed">返回全部相册<text>↗</text></button></view>
+  <block wx:elif="{{album}}">
+    <view class="album-intro"><view class="album-eyebrow">{{album.subtitle}}</view><view class="album-title serif">{{album.title}}</view><view wx:if="{{album.description}}" class="album-description serif">{{album.description}}</view><view class="album-reading-hint"><text aria-hidden="true">↗</text>轻点影像，走近一点<text class="album-total">{{photos.length}} 张照片</text></view><view wx:if="{{hasUnavailable}}" class="album-notice">部分图片暂不可用，仍可查看原有文字记录。</view></view>
+    <view class="photo-list">
+      <button wx:for="{{photos}}" wx:for-item="photo" wx:key="id" class="photo-button" style="width:100%;display:block;" data-index="{{index}}" bindtap="openPhoto" hover-class="photo-pressed" aria-label="查看{{photo.title}}{{photo.available ? '大图' : '的文字记录，图片暂不可用'}}">
+          <view class="photo-frame"><image wx:if="{{photo.available}}" class="photo-image" src="{{photo.url}}" mode="widthFix" lazy-load="{{true}}" data-index="{{index}}" binderror="onPhotoError" aria-label="{{photo.title}}" /><view wx:else class="image-unavailable"><text class="unavailable-mark">▧</text><text>图片暂不可用</text><text class="unavailable-note">保留原照片说明</text></view><view class="photo-open"><text aria-hidden="true">↗</text>{{photo.available ? '放大预览' : '查看记录'}}</view></view>
+          <view class="photo-caption"><text class="photo-number">{{photo.number}}</text><text class="photo-title serif">{{photo.title}}</text></view>
+      </button>
+    </view>
+    <view class="album-end serif">这一册看到这里，下一册再相遇。</view><button class="back-button" style="width:100%;display:flex;" bindtap="returnToAlbums" hover-class="button-pressed">返回全部相册<text aria-hidden="true">↗</text></button>
+  </block>
+</view>
+
+<view wx:if="{{previewOpen}}" class="photo-preview" catchtouchmove="preventPageScroll" role="dialog" aria-modal="true" aria-label="{{previewPhoto.title}}大图浏览">
+  <view class="preview-toolbar"><view class="preview-position"><text class="preview-brand">FIRSTSIGHT</text><text>{{previewPosition}} / {{photos.length}}</text></view><view class="preview-actions"><view class="preview-action-slot"><button class="preview-tool {{!previewPhoto.available ? 'tool-disabled' : ''}}" style="width:100%;display:flex;" bindtap="toggleZoom" disabled="{{!previewPhoto.available}}" aria-label="{{previewZoomed ? '还原图片大小' : '放大图片'}}"><text class="zoom-symbol" aria-hidden="true">{{previewZoomed ? '−' : '＋'}}</text></button></view><view class="preview-action-slot"><button class="preview-tool" style="width:100%;display:flex;" bindtap="closePreview" aria-label="关闭大图"><text class="close-symbol" aria-hidden="true">×</text></button></view></view></view>
+  <view class="preview-stage">
+    <swiper wx:if="{{!previewZoomed}}" class="preview-swiper" current="{{previewIndex}}" circular="{{false}}" duration="220" bindchange="onPreviewChange">
+      <swiper-item wx:for="{{photos}}" wx:for-item="photo" wx:key="id">
+        <image wx:if="{{photo.available}}" class="preview-image" src="{{photo.url}}" mode="aspectFit" data-index="{{index}}" binderror="onPhotoError" bindtap="onPreviewTap" aria-label="{{photo.title}}" />
+        <view wx:else class="preview-unavailable"><text class="unavailable-mark">▧</text><text>图片暂不可用</text><text class="unavailable-note">保留原照片说明</text></view>
+      </swiper-item>
+    </swiper>
+    <movable-area wx:else class="preview-area" scale-area="{{true}}">
+      <movable-view class="preview-movable" direction="all" scale="{{true}}" scale-min="1" scale-max="4" scale-value="{{previewScale}}" x="{{previewX}}" y="{{previewY}}" animation="{{false}}" data-index="{{previewIndex}}" bindscale="onPreviewScale" bindchange="onPreviewMove" bindtap="onPreviewTap">
+        <image class="preview-image" src="{{previewPhoto.url}}" mode="aspectFit" data-index="{{previewIndex}}" binderror="onPhotoError" aria-label="{{previewPhoto.title}}" />
+      </movable-view>
+    </movable-area>
+    <view class="preview-prev-slot"><button class="preview-arrow {{previewIndex === 0 ? 'tool-disabled' : ''}}" style="width:100%;display:flex;" bindtap="previousPhoto" disabled="{{previewIndex === 0}}" aria-label="上一张">‹</button></view>
+    <view class="preview-next-slot"><button class="preview-arrow {{previewIndex === photos.length - 1 ? 'tool-disabled' : ''}}" style="width:100%;display:flex;" bindtap="nextPhoto" disabled="{{previewIndex === photos.length - 1}}" aria-label="下一张">›</button></view>
+  </view>
+  <scroll-view class="preview-caption" scroll-y="{{true}}"><view class="preview-caption-inner"><view class="preview-title-row"><text class="preview-title serif">{{previewPhoto.title}}</text><text wx:if="{{previewPhoto.date}}" class="preview-date">{{previewPhoto.date}}</text></view><view wx:if="{{previewPhoto.description}}" class="preview-description">{{previewPhoto.description}}</view><view wx:if="{{previewPhoto.location}}" class="preview-location">{{previewPhoto.location}}</view><view class="preview-tags"><text wx:for="{{previewPhoto.tags}}" wx:key="*this"># {{item}}</text></view><view class="preview-help">{{previewZoomed ? '双指缩放或拖动查看 · 轻点 − 还原' : previewPhoto.available ? '左右滑动切换 · 双击或＋放大' : '左右滑动切换 · 原有记录仍在'}}</view></view></scroll-view>
+</view>

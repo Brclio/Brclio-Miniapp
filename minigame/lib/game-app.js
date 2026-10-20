@@ -10,8 +10,11 @@ const C = { cream: '#fefcf6', ink: '#1a1a2e', muted: '#64646e', blue: '#2b7fd8',
 const FONT = "'PingFang SC', 'Noto Sans SC', sans-serif";
 const SERIF = "'Songti SC', 'Noto Serif SC', serif";
 
-function createGameApp(platform) {
+function createGameApp(platform, options) {
   const wx = platform;
+  const opt = options || {};
+  const requestFrame = typeof wx.requestAnimationFrame === 'function' ? wx.requestAnimationFrame.bind(wx) : typeof requestAnimationFrame === 'function' ? requestAnimationFrame : null;
+  const cancelFrame = typeof wx.cancelAnimationFrame === 'function' ? wx.cancelAnimationFrame.bind(wx) : typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame : null;
   const canvas = wx.createCanvas();
   const ctx = canvas.getContext('2d');
   const performance = typeof wx.getPerformance === 'function' ? wx.getPerformance() : null;
@@ -25,6 +28,7 @@ function createGameApp(platform) {
   let timer = null;
   let frameId = null;
   let hidden = false;
+  let disposed = false;
   let signaling = false;
   let message = '';
   let toast = '';
@@ -84,6 +88,7 @@ function createGameApp(platform) {
   }
 
   function notify(value) {
+    if (disposed) return;
     toast = value;
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { toast = ''; draw(); }, 2200);
@@ -98,6 +103,7 @@ function createGameApp(platform) {
   }
 
   function resize() {
+    if (disposed) return;
     const info = typeof wx.getWindowInfo === 'function' ? wx.getWindowInfo() : wx.getSystemInfoSync();
     width = info.windowWidth; height = info.windowHeight;
     const dpr = Math.min(info.pixelRatio || 2, 3);
@@ -128,12 +134,12 @@ function createGameApp(platform) {
     if (avatar && avatar.width) {
       ctx.save(); ctx.beginPath(); ctx.arc(45, 32, 21, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(avatar, 24, 11, 42, 42); ctx.restore();
     } else { circle(45, 32, 21, C.blue); text('B', 45, 32, 24, C.cream, 700, 'center', true); }
-    text('Brclio 口袋', 78, 24, 19, C.ink, 800);
+    text('Brclio 悦创', 78, 24, 19, C.ink, 800);
     text('随手打开，发现一点有趣。', 78, 45, 10, C.muted);
     button(306, 16, 60, 32, '关于 ↗', function () { screen = 'about'; draw(); }, { fill: C.cream, color: C.muted, stroke: C.line, size: 11, radius: 16 });
-    text('THE POCKET COLLECTION', 24, 91, 10, C.blue, 700);
+    text('THE BRCLIO COLLECTION', 24, 91, 10, C.blue, 700);
     text('把有趣，', 24, 133, 38, C.ink, 800, 'left', true);
-    text('装进口袋。', 24, 181, 38, C.blue, 800, 'left', true);
+    text('带进生活。', 24, 181, 38, C.blue, 800, 'left', true);
     text('随手打开，发现一点有趣。', 25, 224, 13, C.muted);
     text('✳', 25, 259, 20, C.blue);
     text('今天，从双人反应挑战开始。', 51, 259, 12, C.ink);
@@ -244,7 +250,7 @@ function createGameApp(platform) {
   }
 
   function about() {
-    header('关于口袋', 'ABOUT THE COLLECTION');
+    header('关于悦创', 'ABOUT THE COLLECTION');
     text('两个人，一部手机。', 24, 111, 26, C.ink, 800, 'left', true);
     text('不用复杂的准备，好玩现在开始。', 24, 152, 13, C.muted);
     rounded(24, 187, 342, 87, 14, C.paper);
@@ -257,7 +263,7 @@ function createGameApp(platform) {
     button(24, 479, 342, 48, '隐私与数据', function () { screen = 'privacy'; draw(); }, { fill: C.soft, color: C.ink, left: true, arrow: true });
     button(24, 539, 342, 48, '原作与来源', function () { wx.setClipboardData({ data: 'https://github.com/AndersonHJB/ReadyGoDuel', success: function () { notify('原作链接已复制'); } }); }, { fill: C.soft, color: C.ink, left: true, arrow: true });
     text('Brclio · 写代码，教编程，做产品', 24, 632, 12, C.muted);
-    text('举手决斗  v0.1.1', 24, 659, 11, C.muted);
+    text('举手决斗  v0.1.0', 24, 659, 11, C.muted);
     footer();
   }
 
@@ -307,14 +313,14 @@ function createGameApp(platform) {
 
   function clearRecords() {
     wx.showModal({ title: '清除本机战绩？', content: '将删除本机保存的对决记录。赛制和触感设置会保留。', confirmText: '清除', confirmColor: C.red, success: function (response) {
-      if (!response.confirm) return;
+      if (disposed || !response.confirm) return;
       if (persist({ matches: [] })) notify('本机战绩已清除');
       draw();
     } });
   }
 
   function draw() {
-    if (hidden || !width) return;
+    if (disposed || hidden || !width) return;
     controls = [];
     ctx.save();
     ctx.fillStyle = C.cream; ctx.fillRect(0, 0, width, height);
@@ -330,7 +336,7 @@ function createGameApp(platform) {
 
   function clearRoundTimers() {
     if (timer !== null) { clearTimeout(timer); timer = null; }
-    if (frameId !== null && typeof cancelAnimationFrame === 'function') { cancelAnimationFrame(frameId); frameId = null; }
+    if (frameId !== null) { if (cancelFrame) cancelFrame(frameId); frameId = null; }
   }
 
   function schedule(s) {
@@ -348,7 +354,7 @@ function createGameApp(platform) {
           signaling = false;
           draw(); schedule(next);
         };
-        if (typeof requestAnimationFrame === 'function') frameId = requestAnimationFrame(drawGo);
+        if (requestFrame) frameId = requestFrame(drawGo);
         else drawGo();
       }, Math.max(0, s.signalDueAt - now()));
     } else if (s.phase === 'go' || s.phase === 'judging') {
@@ -394,15 +400,15 @@ function createGameApp(platform) {
       pauseRound();
       const s = engine.snapshot();
       if (s.roundsPlayed && s.phase !== 'complete') {
-        wx.showModal({ title: '离开这场对决？', content: '这场还没有分出胜负，离开后将重新计分。', confirmText: '离开', cancelText: '继续玩', success: function (response) { if (response.confirm) goHome(); } });
+        wx.showModal({ title: '离开这场对决？', content: '这场还没有分出胜负，离开后将重新计分。', confirmText: '离开', cancelText: '继续玩', success: function (response) { if (!disposed && response.confirm) goHome(); } });
       } else goHome();
     } else { screen = screen === 'history' || screen === 'privacy' ? 'about' : 'home'; draw(); }
   }
 
   function goHome() { clearRoundTimers(); screen = 'home'; if (typeof wx.setKeepScreenOn === 'function') wx.setKeepScreenOn({ keepScreenOn: false }); draw(); }
 
-  wx.onTouchStart(function (event) {
-    if (hidden) return;
+  function handleTouch(event) {
+    if (disposed || hidden) return;
     // Capture all hits before a redraw replaces controls; simultaneous touches
     // are both passed to the engine and can produce a fair tie.
     const targets = (event.changedTouches || event.touches || []).map(function (touch) {
@@ -420,20 +426,37 @@ function createGameApp(platform) {
       afterAction(engine.snapshot());
     }
     else if (targets[0]) targets[0].action();
-  });
+  }
+  wx.onTouchStart(handleTouch);
 
-  if (typeof wx.onHide === 'function') wx.onHide(function () { hidden = true; clearRoundTimers(); engine.cancelRound(); signaling = false; message = '刚才离开了一下，本回合重新开始。'; });
-  if (typeof wx.onShow === 'function') wx.onShow(function () { hidden = false; prefs = storage.read(); resize(); });
-  if (typeof wx.onWindowResize === 'function') wx.onWindowResize(function () { pauseRound(); resize(); });
+  function handleHide() { if (disposed) return; hidden = true; clearRoundTimers(); engine.cancelRound(); signaling = false; message = '刚才离开了一下，本回合重新开始。'; }
+  function handleShow() { if (disposed) return; hidden = false; prefs = storage.read(); resize(); }
+  function handleResize() { if (disposed) return; pauseRound(); resize(); }
+  if (typeof wx.onHide === 'function') wx.onHide(handleHide);
+  if (typeof wx.onShow === 'function') wx.onShow(handleShow);
+  if (typeof wx.onWindowResize === 'function') wx.onWindowResize(handleResize);
   if (typeof wx.showShareMenu === 'function') wx.showShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] });
   if (typeof wx.onShareAppMessage === 'function') wx.onShareAppMessage(function () { return { title: '来一局举手决斗，看看谁的反应更快！', query: 'from=share' }; });
   if (typeof wx.onShareTimeline === 'function') wx.onShareTimeline(function () { return { title: '举手决斗 · 两个人，一部手机。' }; });
   if (typeof wx.createImage === 'function') {
     avatar = wx.createImage();
-    avatar.onload = draw; avatar.onerror = function () { avatar = null; draw(); }; avatar.src = 'assets/avatar.png';
+    avatar.onload = draw; avatar.onerror = function () { avatar = null; draw(); }; avatar.src = opt.avatarSrc || 'assets/avatar.png';
   }
+  if (opt.initialScreen === 'duel') enterDuel();
   resize();
-  return { canvas, draw, snapshot: function () { return { screen, duel: engine.snapshot() }; } };
+  function dispose() {
+    if (disposed) return;
+    disposed = true; hidden = true; signaling = false;
+    clearRoundTimers();
+    if (toastTimer !== null) { clearTimeout(toastTimer); toastTimer = null; }
+    engine.cancelRound(); controls = [];
+    if (avatar) { avatar.onload = null; avatar.onerror = null; avatar = null; }
+    [['offTouchStart', handleTouch], ['offHide', handleHide], ['offShow', handleShow], ['offWindowResize', handleResize]].forEach(function (entry) {
+      if (typeof wx[entry[0]] === 'function') wx[entry[0]](entry[1]);
+    });
+    if (typeof wx.setKeepScreenOn === 'function') wx.setKeepScreenOn({ keepScreenOn: false });
+  }
+  return { canvas, draw, dispose, snapshot: function () { return { screen, duel: engine.snapshot() }; } };
 }
 
 module.exports = { createGameApp };

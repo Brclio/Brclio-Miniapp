@@ -1,1 +1,6 @@
-.page-shell { padding-top: 44rpx; }
+.privacy-shell { padding-top: 44rpx; }
+.privacy-shell .eyebrow { font-size: 18rpx; letter-spacing: 2rpx; }
+.privacy-date { margin-top: 16rpx; font-size: 21rpx; color: #817d76; }
+.privacy-shell .document-section { padding-top: 30rpx; margin-top: 32rpx; border-top: 1rpx solid #dedbd2; }
+.privacy-shell .document-heading { font-size: 29rpx; }
+.privacy-footer { margin-top: 38rpx; padding-top: 28rpx; border-top: 1rpx solid #dedbd2; color: #817d76; font-size: 21rpx; }
