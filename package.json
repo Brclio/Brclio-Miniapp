@@ -1,8 +1,8 @@
 {
   "name": "brclio-miniapp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
-  "description": "Brclio 口袋 · 多功能互动合集",
+  "description": "Brclio 口袋 · 摄影与放松内容空间",
   "scripts": {
     "preview": "node scripts/preview-server.js",
     "test": "node --test tests/*.test.js",
@@ -10,9 +10,9 @@
     "check:release": "node scripts/check-project.js --release",
     "configure": "node scripts/configure.js",
     "build": "node scripts/build-web.js",
-    "dev:web": "wrangler dev",
-    "deploy": "npm run build && wrangler deploy",
-    "deploy:wechat-web": "npm run build && wrangler pages deploy --cwd cloudflare/pages --project-name brclio-miniapp-wechat --branch main",
+    "dev:web": "wrangler pages dev dist/web",
+    "deploy": "npm run build && wrangler pages deploy --project-name brclio-miniapp-wechat --branch main",
+    "deploy:wechat-web": "npm run deploy",
     "wechat:doctor": "node scripts/wechat.js doctor",
     "wechat:open": "node scripts/wechat.js open",
     "wechat:preview": "node scripts/wechat.js preview",
@@ -22,6 +22,12 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "esbuild": "0.28.2",
     "wrangler": "4.151.2"
+  },
+  "dependencies": {
+    "lucide-react": "0.460.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   }
 }

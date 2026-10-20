@@ -257,7 +257,7 @@ function createGameApp(platform) {
     button(24, 479, 342, 48, '隐私与数据', function () { screen = 'privacy'; draw(); }, { fill: C.soft, color: C.ink, left: true, arrow: true });
     button(24, 539, 342, 48, '原作与来源', function () { wx.setClipboardData({ data: 'https://github.com/AndersonHJB/ReadyGoDuel', success: function () { notify('原作链接已复制'); } }); }, { fill: C.soft, color: C.ink, left: true, arrow: true });
     text('Brclio · 写代码，教编程，做产品', 24, 632, 12, C.muted);
-    text('举手决斗  v0.1.0', 24, 659, 11, C.muted);
+    text('举手决斗  v0.1.1', 24, 659, 11, C.muted);
     footer();
   }
 

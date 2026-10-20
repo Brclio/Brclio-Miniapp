@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "projects": [
+    {
+      "id": "firstsight",
+      "kind": "react",
+      "source": "web/projects/firstsight",
+      "entry": "main.tsx",
+      "html": "index.html",
+      "assets": [
+        {
+          "source": "web/wedding/assets",
+          "target": "media"
+        }
+      ]
+    },
+    {
+      "id": "wedding",
+      "kind": "static",
+      "source": "web/wedding",
+      "files": [
+        "index.html",
+        "main.js",
+        "style.css"
+      ],
+      "assets": [
+        {
+          "source": "web/wedding/assets",
+          "target": "assets"
+        }
+      ]
+    },
+    {
+      "id": "ready-go-duel",
+      "kind": "canvas",
+      "source": "web/projects/ready-go-duel",
+      "files": [
+        "index.html",
+        "page.css",
+        "local.js"
+      ],
+      "assets": [
+        {
+          "source": "web/projects/ready-go-duel/assets",
+          "target": "assets"
+        }
+      ]
+    }
+  ]
+}

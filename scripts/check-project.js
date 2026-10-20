@@ -45,9 +45,14 @@ try {
   check(!files.some(function (file) { return /\.(?:pem|key|env)$/.test(file); }), '小程序上传目录没有私钥或环境文件');
   const scan = scripts.concat(walk(path.join(root, 'dist/web'))).filter(function (file) { return /\.(?:js|mjs|json|html|css|txt)$/.test(file); });
   const outputRoot = path.join(root, 'dist/web');
-  check(['index.html', 'main.js', 'assets/garden.jpg', 'assets/coast.jpg'].every(function (file) { return fs.existsSync(path.join(outputRoot, file)); }), '图册与两幅 AI 图片已构建');
-  check(['bundle.js', 'runtime.js', 'sync.js', 'config.js'].every(function (file) { return fs.readFileSync(path.join(outputRoot, file), 'utf8') === '/* Retired. This release contains only the wedding lookbook. */\n'; }), '历史脚本 URL 已替换为空操作退役文件，旧功能代码未发布');
-  check(require(path.join(appRoot, 'data/catalog.js')).features.every(function (feature) { return feature.id === 'wedding-inspiration'; }), '首发目录仅开放婚纱灵感图册');
+  check(['index.html', 'main.js', 'catalog.js', 'projects.json', '_worker.js', 'projects/firstsight/index.html', 'projects/firstsight/main.js', 'projects/firstsight/media/garden.jpg', 'projects/wedding/index.html'].every(function (file) { return fs.existsSync(path.join(outputRoot, file)); }), '综合门户与摄影项目已在同一产物构建');
+  check(['bundle.js', 'runtime.js', 'sync.js', 'config.js'].every(function (file) { return fs.readFileSync(path.join(outputRoot, file), 'utf8') === '/* Retired. Use the content portal and registered projects. */\n'; }), '历史脚本仅返回退役占位');
+  const registry = require(path.join(root, 'web/portal/catalog.js')).validateCatalog(JSON.parse(fs.readFileSync(path.join(outputRoot, 'projects.json'), 'utf8')));
+  const version = require(path.join(root, 'package.json')).version;
+  check(registry.version === version && site.version === version, '门户与原生版本一致');
+  check(registry.categories.find(function (item) { return item.id === 'relax'; }).status === 'active' && registry.projects.some(function (item) { return item.id === 'ready-go-duel' && item.category === 'relax' && item.status === 'active'; }) && fs.existsSync(path.join(outputRoot, 'projects/ready-go-duel/bundle.js')), '放松栏目及双人反应挑战如实登记并发布');
+  check(require(path.join(appRoot, 'data/catalog.js')).features.map(function (feature) { return feature.id; }).sort().join(',') === 'content-hub,firstsight,ready-go-duel,relax,wedding-inspiration', '原生固定入口及历史分享入口登记完整');
+  check(!/comment\.bornforthis|waline|unsplash|fonts\.googleapis/.test(fs.readFileSync(path.join(outputRoot, 'projects/firstsight/main.js'), 'utf8')), 'FirstSight 未包含原站留言与外部示例图库');
   check(!scan.some(function (file) { return /github_pat_[A-Za-z0-9_]{30,}|gh[pousr]_[A-Za-z0-9]{30,}|-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(fs.readFileSync(file, 'utf8')); }), '发布源码与网页产物无凭据内容');
   const hasAppId = /^wx[0-9a-f]{16}$/i.test(project.appid || '');
   check(release ? hasAppId : hasAppId || project.appid === 'touristappid', release ? '已配置真实小程序 AppID' : 'AppID 配置可用于本地开发');

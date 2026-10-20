@@ -1,24 +1,25 @@
 # Brclio 口袋
 
-微信普通小程序，首版提供只读的「婚纱灵感图册」。原生首页通过 `web-view` 打开图册，展示花园与海岸两种主题的 AI 生成婚纱示意图，供浏览氛围、色彩和造型参考。
+微信普通小程序与网页内容空间，按「摄影」「放松」两个栏目组织独立项目。`0.1.1` 包含三个公开入口：摄影中的 FirstSight 与婚纱灵感图册，以及放松中的「双人反应挑战」。
 
-**婚纱灵感图册 `0.1.0` 已部署到两个网页域名，并重新上传微信开发版本；82 项测试及发布检查通过。** 微信业务域名已由用户确认保存，线上资源与本地产物字节核对一致，旧备份服务关闭。尚未完成微信真机验收，也未确认提交审核或正式发布，详见 [验证记录](docs/VERIFICATION.md)。
+**`0.1.1` 三个网页模块已部署，微信开发版本已上传成功；93 项测试及发布检查通过。** 两个域名的已测资源与本地产物字节一致，旧独立 Worker 入口已停用。尚无微信审核提交、审核通过或正式发布证据；新增反应挑战对应的类目和产品形态仍需在后台核对。见 [验证记录](docs/VERIFICATION.md)。
 
+- 微信入口：[pocket.bornforthis.cn](https://pocket.bornforthis.cn)，沿用已备案域名。
 - 公开网页：[pocket.brclio.com](https://pocket.brclio.com)
-- 微信网页：[pocket.bornforthis.cn](https://pocket.bornforthis.cn)，使用已备案域名。
 - 源码仓库：[Brclio/Brclio-Miniapp](https://github.com/Brclio/Brclio-Miniapp)
 - 服务提供者：莆田市荔城区黄家蓉宝电脑店
 - 联系邮箱：aiyuechuang@gmail.com
 
-## 首版内容
+## 当前版本内容
 
-- 原生首页仅有「婚纱灵感图册」功能入口，另有关于和隐私说明。
-- 两幅 AI 生成示意图：「花间来信」与「与海相拥」。页面和图片明确标注 AI 生成，非真实人物客片或服务案例。
-- 支持花园／海岸主题筛选、大图查看与切换。
-- 无需注册或登录，不提供图片上传、评论、预约、报价或交易。
-- 不创建用户档案，不保存用户浏览记录，不启用云备份；不申请微信头像、手机号、位置、相册、相机、麦克风或通讯录权限。
+- 首页从 `projects.json` 加载栏目与卡片：摄影两个项目，放松一个项目。
+- FirstSight 保留「系列封面 → 影集详情 → 大图浏览」结构，只适配摄影部分，不导入上游家庭、儿童、个人信件或留言内容。
+- 两个摄影模块使用项目已有的花园与海岸 AI 图片，明确标注 AI 生成、非真实客片。
+- 双人反应挑战公开登记在 `/projects/ready-go-duel/`：两人在同一设备等待 GO 信号，支持先得 1／3／5 分、抢跑、平局和本机战绩。
+- 反应挑战在浏览器本地保存使用偏好与最近 20 场完整记录，可在模块内清除；记录不上传 Cloudflare 或 GitHub，不提供云备份。
+- 无注册、登录、上传、评论、预约或交易，不创建云端用户档案，也不上传浏览记录。
 
-网页和图片由 Cloudflare 分发，正常网络请求与微信加载缓存仍会产生。当前不使用 GitHub 存储用户数据，也不接入广告或访问行为分析服务。
+网页与图片由 Cloudflare 分发，微信可能产生正常加载缓存；服务方可能处理完成网络请求所需的信息。客户端不持有服务凭据，不接入广告或访问行为分析。清理缓存或网页存储可能清除本机记录与偏好。
 
 ## 本地运行
 
@@ -30,7 +31,7 @@ npm run build
 npm run dev:web
 ```
 
-打开 Wrangler 输出的地址查看图册。`npm run build` 的正式产物包含 `web/wedding/` 图册与业务域名校验文件。旧脚本地址仅保留无执行行为的注释占位，防止 CDN 残留旧内容；不包含旧互动或备份客户端代码。
+构建将首页与状态为 `active` 的模块统一输出到 `dist/web`。检查两个栏目、三个模块、返回路径与本机记录清除。
 
 ```sh
 npm test
@@ -38,32 +39,37 @@ npm run check:release
 npm run wechat:open
 ```
 
-开发者工具导入项目根目录，配置已指向普通小程序的 `miniprogram/`，AppID 为 `wx59aa532fbf6fa540`。点击图册卡片访问配置的线上网页。CLI 预览、上传需要工具已登录并允许服务端口，也可直接使用工具界面。
+开发者工具导入项目根目录，代码目录为 `miniprogram/`，AppID `wx59aa532fbf6fa540`。原生 `web-view` 只接受登记 ID，映射到配置域名的固定路径；放松入口打开 `/?category=relax`，不接受任意网址。
 
-## 部署
+## 一个 Cloudflare 项目
+
+`0.1.1` 统一使用 Pages 项目 `brclio-miniapp-wechat`：首页在 `/`，各模块在 `/projects/<id>/`。后续增加模块仍使用同一构建与部署，无需新增 Cloudflare 项目或微信业务域名。
 
 ```sh
-npm run deploy              # 构建并部署 Worker 静态网页
-npm run deploy:wechat-web   # 构建并部署微信使用的 Pages 网页
+npm run deploy
 ```
 
-`pocket.brclio.com` 使用 Worker 静态资源，`pocket.bornforthis.cn` 使用 Pages；两处发布相同图册。当前 `SYNC_ENABLED: "false"`，图册不调用旧记录 API，也不依赖 GitHub 凭据。微信业务域名必须与 `miniprogram/config.js` 一致；网页更新不替代微信审核。发布步骤见 [发布指南](docs/RELEASE.md)。
+`npm run deploy:wechat-web` 是同一命令的别名。Pages 服务在访问静态资源前核对构建生成的开放项目清单；未开放项目不构建，直接访问其模块路径返回 404。旧云端记录接口保持不可用。历史独立 Worker 已解除公开域名绑定，`workers.dev` 和预览入口均已停用；源码归档保留，当前发布命令不部署它。
+
+微信仅使用已备案的 `pocket.bornforthis.cn` 业务域名；`pocket.brclio.com` 作为公开网页入口。添加模块使用路径即可，仍需遵守平台实际类目、资质、隐私和审核要求，模块化部署不等于免审核。
+
+接入和停用模块见 [PROJECTS.md](docs/PROJECTS.md)，发布步骤见 [RELEASE.md](docs/RELEASE.md)。
 
 ## 项目结构
 
 ```text
-miniprogram/       微信实际上传目录：图册入口、web-view、关于、隐私
-web/wedding/      当前正式图册页面、交互与生成图片
-web/public/       微信业务域名校验文件
-worker/           静态资源路由及当前关闭的历史记录 API
-cloudflare/pages/ 微信图册的 Pages 部署配置
-scripts/          构建、部署辅助、开发者工具和发布检查
-tests/            当前入口测试及保留的开发模块回归测试
-docs/             发布步骤与验证记录
-minigame/         保留的早期反应挑战开发源码，不属于图册发布内容
-preview/          早期开发预览，不属于图册发布内容
+miniprogram/             微信原生目录、固定入口、关于和隐私
+projects.config.json    构建登记：react／static／canvas 与素材复制
+web/portal/             内容首页与公开 projects.json 清单
+web/projects/firstsight/ FirstSight 摄影适配
+web/wedding/            婚纱灵感图册与两张 AI 图片
+web/projects/ready-go-duel/ 双人反应挑战网页宿主
+minigame/lib/           反应挑战共享规则、Canvas 界面与本机存储
+web/pages-worker.mjs    健康检查、停用记录 API 和开放项目路径控制
+web/public/             微信业务域名校验文件
+cloudflare/             历史部署配置
+scripts/                统一构建、开发者工具和发布检查
+docs/                   项目接入、发布步骤与验证记录
 ```
 
-旧反应挑战、备份客户端和记录 API 保留作后续开发参考，不是当前首版功能。原生目录没有该功能入口，正式网页产物也不提供相关页面。后续新增功能须按实际服务内容更新类目、说明、隐私和审核材料。
-
-设计和保留源码的来源要求见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+来源与使用要求见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

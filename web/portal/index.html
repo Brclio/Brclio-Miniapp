@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fefcf6">
+  <meta name="description" content="Brclio 口袋，收纳摄影与生活灵感。本期开放 FirstSight 摄影图册、AI 婚纱灵感图册与双人反应挑战。">
+  <title>Brclio 口袋 · 摄影与生活灵感</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/catalog.js" defer></script>
+  <script src="/main.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#collections">跳到内容合集</a>
+  <header class="app-header">
+    <a class="brand" href="/" aria-label="Brclio 口袋首页"><span class="brand-mark" aria-hidden="true">b.</span><span>Brclio <span class="brand-divider">/</span> <span class="brand-pocket">口袋</span></span></a>
+    <a class="header-note" href="#about">一点关于口袋 <span aria-hidden="true">↘</span></a>
+  </header>
+  <main class="app-content">
+    <section class="intro" aria-labelledby="page-title">
+      <div class="intro-copy">
+        <p class="eyebrow"><span class="tiny-star" aria-hidden="true">✳</span> A POCKET OF LITTLE THINGS</p>
+        <h1 id="page-title">把喜欢的生活，<br><span class="highlight">慢慢放进口袋。</span></h1>
+        <p class="intro-description" id="intro-description">翻一翻喜欢的影像，也给轻松留一点时间。</p>
+      </div>
+      <div class="pocket-note" aria-label="本期内容概要">
+        <span class="note-kicker">THIS LITTLE COLLECTION</span>
+        <div class="note-middle"><span class="note-count" id="total-count">—</span><span>个内容项目<br>等你慢慢发现</span></div>
+        <p><span class="note-dot" aria-hidden="true"></span><span id="release-note">摄影与放松，本期一起打开</span></p>
+      </div>
+    </section>
+    <section class="collections" id="collections" aria-labelledby="collection-title" aria-busy="true">
+      <div class="collection-toolbar"><div class="tab-bar" id="category-tabs" role="tablist" aria-label="内容分类"></div><span class="collection-edition">THE POCKET INDEX <span aria-hidden="true">↙</span></span></div>
+      <div class="section-heading"><div><p class="eyebrow section-eyebrow" id="category-eyebrow">COLLECTION</p><h2 id="collection-title">正在打开口袋</h2></div><p id="category-description">请稍等，内容马上就好。</p></div>
+      <div class="status-panel" id="loading-panel" role="status"><span class="status-symbol" aria-hidden="true">✳</span><p>正在整理本期内容…</p></div>
+      <div class="status-panel error-panel" id="error-panel" hidden role="alert"><span class="status-symbol" aria-hidden="true">↻</span><h3>这次没能打开口袋</h3><p>网络暂时没有连上，请稍后再试。</p><button class="retry-button" id="retry-button" type="button">重新加载 <span aria-hidden="true">↗</span></button></div>
+      <div class="project-grid" id="project-grid" role="tabpanel" tabindex="0" hidden></div>
+      <div class="empty-panel" id="empty-panel" role="tabpanel" tabindex="0" hidden><div class="empty-art" aria-hidden="true"><span>☁</span><i>✳</i></div><div><p class="eyebrow">TAKE A LITTLE BREATH</p><h3 id="empty-title">这里暂时没有内容。</h3><p id="empty-description">可以先看看另一个口袋。</p><span class="empty-badge" id="empty-badge">暂无项目</span></div></div>
+      <p class="visually-hidden" id="category-status" role="status" aria-live="polite"></p>
+      <noscript><p class="no-script">需要开启 JavaScript 才能加载当前开放的内容目录，请开启后重新载入页面。</p></noscript>
+    </section>
+    <section class="about-strip" id="about" aria-labelledby="about-title"><span class="about-symbol" aria-hidden="true">✳</span><div><h2 id="about-title">生活很大，口袋可以慢慢装。</h2><p>这里是 Brclio 的内容小合集。翻一翻摄影图册，也可以和身边的人比比反应。无需注册，选择喜欢的一项，就可以开始。</p></div><span class="about-signature">Stay curious.<br>Keep collecting.</span></section>
+  </main>
+  <footer class="app-footer"><span>Brclio 口袋 <span class="footer-version" id="app-version">0.1.1</span></span><span>A small collection of beautiful moments.</span></footer>
+  <details class="privacy-note"><summary>隐私与服务说明</summary><div><p>当前提供摄影图册和同屏双人反应挑战，无需登录，不提供预约、交易、评论或用户图片上传。摄影封面与婚纱灵感中的 AI 示例均有标注，非真实客户作品。</p><p>本站不使用访问行为分析或广告服务。反应挑战的战绩和设置保存在本机，可在项目内清除，不上传云端。网页和图片由 Cloudflare 分发，服务方可能处理 IP 地址、请求时间与浏览器等完成网络服务所需的信息。具体项目的数据说明以项目内展示为准。</p><p>服务提供者：莆田市荔城区黄家蓉宝电脑店。联系邮箱：<a href="mailto:aiyuechuang@gmail.com">aiyuechuang@gmail.com</a>。</p></div></details>
+  <!-- Adapted from the Brclio Design System app template. © Brclio, CC BY-NC-SA 4.0. -->
+</body>
+</html>

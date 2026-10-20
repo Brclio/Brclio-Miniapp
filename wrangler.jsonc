@@ -1,40 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "brclio-miniapp-web",
-  "account_id": "cacceff607775c81f667b7a951d4639f",
-  "main": "worker/index.mjs",
-  "compatibility_date": "2026-10-01",
-  "workers_dev": true,
-  "preview_urls": false,
-  "routes": [{ "pattern": "pocket.brclio.com", "custom_domain": true }],
-  "assets": {
-    "directory": "./dist/web",
-    "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/wechat/*"]
-  },
-  "vars": {
-    "PUBLIC_ORIGIN": "https://pocket.brclio.com",
-    "EXTRA_ALLOWED_ORIGIN": "https://pocket.bornforthis.cn",
-    "GITHUB_OWNER": "BrclioData",
-    "GITHUB_REPO": "Brclio-Miniapp-Data",
-    "GITHUB_BRANCH": "main",
-    "SYNC_ENABLED": "false"
-  },
-  "ratelimits": [
-    {
-      "name": "API_RATE_LIMITER",
-      "namespace_id": "59153201",
-      "simple": { "limit": 60, "period": 60 }
-    },
-    {
-      "name": "SESSION_RATE_LIMITER",
-      "namespace_id": "59153202",
-      "simple": { "limit": 6, "period": 60 }
-    },
-    {
-      "name": "WRITE_RATE_LIMITER",
-      "namespace_id": "59153203",
-      "simple": { "limit": 30, "period": 60 }
-    }
-  ]
+  "name": "brclio-miniapp-wechat",
+  "pages_build_output_dir": "./dist/web",
+  "compatibility_date": "2026-10-01"
 }

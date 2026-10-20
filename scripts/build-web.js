@@ -3,43 +3,69 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-
+const esbuild = require('esbuild');
+const { bundleGame } = require('./bundle-game');
 const root = path.resolve(__dirname, '..');
-// The initial published collection contains only the wedding lookbook.
-// Retained experimental interactions are deliberately excluded from this build.
-const source = path.join(root, 'web', 'wedding');
-const output = path.join(root, 'dist', 'web');
+const output = path.join(root, 'dist/web');
+const portal = path.join(root, 'web/portal');
+const config = JSON.parse(fs.readFileSync(path.join(root, 'projects.config.json'), 'utf8'));
+const registry = JSON.parse(fs.readFileSync(path.join(portal, 'projects.json'), 'utf8'));
+require('../web/portal/catalog').validateCatalog(registry);
+const version = require('../package.json').version;
+if (registry.version !== version) throw new Error('Portal version differs from package version');
+const retired = '/* Retired. Use the content portal and registered projects. */\n';
 
-// A fixed output directory keeps cleanup away from source and credentials.
+function sourcePath(relative) {
+  if (typeof relative !== 'string' || relative.includes('\\')) throw new Error('Invalid source path');
+  const absolute = path.resolve(root, relative);
+  if (!absolute.startsWith(path.join(root, 'web') + path.sep)) throw new Error('Project source must be inside web/');
+  return absolute;
+}
+function outputPath(base, relative) {
+  const absolute = path.resolve(base, relative);
+  if (!absolute.startsWith(base + path.sep)) throw new Error('Invalid output path');
+  return absolute;
+}
+if (config.schemaVersion !== 1 || !Array.isArray(config.projects)) throw new Error('Invalid project build registry');
+const ids = new Set();
+for (const project of config.projects) {
+  if (!/^[a-z][a-z0-9-]{0,47}$/.test(project.id) || ids.has(project.id)) throw new Error('Invalid or duplicate project ID');
+  if (!['react', 'static', 'canvas'].includes(project.kind)) throw new Error('Unsupported project kind');
+  ids.add(project.id);
+}
+for (const item of registry.projects) {
+  if (item.status === 'active' && (!ids.has(item.id) || item.path !== '/projects/' + item.id + '/')) throw new Error('Published project has no matching build: ' + item.id);
+}
+
+const published = config.projects.filter(function (project) { return registry.projects.some(function (item) { return item.id === project.id && item.status === 'active'; }); });
+// Only generated output is cleared; credentials and source remain outside it.
 fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });
-for (const filename of ['index.html', 'style.css', 'main.js']) {
-  fs.copyFileSync(path.join(source, filename), path.join(output, filename));
-}
-fs.cpSync(path.join(source, 'assets'), path.join(output, 'assets'), { recursive: true });
-
-// Only explicit public files belong here, such as WeChat's domain proof .txt.
-// Source, environment files, and upload keys are never copied to the web output.
-const publicRoot = path.join(root, 'web', 'public');
-if (fs.existsSync(publicRoot)) {
-  for (const item of fs.readdirSync(publicRoot, { withFileTypes: true })) {
-    if (!item.isFile() || !/^(?:MP_verify_)?[A-Za-z0-9_-]{6,64}\.txt$/.test(item.name)) continue;
-    fs.copyFileSync(path.join(publicRoot, item.name), path.join(output, item.name));
+for (const file of ['index.html', 'style.css', 'catalog.js', 'main.js', 'projects.json']) fs.copyFileSync(path.join(portal, file), path.join(output, file));
+for (const project of published) {
+  const folder = path.join(output, 'projects', project.id);
+  const source = sourcePath(project.source);
+  fs.mkdirSync(folder, { recursive: true });
+  if (project.kind === 'react') {
+    esbuild.buildSync({ entryPoints: [outputPath(source, project.entry)], outdir: folder, entryNames: 'main', bundle: true, minify: true, format: 'esm', target: ['es2020'], define: { 'process.env.NODE_ENV': '"production"' }, legalComments: 'eof' });
+    fs.copyFileSync(outputPath(source, project.html), path.join(folder, 'index.html'));
+  } else {
+    for (const file of project.files) fs.copyFileSync(outputPath(source, file), outputPath(folder, file));
+    if (project.kind === 'canvas') {
+      fs.copyFileSync(path.join(root, 'web/runtime.js'), path.join(folder, 'runtime.js'));
+      fs.copyFileSync(path.join(root, 'web/style.css'), path.join(folder, 'style.css'));
+      fs.writeFileSync(path.join(folder, 'bundle.js'), bundleGame().code);
+    }
   }
+  for (const asset of project.assets || []) fs.cpSync(sourcePath(asset.source), outputPath(folder, asset.target), { recursive: true });
 }
-
-fs.writeFileSync(path.join(output, '404.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>页面未找到</title><body><p>页面未找到。<a href="/">返回婚纱灵感图册</a></p></body></html>');
-// Replace previously published script URLs explicitly so CDN caches receive
-// retired content even when deleted assets would otherwise remain cached.
-for (const filename of ['bundle.js', 'runtime.js', 'sync.js', 'config.js']) {
-  fs.writeFileSync(path.join(output, filename), '/* Retired. This release contains only the wedding lookbook. */\n');
+const publicRoot = path.join(root, 'web/public');
+for (const item of fs.readdirSync(publicRoot, { withFileTypes: true })) {
+  if (item.isFile() && /^(?:MP_verify_)?[A-Za-z0-9_-]{6,64}\.txt$/.test(item.name)) fs.copyFileSync(path.join(publicRoot, item.name), path.join(output, item.name));
 }
-fs.writeFileSync(path.join(output, '_headers'),
-  '/*\n' +
-  '  X-Content-Type-Options: nosniff\n' +
-  '  Referrer-Policy: strict-origin-when-cross-origin\n' +
-  '  Permissions-Policy: camera=(), microphone=(), geolocation=()\n' +
-  '  Cache-Control: public, no-cache, no-transform\n' +
-  '/assets/*\n' +
-  '  Cache-Control: public, max-age=86400, no-transform\n');
-console.log('Built ' + output + ' (wedding lookbook only)');
+fs.writeFileSync(path.join(output, '404.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>页面未找到 · Brclio 口袋</title><body style="background:#fefcf6;color:#303128;padding:48px;font-family:system-ui"><p>页面未找到。</p><a href="/" style="color:inherit">返回内容空间</a></body></html>');
+for (const file of ['bundle.js', 'runtime.js', 'sync.js', 'config.js']) fs.writeFileSync(path.join(output, file), retired);
+esbuild.buildSync({ entryPoints: [path.join(root, 'web/pages-worker.mjs')], outfile: path.join(output, '_worker.js'), bundle: true, format: 'esm', target: ['es2020'], define: { __BRCLIO_ACTIVE_PROJECTS__: JSON.stringify(published.map(function (item) { return item.id; })), __BRCLIO_VERSION__: JSON.stringify(version) } });
+fs.writeFileSync(path.join(output, '_routes.json'), JSON.stringify({ version: 1, include: ['/api/*', '/projects/*'], exclude: [] }));
+fs.writeFileSync(path.join(output, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n  Cache-Control: public, no-cache, no-transform\n/projects.json\n  Cache-Control: no-store, no-transform\n');
+console.log('Built one content portal and ' + published.length + ' published projects in ' + output);

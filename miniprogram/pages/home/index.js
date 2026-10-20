@@ -1,7 +1,7 @@
 const catalog = require('../../data/catalog');
 
 Page({
-  data: { features: catalog.features },
+  data: { featured: catalog.getFeature('firstsight') },
 
   openFeature(event) {
     const id = event.currentTarget.dataset.id;
@@ -18,10 +18,10 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: 'Brclio 口袋 · 婚纱灵感图册', path: '/pages/home/index' };
+    return { title: 'Brclio 口袋 · 摄影与生活的内容空间', path: '/pages/home/index' };
   },
 
   onShareTimeline() {
-    return { title: 'Brclio 口袋 · 婚纱灵感图册' };
+    return { title: 'Brclio 口袋 · 摄影与生活的内容空间' };
   }
 });

@@ -4,44 +4,53 @@
       <image class="brand-avatar" src="/assets/avatar.png" mode="aspectFill" aria-label="Brclio 头像" />
       <view>
         <view class="brand-title">Brclio <text class="brand-light">/ 口袋</text></view>
-        <view class="brand-caption">收藏生活里的美好</view>
+        <view class="brand-caption">摄影与生活的内容空间</view>
       </view>
     </view>
     <button class="about-button" bindtap="openAbout" hover-class="button-pressed" aria-label="关于 Brclio 口袋">关于 ↗</button>
   </view>
 
+  <view class="category-nav" aria-label="内容栏目">
+    <view class="category-tab category-tab-active" aria-label="摄影，当前栏目"><text>摄影</text><text class="category-state">已开放</text></view>
+    <button class="category-tab category-tab-link" data-id="relax" bindtap="openFeature" hover-class="button-pressed" aria-label="打开放松栏目，双人反应挑战已开放"><text>放松</text><text class="category-state">已开放</text></button>
+  </view>
+
   <view class="intro">
-    <view class="eyebrow">A LITTLE WEDDING INSPIRATION</view>
-    <view class="intro-title serif">为重要的一天，<view>留一份<text class="highlight">心动灵感。</text></view></view>
-    <view class="intro-copy">从一束自然光、一抹温柔的色彩开始，<view>慢慢找到你喜欢的婚礼模样。</view></view>
+    <view class="eyebrow">A SPACE FOR WHAT MOVES US</view>
+    <view class="intro-title serif">从第一眼开始，<view>收藏<text class="highlight">生活的表达。</text></view></view>
+    <view class="intro-copy">从一束自然光、一抹温柔的色彩开始，<view>先收集一份喜欢的影像灵感。</view></view>
   </view>
 
   <view class="section-heading">
-    <text class="section-title serif">本期灵感</text>
-    <text class="section-index">01 / COLLECTION</text>
+    <text class="section-title serif">本期摄影</text>
+    <text class="section-index">01 / PHOTOGRAPHY</text>
   </view>
 
-  <button wx:for="{{features}}" wx:key="id" class="feature-card" style="width: 100%; display: block;" data-id="{{item.id}}" bindtap="openFeature" hover-class="feature-pressed" aria-label="打开{{item.title}}，{{item.description}}">
+  <button class="feature-card" style="width: 100%; display: block;" data-id="firstsight" bindtap="openFeature" hover-class="feature-pressed" aria-label="打开 FirstSight 婚纱摄影灵感，图片为 AI 生成示例">
     <view class="feature-cover">
-      <image class="cover-image" src="/assets/wedding-garden.jpg" mode="aspectFill" aria-label="AI 生成的花园主题婚纱灵感示意图" />
-      <text class="image-disclosure">AI 生成 · 灵感示意</text>
+      <image class="cover-image" src="/assets/firstsight-cover.jpg" mode="aspectFill" aria-label="AI 生成的婚纱摄影灵感示例" />
+      <text class="image-disclosure">AI 生成 · 摄影灵感示例</text>
     </view>
     <view class="feature-content">
-      <view class="feature-topline"><text class="feature-category">{{item.category}}</text><text class="feature-number">Vol. 01</text></view>
-      <view class="feature-title serif">{{item.title}}</view>
-      <view class="feature-subtitle">花园的温柔 · 海岸的自由</view>
-      <view class="feature-description">{{item.description}}</view>
-      <view class="feature-footer"><text>打开图册</text><text class="feature-arrow" aria-hidden="true">↗</text></view>
+      <view class="feature-topline"><text class="feature-category">{{featured.category}}</text><text class="feature-number">Vol. 01</text></view>
+      <view class="feature-title serif">{{featured.title}}</view>
+      <view class="feature-subtitle">{{featured.subtitle}}</view>
+      <view class="feature-description">{{featured.description}}</view>
+      <view class="feature-footer"><text>浏览摄影灵感</text><text class="feature-arrow" aria-hidden="true">↗</text></view>
     </view>
+  </button>
+
+  <button class="hub-button" style="width: 100%; display: flex;" data-id="content-hub" bindtap="openFeature" hover-class="button-pressed" aria-label="浏览 Brclio 内容空间">
+    <view><view class="hub-button-title">浏览内容空间</view><view class="hub-button-copy">查看已发布的项目与内容</view></view><text class="feature-arrow" aria-hidden="true">↗</text>
   </button>
 
   <view class="collection-note">
     <text class="note-star" aria-hidden="true">✦</text>
-    <view><view class="note-title">灵感，可以慢慢收集</view><view class="note-copy">本期图片均由 AI 生成，仅供风格参考，非真实客户作品。</view></view>
+    <view class="note-body"><view class="note-title">灵感，可以慢慢收集</view><view class="note-copy">本期摄影图片均由 AI 生成，仅供风格参考，非真实客户作品。</view></view>
   </view>
 
   <view class="home-footer">
-    <text class="signature">A small collection of beautiful moments.</text>
+    <text class="signature">A small space for stories worth keeping.</text>
     <button class="text-button privacy-button" bindtap="openPrivacy" hover-class="button-pressed">隐私与数据说明</button>
   </view>
 </view>

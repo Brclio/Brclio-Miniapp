@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fefcf6">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="双人反应挑战：与朋友同屏等待信号，比一比谁先举手。支持 1、3、5 分赛制与本机战绩。">
+  <title>双人反应挑战 · Brclio 口袋</title>
+  <link rel="icon" href="./assets/avatar.png" type="image/png">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./page.css">
+</head>
+<body>
+  <!-- Brclio Design System app template adaptation. Brclio · CC BY-NC-SA 4.0. -->
+  <div class="safe-area-probe" id="safe-area-probe" aria-hidden="true"></div>
+  <main class="app-content" aria-label="双人反应挑战">
+    <h1 class="visually-hidden">双人反应挑战</h1>
+    <div class="game-viewport" id="game-viewport">
+      <canvas id="game-canvas" role="img" tabindex="0" aria-label="双人反应挑战正在打开，可使用鼠标或触摸操作"></canvas>
+      <p class="runtime-status" id="runtime-status" role="status" aria-live="polite">正在准备双人挑战…</p>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <section class="runtime-error" id="runtime-error" aria-labelledby="error-title" hidden>
+        <span class="error-eyebrow">BRCLIO / READY GO DUEL</span>
+        <h2 id="error-title">稍等，挑战还没准备好。</h2>
+        <p id="error-message">请检查网络后重试。</p>
+        <button id="reload" type="button">重新打开 ↗</button>
+        <a class="error-return" href="/?category=relax">返回内容空间</a>
+      </section>
+    </div>
+    <nav class="local-footer" aria-label="内容导航与数据说明">
+      <a class="return-to-space" href="/?category=relax"><span aria-hidden="true">←</span> 返回内容空间</a>
+      <span class="local-record-note">战绩仅存本机</span>
+    </nav>
+  </main>
+  <div class="modal-overlay" id="modal" hidden>
+    <section class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h2 id="modal-title"></h2>
+      <p id="modal-copy"></p>
+      <div class="modal-actions">
+        <button id="modal-cancel" type="button">取消</button>
+        <button id="modal-confirm" type="button">确定</button>
+      </div>
+    </section>
+  </div>
+  <noscript><p class="noscript">双人反应挑战需要启用 JavaScript。<a href="/?category=relax">返回内容空间</a></p></noscript>
+  <script src="./runtime.js"></script>
+  <script src="./local.js"></script>
+  <script src="./bundle.js"></script>
+</body>
+</html>

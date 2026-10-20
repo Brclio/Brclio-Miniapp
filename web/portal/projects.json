@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.1",
+  "intro": {
+    "title": "把喜欢的生活，慢慢放进口袋。",
+    "description": "翻一翻喜欢的影像，也给轻松留一点时间。",
+    "releaseNote": "摄影与放松，本期一起打开"
+  },
+  "categories": [
+    {
+      "id": "photography",
+      "title": "摄影",
+      "status": "active",
+      "eyebrow": "PHOTOGRAPHY / 01",
+      "heading": "让目光，多停留一会。",
+      "description": "翻开一本图册，遇见一种喜欢的光。"
+    },
+    {
+      "id": "relax",
+      "title": "放松",
+      "status": "active",
+      "eyebrow": "LIGHT MOMENTS / 02",
+      "heading": "轻松一下，比比反应。",
+      "description": "两个人，一块屏幕，等一声 GO 再出手。"
+    }
+  ],
+  "projects": [
+    {
+      "id": "firstsight",
+      "category": "photography",
+      "status": "active",
+      "kind": "gallery",
+      "title": "FirstSight · 初见",
+      "subtitle": "把一眼心动，留成一册。",
+      "description": "从光线、色彩和构图出发，慢慢浏览婚纱影像与拍摄风格灵感。",
+      "path": "/projects/firstsight/",
+      "cover": "/projects/firstsight/media/coast.jpg",
+      "coverAlt": "AI 生成的海岸婚纱灵感示意图，非真实客片",
+      "disclosure": "封面为 AI 示例 · 非真实客片",
+      "label": "精选图册",
+      "action": "打开 FirstSight"
+    },
+    {
+      "id": "wedding",
+      "category": "photography",
+      "status": "active",
+      "kind": "gallery",
+      "title": "婚纱灵感图册",
+      "subtitle": "花园的温柔，海岸的自由。",
+      "description": "浏览花园与海岸两种主题的 AI 婚纱示意，收藏喜欢的画面氛围。",
+      "path": "/projects/wedding/",
+      "cover": "/projects/wedding/assets/garden.jpg",
+      "coverAlt": "AI 生成的花园婚纱灵感示意图，非真实客片",
+      "disclosure": "AI 生成 · 灵感示意",
+      "label": "婚礼灵感",
+      "action": "翻开灵感图册"
+    },
+    {
+      "id": "ready-go-duel",
+      "category": "relax",
+      "status": "active",
+      "kind": "reaction",
+      "title": "双人反应挑战",
+      "subtitle": "两个人，一块屏幕。",
+      "description": "等 GO 出现后比一比反应，支持 1 / 3 / 5 分赛制、抢跑判定与本机战绩记录。",
+      "path": "/projects/ready-go-duel/",
+      "cover": "/projects/ready-go-duel/assets/avatar.png",
+      "coverAlt": "Brclio 头像，双人反应挑战入口",
+      "disclosure": "同屏双人 · 本机记录",
+      "label": "轻松互动",
+      "action": "开始反应挑战"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+/* The footer participates in the flex layout and never covers touch controls. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.local-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 1px 18px calc(1px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--cream);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.return-to-space {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 0;
+  color: var(--blue);
+  text-decoration: none;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+.return-to-space:hover { text-decoration: underline; text-underline-offset: 4px; }
+.return-to-space:focus-visible, .error-return:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+.return-to-space:active { opacity: .75; }
+.local-record-note { color: var(--muted); font-size: 10px; }
+.runtime-error h2 { font-family: 'Songti SC', 'Noto Serif SC', serif; font-size: clamp(26px, 6vw, 32px); line-height: 1.4; }
+.error-return { color: var(--blue); font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
+.noscript { z-index: 20; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 18px; }
+.noscript a { color: var(--blue); text-underline-offset: 4px; }
+@media (max-width: 350px) {
+  .local-footer { padding-inline: 13px; gap: 8px; font-size: 10px; }
+  .local-record-note { font-size: 9px; }
+}

@@ -6,7 +6,12 @@
 .brand-light { font-weight: 400; color: #77746e; }
 .brand-caption { font-size: 21rpx; color: #817c72; margin-top: 2rpx; }
 .about-button { flex-shrink: 0; font-size: 23rpx; color: #596b59; padding: 12rpx 0 12rpx 12rpx; background: transparent; }
-.intro { padding: 58rpx 0 48rpx; }
+.category-nav { display: flex; gap: 12rpx; margin-top: 38rpx; border-bottom: 1rpx solid #e6e0d5; }
+.category-tab { display: flex; align-items: baseline; gap: 12rpx; padding: 14rpx 18rpx 18rpx; font-size: 29rpx; }
+.category-tab-active { color: #596b59; border-bottom: 4rpx solid #687861; font-weight: 600; }
+.category-tab-link { background: transparent; color: #687861; text-align: left; }
+.category-state { font-size: 18rpx; font-weight: 400; }
+.intro { padding: 42rpx 0 48rpx; }
 .intro .eyebrow { font-size: 18rpx; letter-spacing: 2rpx; color: #687861; }
 .intro-title { font-size: 47rpx; font-weight: 600; margin-top: 18rpx; line-height: 1.5; letter-spacing: -1rpx; color: #33372f; }
 .highlight { box-shadow: inset 0 -13rpx #e7e7d6; }
@@ -28,7 +33,11 @@
 .feature-description { font-size: 24rpx; color: #77746e; line-height: 1.8; margin-top: 20rpx; }
 .feature-footer { margin-top: 26rpx; border-top: 1rpx solid #e9e4d9; min-height: 88rpx; display: flex; align-items: center; justify-content: space-between; font-size: 26rpx; color: #596b59; font-weight: 600; }
 .feature-arrow { font-size: 37rpx; font-weight: 400; }
+.hub-button { margin-top: 22rpx; padding: 23rpx 28rpx; border: 1rpx solid #e6e0d5; border-radius: 14rpx; background: #f1f1e7; color: #596b59; align-items: center; justify-content: space-between; text-align: left; }
+.hub-button-title { font-size: 27rpx; font-weight: 600; }
+.hub-button-copy { margin-top: 3rpx; font-size: 21rpx; color: #817c72; }
 .collection-note { display: flex; align-items: flex-start; gap: 18rpx; padding: 34rpx 0; }
+.note-body { flex: 1; min-width: 0; }
 .note-star { font-size: 30rpx; color: #b59a7a; line-height: 1.4; }
 .note-title { font-size: 24rpx; font-weight: 600; color: #555e4c; }
 .note-copy { font-size: 22rpx; color: #817c72; margin-top: 6rpx; line-height: 1.8; }

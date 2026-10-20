@@ -1,23 +1,24 @@
 <view class="page-shell">
   <view class="eyebrow">PRIVACY / DATA</view>
   <view class="document-title serif">隐私与数据说明</view>
-  <view class="document-intro">适用于当前版本 Brclio 口袋婚纱灵感图册。更新日期：2026 年 10 月 19 日。</view>
+  <view class="document-intro">适用于当前版本 Brclio 口袋内容空间。更新日期：2026 年 10 月 20 日。</view>
 
   <view class="document-section">
     <text class="document-heading serif">1. 当前提供的服务</text>
-    <text class="document-copy">当前版本为只读的婚纱灵感图册，提供 AI 生成图片的浏览与查看。图片仅作风格参考，不是真实客户作品。无需注册或登录，不提供预约、交易、评论或图片上传。</text>
+    <text class="document-copy">当前版本提供摄影与放松两个栏目：摄影包括 FirstSight 摄影灵感及婚纱灵感图册，支持内容浏览与图片查看；放松提供同一设备上的双人反应挑战。当前摄影图片均由 AI 生成，页面已标注，仅供风格参考，非真实客片。无需注册或登录，不提供预约、交易、评论或图片上传。</text>
   </view>
 
   <view class="document-section">
     <text class="document-heading serif">2. 权限与本机数据</text>
     <text class="document-copy">当前功能不调用微信头像、昵称、手机号、位置、相册、相机、麦克风或通讯录等权限，不要求填写姓名、联系方式等个人资料，也不创建用户档案或云端备份。</text>
-    <text class="document-copy">图片和网页可能由微信产生正常的加载缓存。你可以通过微信设置清理该小程序的缓存；清理后不影响重新浏览图册。</text>
+    <text class="document-copy">双人反应挑战在网页本地存储中保存赛制、振动等使用偏好，以及最近 20 场的对局时间、比分和反应成绩。这些信息仅保存在当前设备，不上传服务器或 GitHub，不提供云备份。可在挑战页面清空本机历史记录。</text>
+    <text class="document-copy">图片和网页可能由微信产生正常的加载缓存。你可以通过微信设置清理该小程序的缓存；清理缓存或网页本地存储可能使本机记录与偏好不再保留，不影响重新浏览和使用。</text>
   </view>
 
   <view class="document-section">
-    <text class="document-heading serif">3. 图册联网与服务提供方</text>
-    <text class="document-copy">打开图册后，小程序通过 web-view 加载 HTTPS 网页。网页与图片由 Cloudflare 托管和分发，为完成请求与保障网络服务安全，服务方可能处理 IP 地址、请求时间、设备或浏览器请求信息等必要的网络信息。</text>
-    <text class="document-copy">当前版本不接入广告或访问行为分析服务，不使用 GitHub 存储用户浏览记录，不要求用户开启云备份。</text>
+    <text class="document-heading serif">3. 内容联网与服务提供方</text>
+    <text class="document-copy">打开内容后，小程序通过 web-view 加载 HTTPS 网页。网页与图片由 Cloudflare 托管和分发，为完成请求与保障网络服务安全，服务方可能处理 IP 地址、请求时间、设备或浏览器请求信息等必要的网络信息。</text>
+    <text class="document-copy">当前版本不接入广告或访问行为分析服务，不上传用户浏览记录、双人反应对局记录或使用偏好，也不提供云备份。</text>
   </view>
 
   <view class="document-section">
