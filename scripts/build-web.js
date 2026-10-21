@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const esbuild = require('esbuild');
 const { execFileSync } = require('node:child_process');
+const { createRequire } = require('node:module');
 const { bundleGame } = require('./bundle-game');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist/web');
@@ -52,7 +53,9 @@ for (const project of published) {
   const source = sourcePath(project.source);
   fs.mkdirSync(folder, { recursive: true });
   if (project.kind === 'react') {
-    esbuild.buildSync({ entryPoints: [outputPath(source, project.entry)], outdir: folder, entryNames: 'main', bundle: true, minify: true, format: 'esm', jsx: 'automatic', target: ['es2020'], define: { 'process.env.NODE_ENV': '"production"' }, legalComments: 'eof' });
+    const runtime = project.runtimePackage ? createRequire(require.resolve(project.runtimePackage + '/package.json', { paths: [root] })) : null;
+    const alias = runtime ? Object.fromEntries(['react', 'react-dom', 'lucide-react'].map(function (name) { return [name, path.dirname(runtime.resolve(name + '/package.json'))]; })) : undefined;
+    esbuild.buildSync({ entryPoints: [outputPath(source, project.entry)], outdir: folder, entryNames: 'main', bundle: true, minify: true, format: 'esm', jsx: 'automatic', target: ['es2020'], define: { 'process.env.NODE_ENV': '"production"' }, alias: alias, legalComments: 'eof' });
     fs.copyFileSync(outputPath(source, project.html), path.join(folder, 'index.html'));
     if (project.tailwind) {
       // Compile the original Tailwind 3 utilities locally; no browser CDN runtime.

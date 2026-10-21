@@ -1330,6 +1330,10 @@ export default function App() {
                                 <Save size={18}/> 保存
                             </button>
                         </div>
+                        <nav aria-label="内容空间导航" className="flex justify-center gap-4 mt-4 pt-3 border-t border-gray-100 text-xs text-gray-400">
+                            <a className="hover:text-indigo-600" href="/?category=relax">返回内容空间</a>
+                            <a className="hover:text-indigo-600" href="./match/">计分扩展</a>
+                        </nav>
                     </div>
                 </div>
             )}

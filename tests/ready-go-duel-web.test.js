@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const vm = require('node:vm');
-const { transformSync } = require('esbuild');
+const { createRequire } = require('node:module');
+const { buildSync, transformSync } = require('esbuild');
 const { adaptOriginal } = require('../web/projects/ready-go-duel/adapt-original.cjs');
 
 const root = path.resolve(__dirname, '..');
@@ -28,12 +29,58 @@ test('the registered default is original React and preserves the existing scorin
   assert.equal(project.tailwind, 'index.css');
   assert.equal(project.canvasExtension.target, 'match');
   const html = fs.readFileSync(path.join(moduleRoot, project.html), 'utf8');
-  assert.match(html, /class="module-navigation"/);
-  assert.match(html, /href="\.\/match\/"/);
+  assert.doesNotMatch(html, /<footer\b|module-navigation/);
   assert.match(html, /src="\.\/main\.js"/);
+  assert.equal(fs.readFileSync(path.join(moduleRoot, project.tailwind), 'utf8'), '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n');
+  const app = fs.readFileSync(path.join(moduleRoot, 'App.tsx'), 'utf8');
+  const settingsStart = app.indexOf('{showSettingsModal && (');
+  const settingsEnd = app.indexOf('{/* 彩头输入弹窗 */}', settingsStart);
+  assert.ok(settingsStart >= 0 && settingsEnd > settingsStart, 'settings remain an explicit modal section');
+  const settings = app.slice(settingsStart, settingsEnd);
+  assert.match(settings, /<nav aria-label="内容空间导航"/);
+  assert.match(settings, /href="\/\?category=relax">返回内容空间<\/a>/);
+  assert.match(settings, /href="\.\/match\/">计分扩展<\/a>/);
   const extension = fs.readFileSync(path.join(moduleRoot, 'match/index.html'), 'utf8');
   assert.match(extension, /src="\.\/bundle\.js"/);
   assert.match(extension, /href="\.\.\/"/);
+});
+
+test('the actual ReadyGo bundle isolates its upstream runtime while root consumers retain their existing versions', () => {
+  const registry = JSON.parse(fs.readFileSync(path.join(root, 'projects.config.json'), 'utf8'));
+  const project = registry.projects.find(item => item.id === 'ready-go-duel');
+  assert.equal(project.runtimePackage, '@brclio/ready-go-duel-runtime');
+  // Resolve through the same configured workspace and package-root aliases as
+  // build-web.js, including React's JSX runtime and React DOM's client subpath.
+  const runtime = createRequire(require.resolve(project.runtimePackage + '/package.json', { paths: [root] }));
+  const alias = Object.fromEntries(['react', 'react-dom', 'lucide-react'].map(name => [name, path.dirname(runtime.resolve(name + '/package.json'))]));
+  const options = { absWorkingDir: root, bundle: true, write: false, metafile: true, minify: true,
+    format: 'esm', jsx: 'automatic', target: ['es2020'], define: { 'process.env.NODE_ENV': '"production"' } };
+  const isolated = buildSync({ ...options, entryPoints: [path.join(root, project.source, project.entry)], alias });
+  const existing = buildSync({ ...options, stdin: { loader: 'tsx', resolveDir: root, sourcefile: 'root-runtime-fixture.tsx',
+    contents: "import { createRoot } from 'react-dom/client'; import { Hand } from 'lucide-react'; createRoot(document.getElementById('root')!).render(<Hand />);" } });
+
+  function assertDependencies(metafile, expected) {
+    const packages = new Map(Object.keys(expected).map(name => [name, new Map()]));
+    for (const input of Object.keys(metafile.inputs)) {
+      const normalized = input.replace(/\\/g, '/');
+      const match = normalized.match(/(?:^|\/)node_modules\/(react|react-dom|lucide-react)\//);
+      if (!match) continue;
+      const marker = 'node_modules/' + match[1] + '/';
+      const folder = fs.realpathSync(path.resolve(root, normalized.slice(0, normalized.indexOf(marker) + marker.length - 1)));
+      const dependency = JSON.parse(fs.readFileSync(path.join(folder, 'package.json'), 'utf8'));
+      packages.get(match[1]).set(folder, dependency.version);
+    }
+    for (const [name, version] of Object.entries(expected)) {
+      const instances = packages.get(name);
+      assert.equal(instances.size, 1, name + ' must have exactly one physical package in this bundle');
+      assert.deepEqual([...instances.values()], [version], name + ' must resolve the expected version');
+    }
+  }
+  assertDependencies(isolated.metafile, { react: '19.2.1', 'react-dom': '19.2.1', 'lucide-react': '0.556.0' });
+  assertDependencies(existing.metafile, { react: '18.3.1', 'react-dom': '18.3.1', 'lucide-react': '0.460.0' });
+  const inputs = Object.keys(isolated.metafile.inputs).map(input => fs.realpathSync(path.resolve(root, input)));
+  assert.ok(inputs.includes(fs.realpathSync(path.join(alias.react, 'jsx-runtime.js'))), 'automatic JSX uses the isolated React runtime');
+  assert.ok(inputs.includes(fs.realpathSync(path.join(alias['react-dom'], 'client.js'))), 'createRoot uses the isolated React DOM client');
 });
 
 test('the approved voice removal leaves no microphone, recording or replay capability', () => {

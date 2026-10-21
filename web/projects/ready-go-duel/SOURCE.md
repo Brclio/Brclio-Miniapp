@@ -7,7 +7,9 @@
 - 原始快照去除末尾空白后的 SHA-256：`12a816d6451e45be34d4a9c9cd9b583a2ee088ed40a74b69a08e1d8578777363`。`tests/ready-go-duel-web.test.js` 校验原始快照指纹及当前运行源码严格等于获准变换的结果，另检查运行源码无麦克风／录音／回放能力。
 - `assets/ReadyGoDuel.png` 为原作引用的 [原始二维码](https://ai.bornforthis.cn/images/ReadyGoDuel.png) 的逐字节副本（350 × 350）；SHA-256：`8fc05e6375191a56647947fe8507915d7ac5af83f4e2e55f88821cb566fa1e6d`。
 
-默认入口 `/projects/ready-go-duel/` 渲染原版 React 界面。React、图标与 Tailwind 3 样式在本地构建后随站点发布；不依赖浏览器中的样式 CDN。与原作一致的 Tailwind 默认主题扫描原组件。底部另占一行提供返回内容空间和计分扩展入口，不覆盖双方操作区；原版 DIY / PV 挂件位于此导航之上。
+默认入口 `/projects/ready-go-duel/` 渲染原版 React 界面。React、图标与 Tailwind 3 样式在本地构建后随站点发布；不依赖浏览器中的样式 CDN。与原作一致的 Tailwind 默认主题扫描原组件。宿主只保留原作的三条 Tailwind 指令，不增加页脚或覆盖游戏高度；游戏保持 `100dvh`，DIY / PV 挂件保持原作的右侧、底部各 12px。返回内容空间和计分扩展入口收在设置面板内。
+
+独立 workspace `packages/ready-go-duel-runtime` 按原作 lockfile 固定 React／React DOM `19.2.1`、lucide-react `0.556.0`，Tailwind 为 `3.4.17`。构建按模块隔离这些依赖，包含 JSX runtime、DOM client 与 scheduler，避免全站共用旧图标版本导致原作图标形状改变；摄影及其他根依赖消费者继续使用原有版本。
 
 `/projects/ready-go-duel/match/` 保留原有 1 / 3 / 5 分赛制、同时触碰／超时判定、触感设置与最近 20 场本机战绩扩展，使用现有 `minigame/lib/duel-engine.js`、`game-app.js`、`storage.js` 和浏览器 Canvas 适配。两个入口对所有用户公开，不按审核身份或日期切换功能。
 
@@ -24,6 +26,16 @@
 `projects.config.json` 登记为 React 模块，`scripts/build-web.js` 使用 esbuild 打包 `main.tsx` 为 `main.js`，使用固定版本 Tailwind 3.4.17 编译 `index.css` 为 `main.css`，复制 `index.html` 与 `assets/`。同一构建另外生成 `match/` 下的 HTML、脚本、基础样式与 Canvas `bundle.js`。原始快照与变换脚本不复制到发布目录。
 
 ## 本地验证记录
+
+2026-10-22 根据用户要求再次核对固定上游版本，恢复原宿主全屏布局并隔离原作运行依赖。`node scripts/build-web.js` 构建通过；网页专项 5 项检查通过，新增实际 esbuild 元图验证：ReadyGo 包内只有一份 React／DOM `19.2.1` 和 lucide-react `0.556.0`，根消费者仍为 `18.3.1`／`0.460.0`。测试同时约束无宿主页脚、精确原 CSS，以及设置内扩展入口。
+
+将本轮待提交快照独立导出后，`npm ci --ignore-scripts`、`npm run build`、全量 175 项测试和 `npm run check:release` 均通过；导出产物的 ReadyGo `index.html`、`main.js`、`main.css` 与浏览器实测产物逐字节一致。此记录只覆盖该快照，不包括工作区中其他并行开发内容。
+
+IAB 本轮在 1280×720 实际确认游戏高 720px、无页面溢出、DIY / PV 距右下各 12px；完成试听按钮、彩头输入、等待→GO→A 键获胜→揭晓→600×800 原版单局 PNG，以及无限模式 L 键抢跑→1:0 汇总→600×1000 原版总 PNG。390×844、320×568 均确认游戏占满视口、无横向或整页溢出，设置中的保存／取消及扩展入口完整可见，并实际从设置进入计分扩展。控制台无错误或警告；未把浏览器按钮调用等同于设备扬声器实际听感。
+
+本轮本机审阅截图位于 `artifacts/ready-go-duel/web-original-2026-10-22/`，不随站点构建发布。本轮仅修复独立网页，未重新上传小程序，也未执行 Pages 部署。
+
+### 此前验证
 
 2026-10-21 使用 `node scripts/build-web.js` 成功构建；`node --test tests/ready-go-duel-web.test.js` 的 4 项检查通过：固定来源及获准变换、默认入口与计分扩展、无麦克风能力及禁用策略、实际音频合成函数的开始／GO／试听／抢跑／胜利音参数。
 

@@ -65,6 +65,15 @@ function adaptOriginal(original) {
   replace('{isSavingAudio ? <Loader2 size={20} className="animate-spin" /> : <RotateCcw size={20} />}', '<RotateCcw size={20} />');
   // Retain the original triangle test tone in settings after removing mic precheck.
   replace('<Settings className="text-indigo-600"/> 游戏设置', '<Settings className="text-indigo-600"/> 游戏设置\n                            <button onClick={() => safePlaySound(\'test\', gameMode)} className="ml-auto flex items-center gap-1 text-xs text-indigo-500 font-bold" title="试听音效"><Music size={14}/> 试听</button>');
+  // Keep portal navigation and the optional score mode inside settings so the
+  // original full-height court and bottom-right DIY/PV widget remain untouched.
+  const settingsEnd = '                        </div>\n                    </div>\n                </div>\n            )}\n';
+  const settingsStart = source.indexOf('            {/* 综合设置面板 */}');
+  const settingsClose = source.indexOf(settingsEnd, settingsStart);
+  if (settingsStart < 0 || settingsClose < 0) throw new Error('Original settings footer missing');
+  const navigation = '\n                        <nav aria-label="内容空间导航" className="flex justify-center gap-4 mt-4 pt-3 border-t border-gray-100 text-xs text-gray-400">\n                            <a className="hover:text-indigo-600" href="/?category=relax">返回内容空间</a>\n                            <a className="hover:text-indigo-600" href="./match/">计分扩展</a>\n                        </nav>';
+  const navigationAt = settingsClose + '                        </div>'.length;
+  source = source.slice(0, navigationAt) + navigation + source.slice(navigationAt);
   replace("{gameMode === 'VOICE' ? '声控模式' : (gameMode === 'INFINITE' ? '无限模式' : '触摸模式')}", "{gameMode === 'INFINITE' ? '无限模式' : '触摸模式'}");
   replace("{gameMode === 'VOICE' ? '谁先发声谁赢' : (gameMode === 'INFINITE' ? '无限世界挑战' : '双人反应对决')}", "{gameMode === 'INFINITE' ? '无限世界挑战' : '双人反应对决'}");
   replace('                            {gameMode === \'VOICE\' && <>看到 <strong className="text-rose-500">GO</strong> 信号时，立即喊出声音。</>}\n', '');

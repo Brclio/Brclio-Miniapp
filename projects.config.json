@@ -43,6 +43,7 @@
       "entry": "main.tsx",
       "html": "index.html",
       "tailwind": "index.css",
+      "runtimePackage": "@brclio/ready-go-duel-runtime",
       "canvasExtension": {
         "source": "match",
         "target": "match",
