@@ -29,7 +29,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', require('../package.json').version, '--desc', 'Brclio 悦创：原生摄影与同屏反应挑战；内置169张真实摄影，默认本机保存战绩；可选Brclio共享账号，经覆盖预览后手动备份恢复。', '--info-output', path.join(root, 'artifacts/wechat-upload.json')]
+    upload: ['upload', '--project', root, '--version', require('../package.json').version, '--desc', 'Brclio 悦创：9组169张本地摄影与可缩放大图；原生触摸/无限双人挑战，保留开始/GO/胜负音效、彩头和个性设置；品牌战报使用真实小程序码；1/3/5分为独立计分扩展；共享账号可选，覆盖预览确认后手动备份恢复。', '--info-output', path.join(root, 'artifacts/wechat-upload.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');
