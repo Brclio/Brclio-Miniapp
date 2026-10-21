@@ -1,3 +1,7 @@
+# 2026-10-22 悦学增量验收
+
+「悦学 / 词了个词」已完成源码接入、242 项测试、发布检查、网页正式域名端到端验证、1,425 个在线资源字节校验及微信模拟器真实通关。最终网页与远程资源部署为 [ae91a338](https://ae91a338.brclio-miniapp-wechat.pages.dev)。当前小程序 request 合法域名校验仍未通过；本轮没有上传包含悦学的新开发包、提交审核或正式发布。完整证据和待办见 [LINGOTILES_VERIFICATION.md](LINGOTILES_VERIFICATION.md)，功能与来源对照见 [LINGOTILES_PARITY.md](LINGOTILES_PARITY.md)。以下历史记录保留各自阶段边界。
+
 # 2026-10-21 小程序 0.1.1 开发包上传
 
 23:42（Asia/Shanghai），微信开发者工具 Stable `2.02.2608080` 明确显示“代码上传成功”。本次版本 `0.1.1`，AppID `wx59aa532fbf6fa540`，源码提交 `7cc2bfa22b920bec537804738a022f9d68f72667`，上传备注涵盖 169 张摄影、触摸／无限挑战、原音效、品牌战报真实小程序码、独立计分和可选账号备份。截图为 `artifacts/ready-go-duel/wechat-upload-0.1.1-success.png`，本地源码清单为 `artifacts/ready-go-duel/wechat-0.1.1-source-manifest.json`。清单记录 385 个本地源文件；微信编译和无依赖过滤可能改变实际传输包，不能将本地清单冒充上传二进制指纹。

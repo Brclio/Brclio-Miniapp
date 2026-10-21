@@ -59,6 +59,23 @@
           }
         ]
       }
+    },
+    {
+      "id": "lingotiles",
+      "kind": "react",
+      "source": "web/projects/lingotiles",
+      "entry": "main.tsx",
+      "html": "index.html",
+      "assets": [
+        {
+          "source": "web/projects/lingotiles/public/vocabulary",
+          "target": "vocabulary"
+        },
+        {
+          "source": "web/projects/lingotiles/public/images",
+          "target": "images"
+        }
+      ]
     }
   ]
 }

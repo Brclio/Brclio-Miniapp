@@ -9,7 +9,12 @@
   };
   let catalog = null;
   let loading = false;
-  const views = ['photography', 'relax', 'mine'];
+  const views = ['photography', 'relax', 'learn', 'mine'];
+  const viewCopy = {
+    photography: { title: '摄影', page: '生活的切片', eyebrow: 'THROUGH THE LENS / 摄影', start: '把日常，', end: '看成风景。', description: '有些瞬间，值得多看一眼。', label: '本期精选 ', english: 'SELECTED STORIES', note: 'A little pause.', aside: 'A different view.', unit: '个影像项目' },
+    relax: { title: '放松', page: '放松一下', eyebrow: 'TAKE A LITTLE BREAK / 放松', start: '认真生活，', end: '轻松一下。', description: '放下忙碌，和身边的人分享一点快乐。', label: '从这一局开始 ', english: 'PLAY A LITTLE', note: 'Less rush.', aside: 'More fun.', unit: '个轻松体验' },
+    learn: { title: '悦学', page: '每天学一点', eyebrow: 'A LITTLE EVERY DAY / 悦学', start: '每天学一点，', end: '好奇多一点。', description: '让单词在指尖重逢，把记忆变成小小收获。', label: '从一个单词开始 ', english: 'LEARN A LITTLE', note: 'Small steps.', aside: 'Growing every day.', unit: '个学习项目' }
+  };
   function readView() {
     const value = new URLSearchParams(window.location.search).get('category');
     return views.includes(value) ? value : 'photography';
@@ -22,12 +27,14 @@
     return element;
   }
   function projectCard(project, index) {
-    const link = node('a', 'project-card' + (project.kind === 'reaction' ? ' project-card--reaction' : ''));
+    const link = node('a', 'project-card' + (project.kind === 'reaction' ? ' project-card--reaction' : project.kind === 'learning' ? ' project-card--learning' : ''));
     link.href = project.path;
     link.setAttribute('aria-label', project.action + '，' + project.description);
     const visual = node('div', 'project-visual');
     if (project.kind === 'reaction') {
       visual.appendChild(byId('duel-art').content.cloneNode(true));
+    } else if (project.kind === 'learning') {
+      visual.appendChild(byId('learning-art').content.cloneNode(true));
     } else {
       const image = node('img', 'project-image');
       image.src = project.cover;
@@ -39,7 +46,7 @@
       image.addEventListener('error', function () {
         image.hidden = true;
         visual.classList.add('image-unavailable');
-        visual.appendChild(node('span', 'unavailable-copy', '封面暂不可用 · 仍可打开图册'));
+        visual.appendChild(node('span', 'unavailable-copy', '封面暂不可用 · 仍可打开项目'));
       }, { once: true });
       visual.appendChild(image);
     }
@@ -60,14 +67,14 @@
   function renderProjects() {
     if (!catalog || selectedView === 'mine') return;
     const projects = window.BrclioCatalog.activeProjects(catalog, selectedView);
-    const relax = selectedView === 'relax';
-    byId('project-count').textContent = relax ? projects.length + ' 个轻松体验' : projects.length + ' 个影像项目';
+    const copy = viewCopy[selectedView];
+    byId('project-count').textContent = projects.length + ' ' + copy.unit;
     elements.grid.replaceChildren();
     elements.grid.classList.toggle('project-grid--single', projects.length === 1);
     projects.forEach(function (project, index) { elements.grid.appendChild(projectCard(project, index)); });
     elements.grid.hidden = projects.length === 0;
     elements.empty.hidden = projects.length > 0;
-    elements.status.textContent = (relax ? '放松' : '摄影') + '，' + projects.length + ' 个可浏览项目。';
+    elements.status.textContent = copy.title + '，' + projects.length + ' 个可浏览项目。';
   }
   function selectView(id, updateHistory) {
     if (!views.includes(id)) return;
@@ -79,6 +86,8 @@
     selectedView = id;
     const mine = id === 'mine';
     const relax = id === 'relax';
+    const learn = id === 'learn';
+    const copy = viewCopy[id];
     elements.collections.hidden = mine;
     elements.mine.hidden = !mine;
     document.querySelectorAll('.main-nav [data-view]').forEach(function (link) {
@@ -87,18 +96,19 @@
       if (active) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
-    byId('breadcrumb').textContent = mine ? '我的' : relax ? '放松' : '摄影';
-    document.title = (mine ? '我的' : relax ? '放松一下' : '生活的切片') + ' · Brclio 悦创';
+    byId('breadcrumb').textContent = mine ? '我的' : copy.title;
+    document.title = (mine ? '我的' : copy.page) + ' · Brclio 悦创';
     if (!mine) {
-      elements.eyebrow.textContent = relax ? 'TAKE A LITTLE BREAK / 放松' : 'THROUGH THE LENS / 摄影';
-      elements.title.replaceChildren(document.createTextNode(relax ? '认真生活，' : '把日常，'), node('span', '', relax ? '轻松一下。' : '看成风景。'));
-      elements.description.textContent = relax ? '放下忙碌，和身边的人分享一点快乐。' : '有些瞬间，值得多看一眼。';
+      elements.eyebrow.textContent = copy.eyebrow;
+      elements.title.replaceChildren(document.createTextNode(copy.start), node('span', '', copy.end));
+      elements.description.textContent = copy.description;
       const label = byId('section-label');
-      label.replaceChildren(document.createTextNode(relax ? '从这一局开始 ' : '本期精选 '), node('span', '', relax ? 'PLAY A LITTLE' : 'SELECTED STORIES'));
-      byId('heading-note').replaceChildren(document.createTextNode(relax ? 'Less rush.' : 'A little pause.'), node('br'), node('i', '', relax ? 'More fun.' : 'A different view.'), node('span', '', '↙'));
-      byId('album-section').hidden = relax;
-      byId('pocket-line').hidden = relax;
+      label.replaceChildren(document.createTextNode(copy.label), node('span', '', copy.english));
+      byId('heading-note').replaceChildren(document.createTextNode(copy.note), node('br'), node('i', '', copy.aside), node('span', '', '↙'));
+      byId('album-section').hidden = relax || learn;
+      byId('pocket-line').hidden = relax || learn;
       byId('relax-guide').hidden = !relax;
+      byId('learning-guide').hidden = !learn;
       renderProjects();
     }
     if (updateHistory) {
@@ -122,6 +132,17 @@
     });
     guide.append(steps, node('p', 'relax-note', 'A small break goes a long way.'));
     byId('pocket-line').after(guide);
+    const learningGuide = node('section', 'learning-guide');
+    learningGuide.id = 'learning-guide';
+    learningGuide.setAttribute('aria-label', '词了个词学习方法');
+    [['01', '先看一眼', '选好主题或学习阶段，记住本关词表。'], ['02', '让三张牌重逢', '英文、词性与中文含义，配成一组。'], ['03', '把收获留下', '翻单词本、收藏生词，回看通关足迹。']].forEach(function (step) {
+      const item = node('div');
+      const text = node('div');
+      text.append(node('h3', '', step[1]), node('p', '', step[2]));
+      item.append(node('span', '', step[0]), text);
+      learningGuide.appendChild(item);
+    });
+    guide.after(learningGuide);
   }
   async function loadCatalog() {
     if (loading) return;

@@ -1,0 +1,202 @@
+/* Mobile app layout adapted from Brclio Design System's app template.
+   © Brclio · CC BY-NC-SA 4.0. */
+:root { --blue:#2b7fd8; --yellow:#f4d758; --red:#e84a5f; --green:#2b7fd8; --green-soft:#eef3f8; --ink:#1a1a2e; --line:#e3dfd5; }
+body { min-width:320px; }
+button, input, select { min-height:44px; }
+button { transition:background .15s, opacity .15s; }
+button:active { opacity:.75; }
+.app { max-width:1100px; }
+.app-header { position:sticky; top:0; z-index:20; background:var(--bg); height:76px; margin:0; padding:0 clamp(16px,4vw,40px); gap:20px; }
+.brand-copy { font-size:23px; }
+.brand-copy small { font-size:13px; }
+.brand-icon { width:32px; height:34px; font-size:23px; }
+.main-nav { gap:20px; }
+.header-right { gap:10px; }
+.header-right .streak { display:none; }
+.portal-return { font-size:12px; text-decoration:none; color:var(--blue); min-height:44px; display:flex; align-items:center; white-space:nowrap; }
+.icon-button, .pronounce, .save-button { width:44px; height:44px; min-width:44px; }
+.workspace { padding:clamp(18px,3vw,32px) clamp(16px,4vw,40px) 0; }
+.page-heading h1 { font-size:clamp(21px,3vw,28px); text-align:left; }
+.page-heading p { line-height:1.8; }
+.date-note { display:none; }
+.arena { background:#eef3f8; border-radius:14px; }
+.arena-header { padding:18px 20px 0; }
+.level-label, .phase-label { color:#38618c; letter-spacing:0; }
+.level-label span { background:#d9e7f5; }
+.side-panel { border-radius:12px; box-shadow:none; }
+.game-layout { grid-template-columns:minmax(0,1fr) 290px; gap:20px; }
+.ready-scene { text-align:left; padding:28px; }
+.ready-scene h2 { color:var(--ink); font-size:30px; }
+.ready-scene > p { color:var(--muted); line-height:1.8; }
+.sample-trio { gap:10px; }
+.sample-card { max-width:27%; width:106px; height:100px; }
+.match-caption { color:#38618c; }
+.learning-mode { background:#f0ece1; }
+.learning-mode > button.active { color:var(--blue); }
+.fusion-setting-copy strong { color:var(--blue); }
+.stage-choice.active { background:#edf3f9; border-color:var(--blue); }
+.stage-track { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.stage-choice { grid-template-columns:24px 1fr; }
+.stage-index { display:grid; }
+.stage-density { grid-column:1/3; }
+.course-detail { flex-direction:column; align-items:stretch; gap:16px; }
+.round-navigation { justify-content:center; }
+.level-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.level-card, .level-card.selected { padding:16px; border-radius:8px; }
+.level-card.selected { background:#edf3f9; border-color:var(--blue); }
+.level-card h3 { font-size:14px; }
+.level-symbol { position:static; margin:10px 0; }
+.level-card:nth-child(n) .level-symbol { background:#f4e7ab; color:#715d21; }
+.memory-header h2, .ready-scene h2, .memory-header p, .board-caption, .tray-heading, .board-legend { color:#38618c; }
+.memory-grid { gap:12px; padding:20px; }
+.memory-card { border-color:var(--line); padding:16px; }
+.memory-word { font-size:24px; }
+.board-wrapper { padding:8px 14px 0; }
+.tile { border-color:#bccce0; box-shadow:0 4px 0 #aabdd5; }
+.tile:not(:disabled):hover { transform:none; }
+.tile:disabled { filter:brightness(.86) saturate(.55); }
+.tile.hinted { outline-offset:1px; }
+.tray { background:#dce7f3; }
+.tray-slot { background:#c6d5e7; }
+.tray-area { border-color:#c8d7e9; }
+.tool-button { color:var(--blue); }
+.match-feedback { background:#edf3f9; }
+.result-content h2 { color:var(--ink); font-size:clamp(23px,4vw,30px); }
+.notebook-heading h1 { font-size:24px; font-family:'Noto Serif SC','Songti SC',serif; }
+.notebook-row { padding:20px 0; }
+.notebook-meaning { line-height:1.8; }
+.dictionary-controls select { min-height:44px; }
+.dictionary-pagination { gap:8px; }
+.dictionary-pagination .secondary-button { padding-inline:12px; }
+.app-footer { line-height:1.8; padding-bottom:24px; }
+.toast { max-width:calc(100vw - 32px); width:max-content; line-height:1.7; }
+dialog { max-height:85dvh; max-width:560px; }
+.rule-list { padding-left:0; list-style:none; }
+.word-harvest { border-color:#bdccde; box-shadow:0 3px 0 #dce4ef; }
+@media (max-width:900px) {
+  .app { max-width:680px; padding-bottom:calc(78px + env(safe-area-inset-bottom)); }
+  .app-header { height:64px; min-height:64px; flex-wrap:nowrap; padding-top:0; gap:12px; }
+  .brand-copy small { display:inline-block; }
+  .main-nav { position:fixed; bottom:0; left:0; right:0; width:auto; margin:0; height:calc(64px + env(safe-area-inset-bottom)); padding:4px 8px env(safe-area-inset-bottom); display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; background:var(--bg); border-top:1px solid var(--line); z-index:25; overflow:visible; }
+  .nav-button { font-size:11px; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:4px; border-bottom:0; border-top:2px solid transparent; white-space:nowrap; }
+  .nav-button.active { border-top-color:var(--blue); border-bottom:0; background:#edf3f9; border-radius:6px; }
+  .header-right { margin-left:auto; }
+  .workspace { padding-top:20px; }
+  .game-layout, .game-layout.ready, .game-layout.memory, .game-layout.playing { display:flex; flex-direction:column; gap:16px; }
+  .arena, .side-column { width:100%; }
+  .game-layout.ready .side-column { order:-1; }
+  .ready-controls { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 16px; padding:18px; }
+  .ready-controls .side-eyebrow, .ready-controls h2, .ready-controls .side-description { grid-column:1; }
+  .ready-controls h2 { font-size:18px; }
+  .ready-controls .side-description { font-size:12px; }
+  .ready-controls .round-facts { grid-column:2; grid-row:1/4; margin:0; align-self:center; }
+  .ready-controls .round-facts > div + div { padding-left:12px; }
+  .ready-controls .duration-picker { grid-column:1/3; margin-top:16px; }
+  .ready-controls .start-group { grid-column:1/3; margin-top:14px; }
+  .ready-controls .start-button { margin-top:0; }
+  .ready .stats-strip { margin-top:16px; }
+  .ready .tiny-tip { margin-top:12px; }
+  .ready-scene { padding:20px; }
+  .ready-scene h2 { font-size:25px; }
+  .sample-trio { margin:20px auto 10px; }
+  .sample-card { width:104px; height:90px; }
+  .arena-bottom { margin:0 20px; gap:15px; }
+  .arena { min-height:0; }
+  .memory .side-column { order:-1; position:sticky; top:64px; z-index:12; }
+  .memory-controls { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:0 12px; padding:14px 16px; background:var(--bg); }
+  .memory-controls .side-eyebrow, .memory-controls h2, .memory-controls .memory-tip { grid-column:1; }
+  .memory-controls h2 { font-size:18px; }
+  .memory-controls .memory-tip { font-size:11px; margin-top:4px; }
+  .memory-controls .timer { grid-column:2; grid-row:1/4; width:74px; height:74px; border-width:4px; margin:0; }
+  .timer strong { font-size:28px; }
+  .timer span { font-size:9px; }
+  .memory-controls .start-button { grid-column:1/3; margin-top:12px; }
+  .memory-controls .subnote { grid-column:1/3; }
+  .memory .stats-strip, .memory .tiny-tip, .playing .stats-strip, .playing .tiny-tip { display:none; }
+  .memory-grid { grid-template-columns:1fr; padding:16px; }
+  .memory-card.has-illustration { gap:16px; }
+  .memory-image { width:88px; height:88px; }
+  .playing .side-column { order:1; }
+  .play-controls { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; padding:16px; }
+  .play-controls > .side-eyebrow, .play-controls > h2 { grid-column:1; }
+  .play-controls h2 { font-size:18px; }
+  .play-controls .score-row { grid-column:2; grid-row:1/3; margin:0; }
+  .play-controls .progress-section { grid-column:1/3; margin-top:12px; }
+  .play-controls .match-feedback { grid-column:1/3; margin-top:12px; min-height:44px; }
+  .play-controls .tool-row { grid-column:1/3; padding-top:0; border:0; margin-top:12px; gap:10px; }
+  .tool-button { flex-direction:row; padding:12px; min-height:48px; gap:8px; }
+  .play-controls .round-actions { grid-column:1/3; }
+  .phase-playing.view-game .workspace { display:flex; flex-direction:column; }
+  .phase-playing .page-heading { order:0; margin-bottom:14px; }
+  .phase-playing .game-layout { order:1; }
+  .phase-playing .learning-options { order:2; margin:20px 0 0; }
+  .phase-playing .journey { order:3; }
+  .tile-board.compact-board { max-width:350px; }
+  .tile-content { font-size:clamp(12px,3.8vw,20px); }
+  .tile-kind { font-size:9px; }
+  .playing .tray-area { width:calc(100% - 24px); padding:12px 0 16px; }
+  .tray { gap:4px; padding:5px; }
+  .tray-readout { display:block; font-size:12px; color:#38618c; overflow-wrap:anywhere; line-height:1.8; margin-top:10px; }
+  .board-caption { padding-bottom:10px; }
+  .learning-options { gap:8px; margin-bottom:16px; }
+  .learning-options .learning-mode { width:100%; gap:4px; }
+  .learning-mode > button { flex:1; gap:6px; flex-wrap:wrap; font-size:14px; padding:9px; }
+  .learning-mode > button > span { display:block; width:100%; margin:0; font-size:10px; }
+  .fusion-setting { gap:8px; }
+  .fusion-setting-copy p { font-size:10px; }
+  .stage-track { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .stage-choice { padding:12px; gap:4px 8px; }
+  .stage-choice strong { font-size:13px; }
+  .stage-density { padding-top:5px; }
+  .round-navigation { gap:5px; }
+  .round-navigation form { gap:4px; }
+  .round-navigation input { width:54px; }
+  .course-detail h3 span { display:block; font-size:11px; margin-top:6px; }
+  .section-heading { align-items:flex-start; flex-direction:column; gap:5px; }
+  .level-grid { grid-template-columns:1fr; gap:0; border-top:1px solid var(--line); }
+  .level-card, .level-card.selected { position:relative; padding:15px 16px 15px 66px; border:0; border-bottom:1px solid var(--line); border-radius:0; }
+  .level-card h3 { font-size:16px; }
+  .level-symbol { position:absolute; top:27px; left:16px; margin:0; width:34px; height:34px; }
+  .level-card p { font-size:12px; }
+  .level-card-top { margin-bottom:5px; }
+  .notebook-toolbar { flex-direction:column; align-items:stretch; gap:12px; }
+  .dictionary-controls { justify-content:flex-start; flex-wrap:wrap; }
+  .dictionary-controls .search-box { flex:1; min-width:160px; }
+  .search-box input { width:100%; min-width:0; }
+  .filter-tabs { justify-content:space-between; }
+  .filter-tabs button { padding:8px 10px; }
+  .notebook-row, .notebook-row.has-illustration { grid-template-columns:minmax(0,1fr) 44px; grid-template-areas:'word save' 'meaning meaning' 'context context'; gap:8px 12px; }
+  .notebook-row.has-illustration { grid-template-columns:76px minmax(0,1fr) 44px; grid-template-areas:'image word save' 'image meaning meaning' 'context context context'; }
+  .notebook-row > .notebook-image { width:76px; height:76px; }
+  .notebook-row > .notebook-meaning { justify-content:flex-start; }
+  .notebook-word strong { font-size:23px; }
+  .notebook-word { flex-wrap:wrap; }
+  .word-harvest { left:16px; right:16px; bottom:calc(76px + env(safe-area-inset-bottom)); width:auto; max-width:none; padding:8px 12px; }
+  .harvest-destination { min-height:56px; }
+  .harvest-image { width:48px; height:48px; }
+  .harvest-heading button { min-height:36px; }
+  .harvest-word { font-size:18px; }
+  .app.has-word-harvest { padding-bottom:calc(235px + env(safe-area-inset-bottom)); }
+  .toast { bottom:calc(80px + env(safe-area-inset-bottom)); }
+  .app.has-word-harvest .toast { bottom:calc(235px + env(safe-area-inset-bottom)); }
+  dialog { width:calc(100% - 24px); max-height:82dvh; border-radius:16px; }
+  .dialog-content { padding:22px 18px; }
+}
+@media (max-width:359px) {
+  .brand-copy { font-size:21px; }
+  .brand-copy small { font-size:11px; margin-left:8px; padding-left:8px; }
+  .header-right { gap:4px; }
+  .portal-return { font-size:11px; }
+  .app-header { padding-inline:12px; }
+  .workspace { padding-inline:12px; }
+  .ready-controls { gap:0 10px; padding:16px; }
+  .round-facts strong { font-size:26px; }
+  .round-facts strong small { font-size:11px; }
+  .round-navigation .icon-button { min-width:38px; width:38px; }
+  .round-navigation input { width:48px; }
+  .tile-board.compact-board { max-width:300px; }
+  .tile-content { font-size:12px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+}

@@ -1,0 +1,477 @@
+{
+  "version": 1,
+  "total": 100000,
+  "curatedWordCount": 54,
+  "source": {
+    "name": "ECDICT",
+    "url": "https://github.com/skywind3000/ECDICT",
+    "revision": "bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b",
+    "csvSha256": "1a6947e04785db63613a92e14903cdae7954f7e84860b10e68e5c7cbb3f9c3cf",
+    "license": "MIT"
+  },
+  "stages": [
+    {
+      "id": "primary",
+      "title": "小学基础",
+      "count": 662,
+      "chunks": [
+        {
+          "path": "/vocabulary/primary-001.json",
+          "count": 662,
+          "start": 0,
+          "bytes": 170080,
+          "sha256": "9dc18aab994d7916d10f4c6667f831cf7b97b4c32ea112a9848a923bbc92b169"
+        }
+      ]
+    },
+    {
+      "id": "junior",
+      "title": "初中进阶",
+      "count": 958,
+      "chunks": [
+        {
+          "path": "/vocabulary/junior-001.json",
+          "count": 958,
+          "start": 0,
+          "bytes": 261472,
+          "sha256": "ccea60b3bc72675dd4e591c9ad128a8f728092e5b8df8c41f9143c610f466a48"
+        }
+      ]
+    },
+    {
+      "id": "senior",
+      "title": "高中提升",
+      "count": 3109,
+      "chunks": [
+        {
+          "path": "/vocabulary/senior-001.json",
+          "count": 2000,
+          "start": 0,
+          "bytes": 527957,
+          "sha256": "cc36ff5f8d5b41f9765c1b493bf000c5c601f075c55e38e96a1cd4fec91b311f"
+        },
+        {
+          "path": "/vocabulary/senior-002.json",
+          "count": 1109,
+          "start": 2000,
+          "bytes": 269741,
+          "sha256": "6a8749c7dd87a3ec079b2582056ba6eaa5ccefccd67111e94483485f65cf86af"
+        }
+      ]
+    },
+    {
+      "id": "cet4",
+      "title": "大学四级",
+      "count": 5716,
+      "chunks": [
+        {
+          "path": "/vocabulary/cet4-001.json",
+          "count": 2000,
+          "start": 0,
+          "bytes": 516309,
+          "sha256": "c14476032c0b6d55cf4d89ce7c65ac3a843ecab111722918ce603c9fe40c12d9"
+        },
+        {
+          "path": "/vocabulary/cet4-002.json",
+          "count": 2000,
+          "start": 2000,
+          "bytes": 470846,
+          "sha256": "fdb05734a8a96d238eecd6dd4c0beea45d6b167a4f12a3bdc615111e16d0af07"
+        },
+        {
+          "path": "/vocabulary/cet4-003.json",
+          "count": 1716,
+          "start": 4000,
+          "bytes": 405246,
+          "sha256": "2b19c4e5d6a255adb7bccaf95438f02b92edf14a68632eec47d563bf7babaa88"
+        }
+      ]
+    },
+    {
+      "id": "cet6",
+      "title": "大学六级",
+      "count": 8625,
+      "chunks": [
+        {
+          "path": "/vocabulary/cet6-001.json",
+          "count": 2000,
+          "start": 0,
+          "bytes": 503100,
+          "sha256": "0e153b30b0d24359c0826cfa3e6a4b919fc9ed916584145ea63b7980f7fc4716"
+        },
+        {
+          "path": "/vocabulary/cet6-002.json",
+          "count": 2000,
+          "start": 2000,
+          "bytes": 466255,
+          "sha256": "fa3f0b20618b43cc3b18a5bfa3564a51cc24a5267f9c03058b558a3f70471e34"
+        },
+        {
+          "path": "/vocabulary/cet6-003.json",
+          "count": 2000,
+          "start": 4000,
+          "bytes": 461651,
+          "sha256": "da8d8a1f4aad45c6aa016342ccd76da352f291c7cd394405f4ca05c09b389f77"
+        },
+        {
+          "path": "/vocabulary/cet6-004.json",
+          "count": 2000,
+          "start": 6000,
+          "bytes": 461118,
+          "sha256": "5250eacd2af5d7240171be960a1a82e6f5904d888d0c8a589b5d6d8c48309632"
+        },
+        {
+          "path": "/vocabulary/cet6-005.json",
+          "count": 625,
+          "start": 8000,
+          "bytes": 144687,
+          "sha256": "b7b9b8b1e2e812495604b52e8ff392aebc015db9d2ad19ae24e68ccb6230d1e7"
+        }
+      ]
+    },
+    {
+      "id": "advanced",
+      "title": "大学拓展",
+      "count": 80930,
+      "chunks": [
+        {
+          "path": "/vocabulary/advanced-001.json",
+          "count": 2000,
+          "start": 0,
+          "bytes": 464460,
+          "sha256": "9fec7da6037bc090ffff70aedbeed7419208c6d42c65fcc0299b615fb938e11a"
+        },
+        {
+          "path": "/vocabulary/advanced-002.json",
+          "count": 2000,
+          "start": 2000,
+          "bytes": 464956,
+          "sha256": "1058081de267889cc397d844dc02c1f0d0759ad6187cd22e32ee518740d0d97e"
+        },
+        {
+          "path": "/vocabulary/advanced-003.json",
+          "count": 2000,
+          "start": 4000,
+          "bytes": 458818,
+          "sha256": "d5a8e4438738164d39d56100a955c3435a9455fe5d442ae345f1c061cc532cee"
+        },
+        {
+          "path": "/vocabulary/advanced-004.json",
+          "count": 2000,
+          "start": 6000,
+          "bytes": 456225,
+          "sha256": "81b5e56151ae9268ad349aa6a7b4ecb099210197c9d469a5c5995430bad039d7"
+        },
+        {
+          "path": "/vocabulary/advanced-005.json",
+          "count": 2000,
+          "start": 8000,
+          "bytes": 459905,
+          "sha256": "e33bc31fd8a601286d389ac353664295675e6f4d778c19da5986b646b36e76ae"
+        },
+        {
+          "path": "/vocabulary/advanced-006.json",
+          "count": 2000,
+          "start": 10000,
+          "bytes": 458147,
+          "sha256": "10309aaf268f7de5db10c36f1d2c6ed2baf62646203d038340eeb0ade45e7684"
+        },
+        {
+          "path": "/vocabulary/advanced-007.json",
+          "count": 2000,
+          "start": 12000,
+          "bytes": 458499,
+          "sha256": "cfdf44cf426116b9277a071fe2c364f4cda9ab2df6ed1991fa1a4c1e0835381d"
+        },
+        {
+          "path": "/vocabulary/advanced-008.json",
+          "count": 2000,
+          "start": 14000,
+          "bytes": 456978,
+          "sha256": "8c54dc8293ae5d4db52540a5d5659e16636c7fae879ad4db24376779b3f34f33"
+        },
+        {
+          "path": "/vocabulary/advanced-009.json",
+          "count": 2000,
+          "start": 16000,
+          "bytes": 456922,
+          "sha256": "ff0eb5007430837483192bacfd09519f399fe1f1d2f2ff0c90c4c7b0c4ad997e"
+        },
+        {
+          "path": "/vocabulary/advanced-010.json",
+          "count": 2000,
+          "start": 18000,
+          "bytes": 456916,
+          "sha256": "8859a497b2fc54657bd12ca984f75a1b0e835a149d065a24217a3cd22a951db7"
+        },
+        {
+          "path": "/vocabulary/advanced-011.json",
+          "count": 2000,
+          "start": 20000,
+          "bytes": 425695,
+          "sha256": "6375e10462b8d16aa358eb97e54092668e5faa67a6599d01cc7319925cdfb879"
+        },
+        {
+          "path": "/vocabulary/advanced-012.json",
+          "count": 2000,
+          "start": 22000,
+          "bytes": 431446,
+          "sha256": "a4564b89ef0a530614660f039e861d72afd87c5928c577e06e35cc60924f5e48"
+        },
+        {
+          "path": "/vocabulary/advanced-013.json",
+          "count": 2000,
+          "start": 24000,
+          "bytes": 439190,
+          "sha256": "ed6c023a29a21d9f0ae1afd56f8064bf3f9e52c278d5b5c1a8f065b1b03fa6bb"
+        },
+        {
+          "path": "/vocabulary/advanced-014.json",
+          "count": 2000,
+          "start": 26000,
+          "bytes": 439209,
+          "sha256": "34a0cd1372ff33234db7a9e2d3edd94a3cfc1d6d4e45cf3f2bc3f66c5e10d94d"
+        },
+        {
+          "path": "/vocabulary/advanced-015.json",
+          "count": 2000,
+          "start": 28000,
+          "bytes": 440148,
+          "sha256": "fad07c6df70d94d566f37bc7cefbca78a1688b86a2f6607da2011330bc27f7f0"
+        },
+        {
+          "path": "/vocabulary/advanced-016.json",
+          "count": 2000,
+          "start": 30000,
+          "bytes": 447876,
+          "sha256": "e6cdbef7cb4db2f25edebe1be878a6289430c1c733265c4187ef68a8b8dab18d"
+        },
+        {
+          "path": "/vocabulary/advanced-017.json",
+          "count": 2000,
+          "start": 32000,
+          "bytes": 445295,
+          "sha256": "37be010d983d31a1e57daa439f5110a1f87bd2162e7ab17b23bfeae0f430b27f"
+        },
+        {
+          "path": "/vocabulary/advanced-018.json",
+          "count": 2000,
+          "start": 34000,
+          "bytes": 447892,
+          "sha256": "a660300f5759935f36d2f61569941062de128130c90dae7fa13686bc3373a616"
+        },
+        {
+          "path": "/vocabulary/advanced-019.json",
+          "count": 2000,
+          "start": 36000,
+          "bytes": 449892,
+          "sha256": "38b493711f056bca0a77e88d6966a406615007bac9f1973d01fd55687be7ad0e"
+        },
+        {
+          "path": "/vocabulary/advanced-020.json",
+          "count": 2000,
+          "start": 38000,
+          "bytes": 455936,
+          "sha256": "e8602c538f1f606270a03dbed27df01026635398e6cdbc704a064c25257b91ca"
+        },
+        {
+          "path": "/vocabulary/advanced-021.json",
+          "count": 2000,
+          "start": 40000,
+          "bytes": 450660,
+          "sha256": "ff0df3fb1a561844b4d22911b373ee07b7193454ce5b70d40fe31a5be344b128"
+        },
+        {
+          "path": "/vocabulary/advanced-022.json",
+          "count": 2000,
+          "start": 42000,
+          "bytes": 453191,
+          "sha256": "038205029da097c66e075010e79ef335c0cbaeeee3b9640e94bbb0ee1f917f18"
+        },
+        {
+          "path": "/vocabulary/advanced-023.json",
+          "count": 2000,
+          "start": 44000,
+          "bytes": 452894,
+          "sha256": "2db804592602d42a60e900694dc1741272cef48b5fcb576df9b755ca128775f1"
+        },
+        {
+          "path": "/vocabulary/advanced-024.json",
+          "count": 2000,
+          "start": 46000,
+          "bytes": 457636,
+          "sha256": "c67848feac66dc0b129dd35ba1760a87e384a8b7c3b1fe4a689b9055d43d4591"
+        },
+        {
+          "path": "/vocabulary/advanced-025.json",
+          "count": 2000,
+          "start": 48000,
+          "bytes": 460069,
+          "sha256": "efc4b7dbe2be1e74f5c8c8b7f24c340962543f9eaf76eb4c158ff8daaf70c893"
+        },
+        {
+          "path": "/vocabulary/advanced-026.json",
+          "count": 2000,
+          "start": 50000,
+          "bytes": 458355,
+          "sha256": "833583ea6a3b0b07786aa608d28b4b001e746aed95fdcdea099df18b1e8b3d30"
+        },
+        {
+          "path": "/vocabulary/advanced-027.json",
+          "count": 2000,
+          "start": 52000,
+          "bytes": 459401,
+          "sha256": "1567e206543128c85fe5739793d65354ccae1ddff238cb5eb3ab76b43af80e34"
+        },
+        {
+          "path": "/vocabulary/advanced-028.json",
+          "count": 2000,
+          "start": 54000,
+          "bytes": 457459,
+          "sha256": "621d8514c790759ba4d0d6f01304ea6cce39fc6b4f52b24b0f3ae55b8b2d70f2"
+        },
+        {
+          "path": "/vocabulary/advanced-029.json",
+          "count": 2000,
+          "start": 56000,
+          "bytes": 466284,
+          "sha256": "6cfbccde2c79f50102a54f888e77baf6ba5e29a0d25e1920340f9bc247a36bff"
+        },
+        {
+          "path": "/vocabulary/advanced-030.json",
+          "count": 2000,
+          "start": 58000,
+          "bytes": 467995,
+          "sha256": "c0ee5cd4f779402ce25c79437cbc3458e838f16586e9febb659afcf57754d707"
+        },
+        {
+          "path": "/vocabulary/advanced-031.json",
+          "count": 2000,
+          "start": 60000,
+          "bytes": 466564,
+          "sha256": "38b6e2086ddb775b86c07a189465ba8e737e64828d6de37c5ffbdce8ea11682d"
+        },
+        {
+          "path": "/vocabulary/advanced-032.json",
+          "count": 2000,
+          "start": 62000,
+          "bytes": 469257,
+          "sha256": "d8171b5dd86f9722900a799795f833ed1724353f42d350f32e6bcd7e299a330b"
+        },
+        {
+          "path": "/vocabulary/advanced-033.json",
+          "count": 2000,
+          "start": 64000,
+          "bytes": 466381,
+          "sha256": "d75bc1e36132bf514b4876c19228f2eb50b8bf62b11674f3cf9f8aff21debd37"
+        },
+        {
+          "path": "/vocabulary/advanced-034.json",
+          "count": 2000,
+          "start": 66000,
+          "bytes": 474398,
+          "sha256": "eb845d1e14792e6ca3be8a236564b2197184c7a90bc4459a147ecdfdc537a5f1"
+        },
+        {
+          "path": "/vocabulary/advanced-035.json",
+          "count": 2000,
+          "start": 68000,
+          "bytes": 470182,
+          "sha256": "01bd8eb6efda1efee4690e8671981b74f0c76b1c1080340e30c81c07bce4c0e8"
+        },
+        {
+          "path": "/vocabulary/advanced-036.json",
+          "count": 2000,
+          "start": 70000,
+          "bytes": 474092,
+          "sha256": "902dce033691031cb432a4940d806604f4410d2f8e0137217a72af215e5f7ca3"
+        },
+        {
+          "path": "/vocabulary/advanced-037.json",
+          "count": 2000,
+          "start": 72000,
+          "bytes": 477359,
+          "sha256": "64e1fcd52755d2878324cb04edf6b310540f0ae2b0252788ad55670f6015cd3f"
+        },
+        {
+          "path": "/vocabulary/advanced-038.json",
+          "count": 2000,
+          "start": 74000,
+          "bytes": 479048,
+          "sha256": "2c9904a28abb573cd8d0f22833e5f2a6864c5a144c2d6f5817f93e9efa91103e"
+        },
+        {
+          "path": "/vocabulary/advanced-039.json",
+          "count": 2000,
+          "start": 76000,
+          "bytes": 482274,
+          "sha256": "04a6225422ec0dd4331cd2c17230886848514bed2507e6a0f68d953a4bf9d50a"
+        },
+        {
+          "path": "/vocabulary/advanced-040.json",
+          "count": 2000,
+          "start": 78000,
+          "bytes": 486489,
+          "sha256": "d96e36bc215db7ea3489a44581be77b3fbcafa87e6a4a03a3185481cea8caa6c"
+        },
+        {
+          "path": "/vocabulary/advanced-041.json",
+          "count": 930,
+          "start": 80000,
+          "bytes": 226841,
+          "sha256": "2f0ff65df0b2959087707a87243b6ad399c30fd4487d1422df9c4511e943e56f"
+        }
+      ]
+    }
+  ],
+  "lookupFiles": {
+    "a": "/vocabulary/lookup-a.json",
+    "b": "/vocabulary/lookup-b.json",
+    "c": "/vocabulary/lookup-c.json",
+    "d": "/vocabulary/lookup-d.json",
+    "e": "/vocabulary/lookup-e.json",
+    "f": "/vocabulary/lookup-f.json",
+    "g": "/vocabulary/lookup-g.json",
+    "h": "/vocabulary/lookup-h.json",
+    "i": "/vocabulary/lookup-i.json",
+    "j": "/vocabulary/lookup-j.json",
+    "k": "/vocabulary/lookup-k.json",
+    "l": "/vocabulary/lookup-l.json",
+    "m": "/vocabulary/lookup-m.json",
+    "n": "/vocabulary/lookup-n.json",
+    "o": "/vocabulary/lookup-o.json",
+    "p": "/vocabulary/lookup-p.json",
+    "q": "/vocabulary/lookup-q.json",
+    "r": "/vocabulary/lookup-r.json",
+    "s": "/vocabulary/lookup-s.json",
+    "t": "/vocabulary/lookup-t.json",
+    "u": "/vocabulary/lookup-u.json",
+    "v": "/vocabulary/lookup-v.json",
+    "w": "/vocabulary/lookup-w.json",
+    "x": "/vocabulary/lookup-x.json",
+    "y": "/vocabulary/lookup-y.json",
+    "z": "/vocabulary/lookup-z.json"
+  },
+  "statistics": {
+    "partsOfSpeech": {
+      "n.": 62465,
+      "v.": 8899,
+      "adj.": 24104,
+      "adv.": 4017,
+      "pron.": 85,
+      "prep.": 90,
+      "conj.": 34,
+      "num.": 79,
+      "art.": 2,
+      "interj.": 225
+    },
+    "spellings": {
+      "singleWord": 100000,
+      "hyphenated": 0,
+      "phrase": 0
+    },
+    "withPhonetic": 90497,
+    "withFrequency": 39162,
+    "eligibleSourceEntries": 104983
+  }
+}

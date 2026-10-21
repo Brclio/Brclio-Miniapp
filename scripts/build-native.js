@@ -8,6 +8,7 @@ const output = path.join(root, 'miniprogram/lib/duel.js');
 function buildNative() {
   require('./prepare-duel-audio').prepareDuelAudio();
   require('./prepare-native-photos').prepareNativePhotos(false);
+  require('./build-lingotiles-native').buildLingotilesNative();
   const result = esbuild.buildSync({
     entryPoints: [path.join(root, 'minigame/lib/game-app.js')],
     bundle: true, write: false, format: 'cjs', platform: 'neutral', target: ['es2017'],

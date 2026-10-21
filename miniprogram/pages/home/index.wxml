@@ -2,7 +2,7 @@
   <view class="portal-header">
     <view class="brand-lockup">
       <image class="brand-avatar" src="/assets/avatar.png" mode="aspectFill" aria-label="Brclio 品牌头像" />
-      <view><view class="brand-title">Brclio <text class="brand-slash">悦创</text></view><view class="brand-caption">收藏影像，轻松片刻。</view></view>
+      <view><view class="brand-title">Brclio <text class="brand-slash">悦创</text></view><view class="brand-caption">收藏影像，保持好奇。</view></view>
     </view>
     <button class="header-button" bindtap="openAbout" hover-class="button-pressed" aria-label="查看关于 Brclio 悦创">关于 <text aria-hidden="true">↗</text></button>
   </view>
@@ -10,6 +10,7 @@
   <view class="category-nav" aria-label="内容栏目">
     <button class="category-tab {{activeTab === 'photo' ? 'category-tab-active' : ''}}" data-tab="photo" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'photo' ? '摄影，当前栏目' : '切换到摄影栏目'}}"><text>摄影</text><text class="tab-english">PHOTO</text></button>
     <button class="category-tab {{activeTab === 'relax' ? 'category-tab-active' : ''}}" data-tab="relax" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'relax' ? '放松，当前栏目' : '切换到放松栏目'}}"><text>放松</text><text class="tab-english">PLAY</text></button>
+    <button class="category-tab {{activeTab === 'learn' ? 'category-tab-active' : ''}}" data-tab="learn" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'learn' ? '悦学，当前栏目' : '切换到悦学栏目'}}"><text>悦学</text><text class="tab-english">LEARN</text></button>
     <button class="category-tab {{activeTab === 'mine' ? 'category-tab-active' : ''}}" data-tab="mine" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'mine' ? '我的，当前栏目' : '切换到我的栏目'}}"><text>我的</text><text class="tab-english">ME</text></button>
   </view>
 
@@ -47,14 +48,29 @@
     <view class="play-note"><text class="small-label">玩法很简单</text><view class="play-note-title serif">面对面，才好玩。</view><view class="entry-copy">两人在同一部设备上操作，无需匹配。<view>还可进入计分扩展，保留最近 20 场本机战绩。</view></view></view>
   </view>
 
+  <view wx:elif="{{activeTab === 'learn'}}" class="tab-content">
+    <view class="section-intro"><view class="intro-topline"><text class="eyebrow">A LITTLE EVERY DAY</text><text class="issue-number">03 / 悦学</text></view><view class="intro-title serif">每天学一点，<view><text class="word-highlight">好奇多一点。</text></view></view><view class="intro-copy">让单词在指尖重逢，把记忆变成小小收获。</view></view>
+    <button class="learning-entry" style="width: 100%; display: block;" data-id="lingotiles" bindtap="openFeature" hover-class="feature-pressed" aria-label="打开词了个词 LingoTiles，先记忆词表，再配对英文、词性与中文，支持主题和分级闯关">
+      <view class="learning-poster" aria-hidden="true">
+        <view class="learning-poster-top"><text>LINGOTILES</text><text>LEARN / 001</text></view>
+        <view class="learning-poster-title serif">词了<text>个词。</text></view>
+        <view class="learning-tile-row"><text class="learning-tile learning-tile-word">apple</text><text class="learning-tile learning-tile-pos">n.</text><text class="learning-tile learning-tile-meaning">苹果</text></view>
+        <view class="learning-poster-bottom"><text>三个部分，一次记住。</text><text>↗</text></view>
+      </view>
+      <view class="game-details"><view class="entry-topline"><text class="feature-title serif">词了个词 <text class="learning-english">LingoTiles</text></text><text class="small-label">记忆 × 配对</text></view><view class="game-copy">先记忆，再消除。每一次配对，都是一次回想。</view><view class="game-tags"><text>经典六关</text><text>分级闯关</text><text>单词本与收藏</text></view><view class="game-action"><text>开始学习</text><text aria-hidden="true">↗</text></view></view>
+    </button>
+    <view class="learning-steps"><view><text class="learning-step-number">01</text><view><view class="entry-title serif">先看一眼</view><view class="entry-copy">选择主题或学习阶段，记住本关词表。</view></view></view><view><text class="learning-step-number">02</text><view><view class="entry-title serif">让三张牌重逢</view><view class="entry-copy">英文、词性与中文含义，配成一组。</view></view></view><view><text class="learning-step-number">03</text><view><view class="entry-title serif">把收获留下</view><view class="entry-copy">翻单词本、收藏生词，回看通关足迹。</view></view></view></view>
+    <view class="editorial-note"><text class="note-symbol" aria-hidden="true">✳</text><view>一点点积累，<text class="note-emphasis">也会长成自己的风景。</text></view></view>
+  </view>
+
   <view wx:else class="tab-content">
-    <view class="section-intro"><view class="intro-topline"><text class="eyebrow">YOUR LITTLE CORNER</text><text class="issue-number">03 / 我的</text></view><view class="intro-title serif">给喜欢的事，<view><text class="word-highlight">留个位置。</text></view></view></view>
+    <view class="section-intro"><view class="intro-topline"><text class="eyebrow">YOUR LITTLE CORNER</text><text class="issue-number">04 / 我的</text></view><view class="intro-title serif">给喜欢的事，<view><text class="word-highlight">留个位置。</text></view></view></view>
     <view class="visitor-section">
       <view class="visitor-topline"><view class="visitor-icon" aria-hidden="true"><view class="visitor-head"></view><view class="visitor-body"></view></view><view><view class="visitor-title serif">你好，{{accountName || '访客'}}。</view><view class="visitor-caption">现在，随心逛逛。</view></view><text class="visitor-badge">{{accountName ? '共享账号' : '访客模式'}}</text></view>
       <view class="account-note"><view class="account-title"><text class="status-dot" aria-hidden="true"></text>一个账号，带着记录出发</view><view class="entry-copy">使用 Brclio 共享账号登录，手动备份和恢复挑战数据。<view>摄影与挑战仍可无需登录使用。</view></view><button class="text-button" bindtap="openAccount" hover-class="button-pressed">登录 / 注册与挑战备份 →</button></view>
     </view>
     <view class="personal-links">
-      <button class="personal-link" style="width: 100%; display: flex;" data-id="content-hub" bindtap="openFeature" hover-class="button-pressed" aria-label="浏览全部已发布的内容与项目"><view><view class="personal-link-title">全部内容</view><view class="personal-link-copy">摄影与放松，随时回来看看</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
+      <button class="personal-link" style="width: 100%; display: flex;" data-id="content-hub" bindtap="openFeature" hover-class="button-pressed" aria-label="浏览全部已发布的内容与项目"><view><view class="personal-link-title">全部内容</view><view class="personal-link-copy">摄影、放松与悦学，随时回来看看</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
       <button class="personal-link" style="width: 100%; display: flex;" bindtap="openAbout" hover-class="button-pressed" aria-label="查看关于 Brclio 悦创与服务信息"><view><view class="personal-link-title">关于悦创</view><view class="personal-link-copy">从摄影开始，慢慢生长</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
       <button class="personal-link" style="width: 100%; display: flex;" bindtap="openPrivacy" hover-class="button-pressed" aria-label="查看隐私、权限与本机数据说明"><view><view class="personal-link-title">隐私与数据</view><view class="personal-link-copy">了解权限与本机记录</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
     </view>

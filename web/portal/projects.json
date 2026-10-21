@@ -3,8 +3,8 @@
   "version": "0.1.1",
   "intro": {
     "title": "Brclio 悦创 · 生活的切片",
-    "description": "看看摄影，轻松一下。给喜欢的事，留一点时间。",
-    "releaseNote": "摄影与放松，随手打开"
+    "description": "看看摄影，轻松一下，每天学一点。给喜欢的事，留一点时间。",
+    "releaseNote": "摄影、放松与悦学，随手打开"
   },
   "categories": [
     {
@@ -22,6 +22,14 @@
       "eyebrow": "LIGHT MOMENTS / 02",
       "heading": "认真生活，轻松一下。",
       "description": "放下忙碌，和身边的人分享一点快乐。"
+    },
+    {
+      "id": "learn",
+      "title": "悦学",
+      "status": "active",
+      "eyebrow": "A LITTLE EVERY DAY / 03",
+      "heading": "每天学一点，好奇多一点。",
+      "description": "让单词在指尖重逢，把记忆变成小小收获。"
     }
   ],
   "projects": [
@@ -69,6 +77,21 @@
       "disclosure": "同屏双人 · 触摸与无限挑战",
       "label": "轻松互动",
       "action": "开始反应挑战"
+    },
+    {
+      "id": "lingotiles",
+      "category": "learn",
+      "status": "active",
+      "kind": "learning",
+      "title": "词了个词 · LingoTiles",
+      "subtitle": "先记忆，再消除。每一次配对，都是一次回想。",
+      "description": "保留经典六关与 10 万词分级闯关，让英文、词性与中文含义配成一组。翻单词本、收藏生词，回看每一次通关。",
+      "path": "/projects/lingotiles/",
+      "cover": "/projects/ready-go-duel/assets/avatar.png",
+      "coverAlt": "Brclio 品牌头像，词了个词学习项目入口",
+      "disclosure": "经典主题 · 分级闯关 · 单词本",
+      "label": "轻松悦学",
+      "action": "开始学习"
     }
   ]
 }

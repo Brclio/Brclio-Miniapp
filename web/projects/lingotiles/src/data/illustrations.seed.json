@@ -1,0 +1,380 @@
+[
+  {
+    "word": "abroad",
+    "pos": "adv.",
+    "meaning": "在国外",
+    "src": "./images/words/abroad.webp",
+    "alt": "带有中国国旗身份线索的学生在法国校园读书，背后可见法国国旗和埃菲尔铁塔"
+  },
+  {
+    "word": "apple",
+    "pos": "n.",
+    "meaning": "苹果",
+    "src": "./images/words/apple.webp",
+    "alt": "一颗带绿叶的红苹果"
+  },
+  {
+    "word": "brave",
+    "pos": "adj.",
+    "meaning": "勇敢的",
+    "src": "./images/words/brave.webp",
+    "alt": "消防员顶着烟火向前迈步，冒险去救被困在窗边的小猫"
+  },
+  {
+    "word": "bridge",
+    "pos": "n.",
+    "meaning": "桥梁",
+    "src": "./images/words/bridge.webp",
+    "alt": "石拱桥连接小溪两岸，两个人正在桥上走过"
+  },
+  {
+    "word": "calm",
+    "pos": "adj.",
+    "meaning": "平静的",
+    "src": "./images/words/calm.webp",
+    "alt": "面试中的女子神情平静，肩膀放松，双手自然放在膝上"
+  },
+  {
+    "word": "carefully",
+    "pos": "adv.",
+    "meaning": "仔细地",
+    "src": "./images/words/carefully.webp",
+    "alt": "人物眯眼看准针孔，用指尖稳稳捏住细线，小心仔细地穿针"
+  },
+  {
+    "word": "clearly",
+    "pos": "adv.",
+    "meaning": "清楚地",
+    "src": "./images/words/clearly.webp",
+    "alt": "透过眼镜能清楚地看见小鸟，而镜片外的花园模糊不清"
+  },
+  {
+    "word": "corner",
+    "pos": "n.",
+    "meaning": "拐角",
+    "src": "./images/words/corner.webp",
+    "alt": "书店位于街道转弯的拐角，两面街道清晰可见"
+  },
+  {
+    "word": "courage",
+    "pos": "n.",
+    "meaning": "勇气",
+    "src": "./images/words/courage.webp",
+    "alt": "孩子鼓起勇气站到小舞台的麦克风前，面对台下观众"
+  },
+  {
+    "word": "create",
+    "pos": "v.",
+    "meaning": "创造",
+    "src": "./images/words/create.webp",
+    "alt": "艺术家的双手把柔软陶泥塑造成一只新杯子"
+  },
+  {
+    "word": "crowded",
+    "pos": "adj.",
+    "meaning": "拥挤的",
+    "src": "./images/words/crowded.webp",
+    "alt": "公交车内乘客肩挨肩站立，几乎没有空位"
+  },
+  {
+    "word": "curious",
+    "pos": "adj.",
+    "meaning": "好奇的",
+    "src": "./images/words/curious.webp",
+    "alt": "孩子睁大好奇的眼睛望向星空，身旁架着一台小望远镜"
+  },
+  {
+    "word": "discover",
+    "pos": "v.",
+    "meaning": "发现",
+    "src": "./images/words/discover.webp",
+    "alt": "孩子刚掀开平石，惊喜地指向原先藏在下面的螺旋化石"
+  },
+  {
+    "word": "distant",
+    "pos": "adj.",
+    "meaning": "遥远的",
+    "src": "./images/words/distant.webp",
+    "alt": "近处人物和树木清晰巨大，远方山峰隔着长长山谷与层层云雾显得很小很淡"
+  },
+  {
+    "word": "explore",
+    "pos": "v.",
+    "meaning": "探索",
+    "src": "./images/words/explore.webp",
+    "alt": "旅行者查看无字地图并好奇探索老城的小巷"
+  },
+  {
+    "word": "finally",
+    "pos": "adv.",
+    "meaning": "最后",
+    "src": "./images/words/finally.webp",
+    "alt": "同一孩子制作三明治的顺序由箭头连接，最右侧最后一步吃三明治被明显突出"
+  },
+  {
+    "word": "focus",
+    "pos": "v.",
+    "meaning": "专注",
+    "src": "./images/words/focus.webp",
+    "alt": "学生凝神完成桌上的木质拼图，专心对齐手中的一块"
+  },
+  {
+    "word": "follow",
+    "pos": "v.",
+    "meaning": "跟随",
+    "src": "./images/words/follow.webp",
+    "alt": "一个人回头引路，另一个人紧跟在身后"
+  },
+  {
+    "word": "forward",
+    "pos": "adv.",
+    "meaning": "向前",
+    "src": "./images/words/forward.webp",
+    "alt": "侧身朝右的人向自己面朝的方向迈步，身后留下同向脚印"
+  },
+  {
+    "word": "fresh",
+    "pos": "adj.",
+    "meaning": "新鲜的",
+    "src": "./images/words/fresh.webp",
+    "alt": "带着露珠的刚采摘的蔬菜"
+  },
+  {
+    "word": "gently",
+    "pos": "adv.",
+    "meaning": "温柔地",
+    "src": "./images/words/gently.webp",
+    "alt": "成年人俯身温柔安抚受惊的孩子"
+  },
+  {
+    "word": "grateful",
+    "pos": "adj.",
+    "meaning": "感激的",
+    "src": "./images/words/grateful.webp",
+    "alt": "收到帮助的人把手放在胸前，微笑感谢为她捡起掉落书本的朋友"
+  },
+  {
+    "word": "grow",
+    "pos": "v.",
+    "meaning": "生长",
+    "src": "./images/words/grow.webp",
+    "alt": "植物从萌芽逐渐长成枝叶茂盛的小苗"
+  },
+  {
+    "word": "habit",
+    "pos": "n.",
+    "meaning": "习惯",
+    "src": "./images/words/habit.webp",
+    "alt": "孩子每晚睡前在床上阅读，表现固定的阅读习惯"
+  },
+  {
+    "word": "horizon",
+    "pos": "n.",
+    "meaning": "地平线",
+    "src": "./images/words/horizon.webp",
+    "alt": "平坦的陆地与天空在远处相接成一条清晰的水平地平线，近处的手指正指向这条界线"
+  },
+  {
+    "word": "idea",
+    "pos": "n.",
+    "meaning": "想法",
+    "src": "./images/words/idea.webp",
+    "alt": "创作者想到新点子，脑海中浮现纸飞机构想"
+  },
+  {
+    "word": "improve",
+    "pos": "v.",
+    "meaning": "改善",
+    "src": "./images/words/improve.webp",
+    "alt": "练习者把早期歪斜的花朵画逐步画得更准确，展示绘画水平的改善"
+  },
+  {
+    "word": "island",
+    "pos": "n.",
+    "meaning": "岛屿",
+    "src": "./images/words/island.webp",
+    "alt": "俯视的小岛四周完全环绕蓝色海水，沙滩与树木位于岛中央"
+  },
+  {
+    "word": "journey",
+    "pos": "n.",
+    "meaning": "旅程",
+    "src": "./images/words/journey.webp",
+    "alt": "背着旅行包的人沿长路出发，道路经过村庄、桥梁与山谷，通往远方城市"
+  },
+  {
+    "word": "joy",
+    "pos": "n.",
+    "meaning": "喜悦",
+    "src": "./images/words/joy.webp",
+    "alt": "孩子与迎面扑来的小狗重逢，脸上洋溢着喜悦"
+  },
+  {
+    "word": "leaf",
+    "pos": "n.",
+    "meaning": "叶子",
+    "src": "./images/words/leaf.webp",
+    "alt": "一片叶脉清晰的绿色叶子"
+  },
+  {
+    "word": "morning",
+    "pos": "n.",
+    "meaning": "早晨",
+    "src": "./images/words/morning.webp",
+    "alt": "清晨阳光照进窗户，孩子起床伸懒腰"
+  },
+  {
+    "word": "nearby",
+    "pos": "adv.",
+    "meaning": "在附近",
+    "src": "./images/words/nearby.webp",
+    "alt": "两位邻居从相邻的小屋门口挥手，之间只有一小段路"
+  },
+  {
+    "word": "often",
+    "pos": "adv.",
+    "meaning": "经常",
+    "src": "./images/words/often.webp",
+    "alt": "家人在厨房做饭，旁边无字周历的大多数格子重复出现小锅图案，表示经常做饭"
+  },
+  {
+    "word": "patient",
+    "pos": "adj.",
+    "meaning": "有耐心的",
+    "src": "./images/words/patient.webp",
+    "alt": "缓慢长队里，一位孩子放松地安静等候，旁边的孩子焦躁地催促；对比有耐心与不耐烦"
+  },
+  {
+    "word": "peaceful",
+    "pos": "adj.",
+    "meaning": "宁静的",
+    "src": "./images/words/peaceful.webp",
+    "alt": "清晨湖面如镜，倒映安静的树木与小船，水边没有喧闹活动"
+  },
+  {
+    "word": "prepare",
+    "pos": "v.",
+    "meaning": "准备",
+    "src": "./images/words/prepare.webp",
+    "alt": "人物在厨房摆放食材与碗勺，准备午饭"
+  },
+  {
+    "word": "protect",
+    "pos": "v.",
+    "meaning": "保护",
+    "src": "./images/words/protect.webp",
+    "alt": "人用一把伞替小鸟挡住风雨，伞外雨点落下而小鸟所在处保持干燥"
+  },
+  {
+    "word": "proud",
+    "pos": "adj.",
+    "meaning": "自豪的",
+    "src": "./images/words/proud.webp",
+    "alt": "孩子挺胸微笑展示亲手完成的小鸟屋，旁边的家长赞许地看着"
+  },
+  {
+    "word": "share",
+    "pos": "v.",
+    "meaning": "分享",
+    "src": "./images/words/share.webp",
+    "alt": "孩子把一篮草莓中的一半递给朋友，表现分享的动作"
+  },
+  {
+    "word": "simple",
+    "pos": "adj.",
+    "meaning": "简单的",
+    "src": "./images/words/simple.webp",
+    "alt": "只有两块大木片的拼图轻松合拢，表现结构简单、容易完成"
+  },
+  {
+    "word": "sketch",
+    "pos": "n.",
+    "meaning": "草图",
+    "src": "./images/words/sketch.webp",
+    "alt": "画本上以松散铅笔线条画出的房间草图，旁边放着铅笔"
+  },
+  {
+    "word": "slowly",
+    "pos": "adv.",
+    "meaning": "缓慢地",
+    "src": "./images/words/slowly.webp",
+    "alt": "一只蜗牛缓慢地爬过花园小路"
+  },
+  {
+    "word": "station",
+    "pos": "n.",
+    "meaning": "车站",
+    "src": "./images/words/station.webp",
+    "alt": "一列火车停靠在有雨棚和长椅的小车站"
+  },
+  {
+    "word": "straight",
+    "pos": "adv.",
+    "meaning": "径直",
+    "src": "./images/words/straight.webp",
+    "alt": "行人沿一条笔直的人行道向前走，经过侧边岔路也没有转弯"
+  },
+  {
+    "word": "suddenly",
+    "pos": "adv.",
+    "meaning": "突然",
+    "src": "./images/words/suddenly.webp",
+    "alt": "安静阅读的人突然因跳出的猫而惊讶大笑"
+  },
+  {
+    "word": "tidy",
+    "pos": "adj.",
+    "meaning": "整洁的",
+    "src": "./images/words/tidy.webp",
+    "alt": "厨房台面干净空整，盘子、杯子和餐具整齐归位"
+  },
+  {
+    "word": "together",
+    "pos": "adv.",
+    "meaning": "一起",
+    "src": "./images/words/together.webp",
+    "alt": "一家四口围坐餐桌一起吃晚饭"
+  },
+  {
+    "word": "trust",
+    "pos": "v.",
+    "meaning": "信任",
+    "src": "./images/words/trust.webp",
+    "alt": "一个人放心地闭眼微微后倾，信任身后的朋友稳稳扶住自己"
+  },
+  {
+    "word": "unique",
+    "pos": "adj.",
+    "meaning": "独特的",
+    "src": "./images/words/unique.webp",
+    "alt": "一群外形相同的白色小鸟中，只有一只具有独特彩色羽毛"
+  },
+  {
+    "word": "useful",
+    "pos": "adj.",
+    "meaning": "有用的",
+    "src": "./images/words/useful.webp",
+    "alt": "开罐器帮助人轻松打开徒手难以打开的罐头，突出工具的实际用处"
+  },
+  {
+    "word": "water",
+    "pos": "n.",
+    "meaning": "水",
+    "src": "./images/words/water.webp",
+    "alt": "清水倒入透明玻璃杯"
+  },
+  {
+    "word": "wonder",
+    "pos": "v.",
+    "meaning": "想知道",
+    "src": "./images/words/wonder.webp",
+    "alt": "孩子看着紧闭的不透明盒子托腮思索，脑海中分别浮现球和玩具熊两种可能"
+  },
+  {
+    "word": "worry",
+    "pos": "v.",
+    "meaning": "担心",
+    "src": "./images/words/worry.webp",
+    "alt": "孩子皱眉托着脸，看着画纸上的一小处颜料污点，担心自己画错了"
+  }
+]

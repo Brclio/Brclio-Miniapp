@@ -4,6 +4,7 @@
     "pages/account/index",
     "pages/gallery/index",
     "pages/duel/index",
+    "pages/lingotiles/index",
     "pages/web/index",
     "pages/about/index",
     "pages/privacy/index"

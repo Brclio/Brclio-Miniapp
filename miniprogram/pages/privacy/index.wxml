@@ -6,20 +6,21 @@
 
   <view class="document-section">
     <text class="document-heading serif">1. 当前提供的服务</text>
-    <text class="document-copy">「Brclio 悦创」当前版本提供摄影与放松两个栏目：摄影包含 FirstSight_Online 的 8 组婚纱与 1 组孕期影像，共 169 张实际摄影照片，支持相册浏览与大图查看；放松提供同一设备上的 ReadyGoDuel 触摸、无限挑战，以及独立的计分扩展。摄影图片为原项目优化图片的本地展示版本，保留原有标题与说明。无需注册或登录，不提供预约、交易、评论或图片上传。</text>
-    <text class="document-copy">「我的」提供可选的 Brclio 共享账号注册、登录、资料设置与手动挑战备份。未登录仍可使用摄影与挑战。账号能力需要对应服务部署可用，微信生产使用还需配置合法 request 域名。</text>
+    <text class="document-copy">「Brclio 悦创」当前版本提供摄影、放松与悦学三个栏目：摄影包含 FirstSight_Online 的 8 组婚纱与 1 组孕期影像，共 169 张实际摄影照片，支持相册浏览与大图查看；放松提供同一设备上的 ReadyGoDuel 触摸、无限挑战，以及独立的计分扩展；悦学提供 LingoTiles「词了个词」的记忆与三牌配对、经典主题、分级闯关、单词本、收藏与通关足迹。摄影图片为原项目优化图片的本地展示版本，保留原有标题与说明。无需注册或登录，不提供预约、交易、评论或图片上传。</text>
+    <text class="document-copy">「我的」提供可选的 Brclio 共享账号注册、登录、资料设置与手动挑战备份。未登录仍可使用摄影、挑战与学习。悦学进度、收藏与通关足迹不在账号备份范围内。账号能力需要对应服务部署可用，微信生产使用还需配置合法 request 域名。</text>
   </view>
 
   <view class="document-section">
     <text class="document-heading serif">2. 权限与本机数据</text>
     <text class="document-copy">摄影浏览、触摸挑战和计分扩展不需要相册权限；只有主动保存战报图片时才申请相册写入权限，拒绝后仍可使用摄影和挑战。当前版本已移除声控，不采集录音，也不调用微信头像、昵称、手机号、位置、相机、麦克风或通讯录权限。自愿注册共享账号时，需要填写账号名、邮箱、邮件验证码及密码；邮箱用于验证账号，昵称可选。不会调用 wx.login 或读取微信身份。</text>
     <text class="document-copy">ReadyGoDuel 在微信本地缓存保存标题、玩家名、等待时间和自定义彩头等设置。计分扩展在本地缓存中保存赛制、振动等使用偏好，以及最近 20 场的对局时间、比分和反应成绩。默认只保存在当前设备。登录后，只有点击备份并确认覆盖预览，才上传赛制、振动、玩家名和最近 20 场记录；恢复同样需要预览确认，先在本机保存一份完整恢复前副本。退出账号不删除挑战记录，可在挑战页面清空本机历史。</text>
+    <text class="document-copy">词了个词在当前设备保存学习偏好、已学习词条、收藏、关卡成绩与通关足迹，正常学习不上传这些记录。可主动导出通关 CSV 以保留副本。主动点击发音或开启消除朗读时，会通过 pocket.bornforthis.cn 的固定接口将当前英文单词发送至有道词典语音服务以获取发音；不开启朗读不会发起此类语音请求。学习无需麦克风或录音权限。</text>
     <text class="document-copy">摄影图片随小程序摄影分包内置。你可以通过微信设置清理该小程序的缓存；清理缓存可能使本机记录与偏好不再保留，微信会在下次打开时重新获取小程序代码包。</text>
   </view>
 
   <view class="document-section">
     <text class="document-heading serif">3. 内置内容与网络</text>
-    <text class="document-copy">摄影列表、照片详情、大图浏览和双人反应挑战均为小程序原生代码。摄影展示图片随摄影分包上传，日常摄影和游戏无需下载网页或访问外部 API。账号与手动备份通过 pocket.bornforthis.cn 的固定接口转交 Brclio 中央账号服务；服务不可用时，本机摄影与挑战可继续使用。微信首次获取或更新小程序及分包需要正常网络连接，相关网络信息按微信平台的服务规则处理。</text>
+    <text class="document-copy">摄影列表、照片详情、大图浏览、双人反应挑战和悦学界面均为小程序原生代码。摄影展示图片随摄影分包上传，日常摄影和挑战无需下载网页或访问外部 API。悦学根据你选择的学习阶段、词页和单词，从 pocket.bornforthis.cn 按需读取词库、现有插图与主动请求的语音，不会在使用中调用图片生成服务。微信生产使用需将 pocket.bornforthis.cn 同时配置为 request 与 downloadFile 合法域名。账号与手动挑战备份通过该域名的固定接口转交 Brclio 中央账号服务；服务不可用时，本机摄影、挑战与已加载的学习内容可继续使用。微信首次获取或更新小程序及分包需要正常网络连接，相关网络信息按微信平台的服务规则处理。</text>
     <text class="document-copy">本小程序不接入广告或访问行为分析服务，不上传浏览记录。独立网页的 ReadyGoDuel 保留原作 PV 计数脚本，会向 counter.bornforthis.cn 发起请求；此项不在原生小程序中运行。共享账号资料与手动备份以明文 JSON 存放于私有 GitHub 仓库 BrclioData/BrclioUserData，每个用户独立目录，包括用户设置的明文密码；仓库授权管理者可读取，因此请勿复用其他服务密码。服务端 GitHub token 不下发小程序；本机只保存该用户的登录会话。Cloudflare 与 GitHub 可能处理完成服务所需的网络请求信息。</text>
   </view>
 

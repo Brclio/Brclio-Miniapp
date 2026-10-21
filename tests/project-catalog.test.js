@@ -7,12 +7,13 @@ const { validateCatalog, activeProjects, imagePath } = require('../web/portal/ca
 const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, '../web/portal/projects.json'), 'utf8'));
 const copy = () => JSON.parse(JSON.stringify(fixture));
 
-test('released portal exposes one real photography project and the same active relax entry to everyone', () => {
+test('portal exposes photography, relax and the LingoTiles learning project to everyone', () => {
   const catalog = validateCatalog(fixture);
-  assert.deepEqual(catalog.categories.map(item => item.title), ['摄影', '放松']);
-  assert.deepEqual(activeProjects(catalog).map(item => item.path), ['/projects/firstsight/', '/projects/ready-go-duel/']);
+  assert.deepEqual(catalog.categories.map(item => item.title), ['摄影', '放松', '悦学']);
+  assert.deepEqual(activeProjects(catalog).map(item => item.path), ['/projects/firstsight/', '/projects/ready-go-duel/', '/projects/lingotiles/']);
   assert.deepEqual(activeProjects(catalog, 'photography').map(item => item.id), ['firstsight']);
   assert.deepEqual(activeProjects(catalog, 'relax').map(item => item.id), ['ready-go-duel']);
+  assert.deepEqual(activeProjects(catalog, 'learn').map(item => [item.id, item.kind]), [['lingotiles', 'learning']]);
 });
 
 test('project registry rejects external origins and URL/path escape forms', () => {
@@ -38,7 +39,7 @@ test('planned categories cannot silently publish active project entries', () => 
   assert.throws(() => validateCatalog(candidate), /Invalid project catalog/);
   candidate.projects.find(item => item.category === 'relax').status = 'planned';
   const catalog = validateCatalog(candidate);
-  assert.deepEqual(activeProjects(catalog).map(item => item.id), ['firstsight']);
+  assert.deepEqual(activeProjects(catalog).map(item => item.id), ['firstsight', 'lingotiles']);
   assert.deepEqual(activeProjects(catalog, 'relax'), []);
 });
 

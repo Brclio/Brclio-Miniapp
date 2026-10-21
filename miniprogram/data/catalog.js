@@ -7,8 +7,24 @@ const features = Object.freeze([
     title: '内容空间',
     subtitle: '收藏影像，也收藏生活的表达',
     category: '内容合集',
-    description: '浏览摄影灵感与放松互动，发现当前已发布的内容与项目。',
+    description: '浏览摄影、放松互动与悦学项目，给喜欢的事留一点时间。',
     path: '/?entry=wechat'
+  }),
+  Object.freeze({
+    id: 'learn',
+    title: '悦学',
+    subtitle: '每天学一点，好奇多一点',
+    category: '悦学',
+    description: '在轻松的记忆与配对中，慢慢积累新单词。',
+    path: '/?category=learn&entry=wechat'
+  }),
+  Object.freeze({
+    id: 'lingotiles',
+    title: '词了个词',
+    subtitle: 'LingoTiles · 先记忆，再消除',
+    category: '悦学',
+    description: '经典主题与小学到大学的分级闯关，保留三牌配对、单词本、收藏和通关记录。',
+    path: '/projects/lingotiles/?entry=wechat'
   }),
   Object.freeze({
     id: 'firstsight',
@@ -65,6 +81,8 @@ function getFeatureRoute(id) {
     'content-hub': '/pages/home/index',
     firstsight: '/pages/gallery/index',
     relax: '/pages/home/index?tab=relax',
+    learn: '/pages/home/index?tab=learn',
+    lingotiles: '/pages/lingotiles/index',
     'ready-go-duel': '/pages/duel/index',
     'wedding-inspiration': (photos.collections.find(function (album) { return album.id === 'pregnancy'; }) || {}).nativePath || '/pages/gallery/index'
   };

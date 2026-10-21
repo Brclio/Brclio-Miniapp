@@ -4,7 +4,7 @@
   else root.BrclioCatalog = factory();
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
-  const categoryTitles = Object.freeze({ photography: '摄影', relax: '放松' });
+  const categoryTitles = Object.freeze({ photography: '摄影', relax: '放松', learn: '悦学' });
   const idPattern = /^[a-z0-9][a-z0-9-]{0,63}$/;
   const projectPathPattern = /^\/projects\/[a-z0-9][a-z0-9-]{0,63}\/$/;
   const imagePathPattern = /^\/projects\/[a-z0-9][a-z0-9-]{0,63}\/(?:assets|media)\/(?:[A-Za-z0-9][A-Za-z0-9_-]*\/)*[A-Za-z0-9][A-Za-z0-9_.-]*\.(?:jpe?g|png|webp|avif|gif)$/i;
@@ -25,7 +25,7 @@
     if (source.schemaVersion !== 1 || typeof source.version !== 'string' || !/^\d+\.\d+\.\d+$/.test(source.version)) fail();
     const sourceIntro = object(source.intro);
     const intro = Object.freeze({ title: text(sourceIntro.title, 70), description: text(sourceIntro.description, 180), releaseNote: text(sourceIntro.releaseNote, 50) });
-    if (!Array.isArray(source.categories) || source.categories.length !== 2 || !Array.isArray(source.projects) || source.projects.length > 100) fail();
+    if (!Array.isArray(source.categories) || source.categories.length !== Object.keys(categoryTitles).length || !Array.isArray(source.projects) || source.projects.length > 100) fail();
     const ids = new Set();
     const categories = source.categories.map(function (value) {
       const category = object(value);

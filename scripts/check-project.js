@@ -43,7 +43,7 @@ try {
   const mainSize = size - subSizes.reduce(function (sum, bytes) { return sum + bytes; }, 0);
   check(mainSize < 2 * 1024 * 1024, '主包小于 2 MiB（' + (mainSize / 1024).toFixed(1) + ' KiB）');
   check(size < 20 * 1024 * 1024, '全部本地代码与素材小于 20 MiB（' + (size / 1024).toFixed(1) + ' KiB）');
-  check(!files.filter(function (file) { return file.endsWith('.wxml'); }).some(function (file) { return /<web-view\b/.test(fs.readFileSync(file, 'utf8')); }), '摄影、相册与游戏全部原生内置，无 web-view');
+  check(!files.filter(function (file) { return file.endsWith('.wxml'); }).some(function (file) { return /<web-view\b/.test(fs.readFileSync(file, 'utf8')); }), '摄影、相册、挑战与悦学界面全部原生内置，无 web-view');
   const nativePhotos = require(path.join(appRoot, 'data/photos.js'));
   const crypto = require('node:crypto');
   const manifest = JSON.parse(fs.readFileSync(path.join(appRoot, 'data/photo-assets.json'), 'utf8'));
@@ -68,7 +68,9 @@ try {
   const version = require(path.join(root, 'package.json')).version;
   check(registry.version === version && site.version === version, '门户与原生版本一致');
   check(registry.categories.find(function (item) { return item.id === 'relax'; }).status === 'active' && registry.projects.some(function (item) { return item.id === 'ready-go-duel' && item.category === 'relax' && item.status === 'active'; }) && ['main.js', 'main.css', 'match/bundle.js'].every(function (file) { return fs.existsSync(path.join(outputRoot, 'projects/ready-go-duel', file)); }), '放松栏目、原版反应对决与积分扩展均已构建');
-  check(require(path.join(appRoot, 'data/catalog.js')).features.map(function (feature) { return feature.id; }).sort().join(',') === 'content-hub,firstsight,ready-go-duel,relax,wedding-inspiration', '原生固定入口及历史分享入口登记完整');
+  check(registry.categories.find(function (item) { return item.id === 'learn'; }).status === 'active' && registry.projects.some(function (item) { return item.id === 'lingotiles' && item.category === 'learn' && item.status === 'active'; }) && ['index.html', 'main.js', 'main.css', 'vocabulary/manifest.json', 'images/words/index/manifest.json'].every(function (file) { return fs.existsSync(path.join(outputRoot, 'projects/lingotiles', file)); }), '悦学栏目、词了个词及按需词库与现有插图索引均已构建');
+  const nativeCatalog = require(path.join(appRoot, 'data/catalog.js'));
+  check(nativeCatalog.features.map(function (feature) { return feature.id; }).sort().join(',') === 'content-hub,firstsight,learn,lingotiles,ready-go-duel,relax,wedding-inspiration' && nativeCatalog.getFeatureRoute('lingotiles') === '/pages/lingotiles/index', '原生固定入口及历史分享入口登记完整');
   const photoData = JSON.parse(fs.readFileSync(path.join(root, 'web/projects/firstsight/original-data.json'), 'utf8'));
   const photoAssets = photoData.assets.filter(function (asset) { return asset.available; });
   check(photoAssets.length > 2 && photoAssets.every(function (asset) {

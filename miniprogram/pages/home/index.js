@@ -11,7 +11,7 @@ Page({
   onLoad(options) {
     if (typeof wx.setNavigationBarTitle === 'function') wx.setNavigationBarTitle({ title: 'Brclio 悦创' });
     const tab = options && options.tab;
-    if (['photo', 'relax', 'mine'].indexOf(tab) !== -1) this.setData({ activeTab: tab });
+    if (['photo', 'relax', 'learn', 'mine'].indexOf(tab) !== -1) this.setData({ activeTab: tab });
   },
 
   onShow() {
@@ -21,7 +21,7 @@ Page({
 
   switchTab(event) {
     const tab = event.currentTarget.dataset.tab;
-    if (['photo', 'relax', 'mine'].indexOf(tab) === -1 || tab === this.data.activeTab) return;
+    if (['photo', 'relax', 'learn', 'mine'].indexOf(tab) === -1 || tab === this.data.activeTab) return;
     this.setData({ activeTab: tab });
     if (typeof wx.pageScrollTo === 'function') wx.pageScrollTo({ scrollTop: 0, duration: 0 });
   },
@@ -45,10 +45,10 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: 'Brclio 悦创 · 摄影与放松', path: '/pages/home/index' };
+    return { title: 'Brclio 悦创 · 摄影、放松与悦学', path: '/pages/home/index' };
   },
 
   onShareTimeline() {
-    return { title: 'Brclio 悦创 · 摄影与放松' };
+    return { title: 'Brclio 悦创 · 摄影、放松与悦学' };
   }
 });

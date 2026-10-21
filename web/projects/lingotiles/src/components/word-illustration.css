@@ -1,0 +1,5 @@
+/* A reserved image slot keeps the travelling card stable while images decode. */
+.word-illustration { position: relative; flex-shrink: 0; overflow: hidden; border-radius: 8px; background: #faf8ee; }
+.word-illustration img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.word-illustration img[hidden] { display: none; }
+.word-illustration-unavailable { position: absolute; inset: 0; display: grid; place-items: center; padding: 6px; color: var(--muted); font-size: 10px; line-height: 1.5; text-align: center; }

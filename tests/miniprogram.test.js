@@ -25,6 +25,8 @@ const routes = [
   ['content-hub', '/pages/home/index'],
   ['firstsight', '/pages/gallery/index'],
   ['relax', '/pages/home/index?tab=relax'],
+  ['learn', '/pages/home/index?tab=learn'],
+  ['lingotiles', '/pages/lingotiles/index'],
   ['ready-go-duel', '/pages/duel/index'],
   ['wedding-inspiration', require('../miniprogram/data/photos').collections.find(item => item.id === 'pregnancy').nativePath]
 ];
@@ -53,7 +55,7 @@ test('unknown and prototype IDs cannot open a route or leak arbitrary URLs', () 
     assert.equal(page.onShareAppMessage().path, '/pages/home/index');
   }
 });
-test('homepage opens photography and game locally and validates selected tabs', () => {
+test('homepage opens photography, games and learning locally and validates selected tabs', () => {
   const { page, calls } = loadPage('pages/home/index.js');
   for (const [id, route] of routes) {
     page.openFeature({ currentTarget: { dataset: { id } } });
@@ -62,7 +64,7 @@ test('homepage opens photography and game locally and validates selected tabs', 
   const count = calls.length;
   page.openFeature({ currentTarget: { dataset: { id: 'https://evil.example' } } });
   assert.equal(calls.length, count);
-  for (const tab of ['relax', 'mine', 'photo']) {
+  for (const tab of ['relax', 'learn', 'mine', 'photo']) {
     page.switchTab({ currentTarget: { dataset: { tab } } });
     assert.equal(page.data.activeTab, tab);
   }
@@ -70,6 +72,8 @@ test('homepage opens photography and game locally and validates selected tabs', 
   assert.equal(page.data.activeTab, 'photo');
   page.onLoad({ tab: 'relax' });
   assert.equal(page.data.activeTab, 'relax');
+  page.onLoad({ tab: 'learn' });
+  assert.equal(page.data.activeTab, 'learn');
 });
 test('native compatibility route offers retry on a navigation failure without using web-view', () => {
   const { page, calls } = loadPage('pages/web/index.js');
