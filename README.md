@@ -60,7 +60,7 @@ npm run deploy
 
 当前准确状态见 [VERIFICATION.md](docs/VERIFICATION.md)，发布步骤见 [RELEASE.md](docs/RELEASE.md)。开发包上传、网页部署、微信审核与正式发布分别记录。内置竞技玩法仍须按实际内容核对微信类目，不能仅凭「放松」栏目名称推断可审核通过。
 
-共享账号协议与数据恢复边界见 [ACCOUNT_PLAN.md](docs/ACCOUNT_PLAN.md)，账号代理的 Pages 部署和真实隔离测试账号联调记录见 [VERIFICATION.md](docs/VERIFICATION.md)。ReadyGoDuel 原生改版本轮完成自动测试、本地网页与微信开发者工具模拟器流程检查，详情见功能对照；此次原生改版未单独执行 Pages 部署或上传新的微信开发包，微信审核与正式发布仍分别验收。
+共享账号协议与数据恢复边界见 [ACCOUNT_PLAN.md](docs/ACCOUNT_PLAN.md)，账号代理的 Pages 部署和真实隔离测试账号联调记录见 [VERIFICATION.md](docs/VERIFICATION.md)。ReadyGoDuel 原生改版本轮完成自动测试、本地网页与微信开发者工具模拟器流程检查；`0.1.1` 开发包已上传，后台审核尚未提交。此次原生改版未单独执行 Pages 部署，微信审核与正式发布仍分别验收。
 
 ```text
 miniprogram/pages/          原生首页、图库、挑战、关于、隐私与旧链接转接

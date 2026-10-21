@@ -1,4 +1,14 @@
-# 2026-10-21 共享账号最新验收阶段
+# 2026-10-21 小程序 0.1.1 开发包上传
+
+23:42（Asia/Shanghai），微信开发者工具 Stable `2.02.2608080` 明确显示“代码上传成功”。本次版本 `0.1.1`，AppID `wx59aa532fbf6fa540`，源码提交 `7cc2bfa22b920bec537804738a022f9d68f72667`，上传备注涵盖 169 张摄影、触摸／无限挑战、原音效、品牌战报真实小程序码、独立计分和可选账号备份。截图为 `artifacts/ready-go-duel/wechat-upload-0.1.1-success.png`，本地源码清单为 `artifacts/ready-go-duel/wechat-0.1.1-source-manifest.json`。清单记录 385 个本地源文件；微信编译和无依赖过滤可能改变实际传输包，不能将本地清单冒充上传二进制指纹。
+
+版本配置已统一；构建、174 项测试及发布静态检查通过。新版对局流程见 [READY_GO_DUEL_PARITY.md](READY_GO_DUEL_PARITY.md)。原生账号页已实际打开并修复输入框超出手机宽度的问题；但进入账号页仍报 `https://pocket.bornforthis.cn` 不在 request 合法域名列表。用户回复已配置并提供业务域名截图；重新打开项目后开发工具仍报该错误，因此不能将此记录写成原生账号已联通。业务域名和服务器 request 域名须分别核对，未关闭 `urlCheck` 或更改微信安全设置。
+
+业务域名校验文件 `web/public/jBK3p5zOBn.txt` 自初始提交起保留，本轮无删除；构建副本逐字节一致，SHA-256 为 `b43069dff9b50df306cc836e7261f96a60cac3a4ac51622f1680514f93999090`。当前自动客户端访问两个 pocket 域名的该文件、首页和健康接口均返回 HTTP 403、Cloudflare `error code: 1010`，是边缘对当前客户端的访问限制，不能据此断言校验文件在线丢失，也未验证微信校验服务器是否受到相同限制。本轮没有更改 Cloudflare 安全配置或部署 Pages。
+
+用户已授权提交审核；Computer Use 明确禁止访问 `mp.weixin.qq.com`，包括用户已经打开的后台标签。本轮已完成开发包上传，后台体验版设置、审核提交和正式发布均未执行，需用户接管。下方 Pages 生产与账号联调记录属于另一阶段，不等同于本次微信客户端验收。
+
+# 2026-10-21 共享账号验收记录
 
 当前 Pages 生产部署为 [21884f14](https://21884f14.brclio-miniapp-wechat.pages.dev)，已包含本轮存储无损往返窄修；`8a60550b` 仅保留为早期账号验收历史。固定 `https://pocket.bornforthis.cn` 账号代理已与中央 `https://tools.brclio.com` 完成真实隔离测试账号联调。Pages 是网页/代理部署，不是微信小程序上传或正式发布。
 
