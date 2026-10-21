@@ -87,25 +87,15 @@ npm run build
 
 旧 `wedding` AI示例模块设为planned，不构建、不公开。真实摄影不混入旧FirstSight样例、重复聚合、模拟EXIF、信件、视频或留言。来源和导入维护见 [SOURCE.md](../web/projects/firstsight/SOURCE.md)。
 
-## 当前 Canvas 模块示例
+## ReadyGoDuel 原作与计分扩展
 
-反应挑战的构建登记如下：
+默认 `/projects/ready-go-duel/` 恢复原作固定提交 `e3efd5f3c1f40ac780cce0ff170b904922b1acf5` 的 React 界面与玩法，包含触摸、无限模式、开始／GO／抢跑／胜利音效、彩头设置与 TXT 导入、自定义标题和玩家名、3–10 秒最大等待时间及 PNG 战报。用户本次明确允许移除声控，因此麦克风、录音和录音回放不再属于交付范围；其他原有功能继续保留。源码、构建登记和逐项验证证据见 [READY_GO_DUEL_PARITY.md](READY_GO_DUEL_PARITY.md)；未经真机与听觉验收，不将这些接入记录表述为最终效果已完全一致。
 
-```json
-{
-  "id": "ready-go-duel",
-  "kind": "canvas",
-  "source": "web/projects/ready-go-duel",
-  "files": ["index.html", "page.css", "local.js"],
-  "assets": [
-    { "source": "web/projects/ready-go-duel/assets", "target": "assets" }
-  ]
-}
-```
+原生 `/pages/duel/index` 按用户最新要求采用 Brclio 品牌的手机布局：原生导航、上下对坐触控区、底部操作栏与可滚动底部面板。单局和无限总战报同步重设计，分别输出 600×900、600×1100 PNG，使用用户提供的真实小程序码；原始码文件按字节保留在 `miniprogram/assets/duel-miniprogram-code.jpg`。
 
-当前 `canvas` 类型专用于仓库已有的反应挑战引擎：除了复制登记文件，还会复制共享 `web/runtime.js`、`web/style.css`，并用 `scripts/bundle-game.js` 生成模块内 `bundle.js`。它不是任意 Canvas 代码的通用适配器；新增其他实现时应明确修改并验证构建流程。
+原有 Canvas 实现保留为可选计分扩展，提供 1／3／5 分赛制、35 ms 平局窗口、5 秒无人响应超时、本机最近 20 场记录和暂停；这些规则不替代默认原作单轮玩法。共享引擎、平台适配与本机记录继续维护于 `minigame/lib/` 和 `web/runtime.js`，独立扩展页面由网页构建脚本生成，固定地址为 `/projects/ready-go-duel/match/`。`canvas` 类型仍只用于该共享实现；新增其他实现时应明确修改并验证构建流程。
 
-公开卡片将该项目登记到 `relax`，固定路径为 `/projects/ready-go-duel/`，展示类型为 `reaction`。`local.js` 关闭共享界面的云备份能力，产物不带备份脚本或 API 配置；使用偏好和最近 20 场记录仅保存在浏览器本地。来源见该模块的 `SOURCE.md`。
+公开卡片将项目登记到 `relax`，固定路径保持不变。原作网页保留 `counter.bornforthis.cn` 的 PV 计数脚本；战报二维码使用原图片的本地副本。网页与小程序均不申请麦克风，也不采集或保留录音。恢复原源码时应同步维护网络策略、权限策略与隐私说明，不能再宣称整个模块完全没有外部脚本或网络请求。来源见模块 `SOURCE.md`。
 
 ## 栏目与状态
 
@@ -133,4 +123,4 @@ npm run build
 
 ## 素材与数据
 
-当前摄影只读；原生与网页反应挑战分别在对应本机存储保存偏好和最近 20 场记录，可在模块内清除。没有云端用户档案、浏览记录或对局写入，不使用私有 GitHub 数据仓库存储用户数据。素材与网页随项目构建发布。来源署名、版权说明和 AI 标注随模块一起维护；新增外部项目时只适配授权范围内需要的部分，并记录固定上游提交与裁剪范围。
+当前摄影只读；原生与网页 ReadyGoDuel 分别在本机保存设置和自定义彩头，不采集录音。计分扩展保留最近 20 场本机记录，可在模块内清除；其可选共享账号与手动备份范围见 [ACCOUNT_PLAN.md](ACCOUNT_PLAN.md)。原作网页的 PV 请求与原生权限范围见功能对照。素材与网页随项目构建发布。来源署名、版权说明和 AI 标注随模块一起维护；新增外部项目时只适配授权范围内需要的部分，并记录固定上游提交与裁剪范围。

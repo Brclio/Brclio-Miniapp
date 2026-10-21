@@ -22,6 +22,7 @@ function nativeHost(t, options) {
   const transforms = [];
   const keepScreenOn = [];
   const modals = [];
+  const sounds = [];
   let stored = opt.stored;
   let canvasCalls = 0;
   let haptics = 0;
@@ -100,6 +101,9 @@ function nativeHost(t, options) {
     createImage() { return { width: 64, height: 64 }; }
   };
   if (opt.legacyWindowInfo) delete wx.getWindowInfo;
+  if (opt.audio) wx.createInnerAudioContext = function () {
+    return { stop() {}, destroy() {}, onError() {}, play() { sounds.push({ name: this.src.split('/').pop(), phase: app.snapshot().duel.phase }); } };
+  };
   globalThis.wx = wx;
   app = createGameApp(wx);
 
@@ -131,7 +135,7 @@ function nativeHost(t, options) {
   function touch(points) { events.touch({ changedTouches: points.map(function (p) { return point(p[0], p[1]); }) }); }
 
   return {
-    app, canvas, events, text, goPaintPhases, transforms, keepScreenOn, writes, modals,
+    app, canvas, events, text, goPaintPhases, transforms, keepScreenOn, writes, modals, sounds,
     get canvasCalls() { return canvasCalls; },
     get haptics() { return haptics; },
     get stored() { return stored; },
@@ -172,6 +176,23 @@ test('native boot creates a DPR-sized visible Canvas and registers touch, lifecy
   assert.ok(h.events.timeline().title.includes('举手决斗'));
   assert.equal(h.writes.length, 0);
   assert.equal(h.pendingTasks, 0);
+});
+
+test('start, displayed GO, win and false-start produce the original sounds; muted starts remain silent', (t) => {
+  const h = nativeHost(t, { audio: true });
+  h.enter(); h.start();
+  assert.deepEqual(h.sounds, [{ name: 'start.wav', phase: 'waiting' }]);
+  h.signal(); h.advance(200); h.tap(105, 460); h.advance(35);
+  assert.deepEqual(h.sounds.map(s => s.name), ['start.wav', 'go.wav', 'win.wav']);
+  assert.equal(h.sounds[1].phase, 'go', 'GO sound must follow the painted signal');
+  h.start(); h.tap(285, 460);
+  assert.equal(h.sounds.at(-1).name, 'false.wav');
+  h.tap(278, 31);
+  assert.equal(h.stored.soundEnabled, false);
+  const count = h.sounds.length;
+  h.start(); h.signal();
+  assert.equal(h.sounds.length, count);
+  h.app.dispose();
 });
 
 test('GO is painted in an animation frame before starting the actual reaction clock', (t) => {

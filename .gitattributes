@@ -1,2 +1,5 @@
 # Preserve pinned upstream snapshots byte for byte, including original whitespace.
 web/projects/firstsight/upstream/** -text -whitespace
+web/projects/ready-go-duel/upstream/** -text -whitespace
+# The deterministic adaptation retains upstream formatting.
+web/projects/ready-go-duel/App.tsx -whitespace

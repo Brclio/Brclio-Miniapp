@@ -1,0 +1,32 @@
+<view class="page-shell account-shell">
+  <view class="eyebrow">ONE ACCOUNT / BRCLIO</view>
+  <view class="document-title serif">让记录，跟着你。</view>
+  <view class="document-intro">同一个账号，在 Brclio 和悦创之间使用。挑战数据按需手动备份。</view>
+  <view wx:if="{{message}}" class="account-message" role="status">{{message}}</view>
+  <view wx:if="{{!user}}">
+    <view class="account-tabs"><button class="account-tab {{tab === 'login' ? 'selected' : ''}}" data-tab="login" bindtap="switchTab" disabled="{{busy}}">登录</button><button class="account-tab {{tab === 'register' ? 'selected' : ''}}" data-tab="register" bindtap="switchTab" disabled="{{busy}}">注册新账号</button></view>
+    <view wx:if="{{tab === 'login'}}" class="account-form">
+      <label for="identifier">账号或邮箱</label><input id="identifier" class="account-input" data-field="identifier" bindinput="input" value="{{identifier}}" maxlength="254" placeholder="输入账号或邮箱" disabled="{{busy}}" />
+      <label for="login-password">密码</label><input id="login-password" class="account-input" data-field="password" bindinput="input" value="{{password}}" password maxlength="128" placeholder="输入密码" disabled="{{busy}}" />
+      <button class="primary-button" bindtap="login" disabled="{{busy}}" loading="{{busy}}" hover-class="button-pressed">登录共享账号</button>
+    </view>
+    <view wx:else class="account-form">
+      <label for="username">账号</label><input id="username" class="account-input" data-field="username" bindinput="input" value="{{username}}" maxlength="32" placeholder="3–32 位，可含中文、字母、数字、_ . -" disabled="{{busy}}" />
+      <label for="email">邮箱</label><input id="email" class="account-input" data-field="email" bindinput="input" value="{{email}}" maxlength="254" placeholder="用于接收注册验证码" disabled="{{busy}}" />
+      <label for="code">邮箱验证码</label><view class="code-row"><input id="code" class="account-input" data-field="code" bindinput="input" value="{{code}}" type="number" maxlength="6" placeholder="6 位验证码" disabled="{{busy}}" /><button class="secondary-button" bindtap="sendCode" disabled="{{busy || cooldown > 0}}">{{cooldown > 0 ? cooldown + ' 秒后重发' : '获取验证码'}}</button></view>
+      <label for="new-account-password">设置密码</label><input id="new-account-password" class="account-input" data-field="password" bindinput="input" value="{{password}}" password maxlength="128" placeholder="8–128 位，请勿复用其他网站密码" disabled="{{busy}}" />
+      <button class="primary-button" bindtap="register" disabled="{{busy}}" loading="{{busy}}" hover-class="button-pressed">注册并登录</button>
+    </view>
+    <view class="account-note">账号资料与手动备份保存在私有 GitHub 仓库，包含明文密码，仓库授权管理者可读取。登录不自动上传或覆盖挑战记录。摄影和挑战可继续离线使用。</view>
+  </view>
+  <view wx:else>
+    <view class="account-identity"><view><view class="identity-name serif">{{user.nickname || user.username}}</view><view class="muted">{{user.email}}</view></view><button class="text-button" bindtap="logout" disabled="{{busy}}">退出登录</button></view>
+    <view class="sync-section"><view class="section-label">我的挑战备份</view><view class="sync-count"><text class="serif">{{localCount}}</text> 场在本机<text class="cloud-count">云端 {{cloudCount === null ? '尚无概况' : cloudCount + ' 场'}}</text></view><view class="account-note">{{cloudLabel}}。同步赛制、振动、玩家名及最近 20 场完整对局；每次备份或恢复前都会显示覆盖预览。</view>
+      <button class="primary-button" bindtap="backup" disabled="{{busy}}" hover-class="button-pressed">预览并备份本机数据</button><button class="secondary-button" bindtap="restore" disabled="{{busy}}" hover-class="button-pressed">预览并恢复云端数据</button><button class="text-button" bindtap="readCloud" disabled="{{busy}}">只读取云端概况 ↻</button>
+    </view>
+    <view class="account-form settings-section"><view class="section-label">共享个人资料</view><label for="nickname">昵称</label><input id="nickname" class="account-input" data-field="nickname" bindinput="input" value="{{nickname}}" maxlength="40" disabled="{{busy}}" /><label for="edit-username">账号</label><input id="edit-username" class="account-input" data-field="username" bindinput="input" value="{{username}}" maxlength="32" disabled="{{busy}}" /><button class="secondary-button" bindtap="saveProfile" disabled="{{busy}}">保存资料</button></view>
+    <view class="account-form settings-section"><view class="section-label">{{passwordEnabled ? '修改密码' : '设置密码'}}</view><view wx:if="{{passwordEnabled}}"><label for="current-password">当前密码</label><input id="current-password" class="account-input" data-field="currentPassword" bindinput="input" value="{{currentPassword}}" password maxlength="128" disabled="{{busy}}" /></view><label for="new-password">新密码</label><input id="new-password" class="account-input" data-field="newPassword" bindinput="input" value="{{newPassword}}" password maxlength="128" placeholder="8–128 位" disabled="{{busy}}" /><label for="confirm-password">确认新密码</label><input id="confirm-password" class="account-input" data-field="confirmPassword" bindinput="input" value="{{confirmPassword}}" password maxlength="128" disabled="{{busy}}" /><button class="secondary-button" bindtap="savePassword" disabled="{{busy}}">保存密码</button></view>
+    <view class="account-note">退出登录只移除本机账号会话。原有挑战记录和偏好仍留在本机；共享设备时，请在备份预览中确认目标账号。</view>
+  </view>
+  <button class="text-button privacy-link" bindtap="openPrivacy" hover-class="button-pressed">隐私与数据说明 →</button>
+</view>

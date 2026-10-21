@@ -1,5 +1,6 @@
 {
-  "navigationBarTitleText": "双人反应挑战",
+  "navigationBarTitleText": "双人反应",
+  "navigationStyle": "default",
   "navigationBarBackgroundColor": "#fefcf6",
   "navigationBarTextStyle": "black",
   "backgroundColor": "#fefcf6",

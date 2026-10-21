@@ -1,0 +1,26 @@
+/* Adapted from Brclio Design System app template. Brclio · CC BY-NC-SA 4.0. */
+.account-shell { padding-top: 38rpx; }
+.account-shell .document-title { font-size: 40rpx; }
+.account-tabs { display: flex; margin: 36rpx 0 26rpx; border-bottom: 1rpx solid #dedbd2; }
+.account-tab { flex: 1; padding: 22rpx 12rpx; color: #75716a; background: transparent; border-bottom: 4rpx solid transparent; }
+.account-tab.selected { color: #2b7fd8; border-bottom-color: #2b7fd8; font-weight: 600; }
+.account-form label { display: block; margin: 24rpx 0 10rpx; font-size: 25rpx; }
+.account-input { width: 100%; min-height: 92rpx; height: 92rpx; border: 1rpx solid #d6d0c4; border-radius: 10rpx; padding: 16rpx 22rpx; background: #faf6eb; font-size: 26rpx; }
+.account-form .primary-button, .account-form .secondary-button { margin-top: 28rpx; }
+.account-note { color: #75716a; font-size: 23rpx; line-height: 1.85; margin: 22rpx 0; }
+.account-message { color: #6a552a; font-size: 25rpx; padding: 22rpx 24rpx; margin-top: 28rpx; background: #f5edcf; border-radius: 8rpx; overflow-wrap: anywhere; }
+.code-row { display: flex; gap: 14rpx; align-items: center; }
+.code-row .account-input { flex: 1; width: 0; }
+.code-row .secondary-button { font-size: 23rpx; flex-shrink: 0; padding: 22rpx 18rpx; margin: 0; }
+.account-identity { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; margin: 38rpx 0; padding-bottom: 28rpx; border-bottom: 1rpx solid #dedbd2; overflow-wrap: anywhere; }
+.identity-name { font-size: 34rpx; font-weight: 600; }
+.account-identity .muted { font-size: 23rpx; }
+.section-label { font-size: 28rpx; font-weight: 600; }
+.sync-count { display: flex; align-items: baseline; gap: 10rpx; margin-top: 22rpx; font-size: 24rpx; color: #75716a; }
+.sync-count .serif { font-size: 58rpx; color: #1a1a2e; }
+.cloud-count { margin-left: auto; font-size: 23rpx; }
+.sync-section .secondary-button { margin-top: 18rpx; }
+.settings-section { padding-top: 32rpx; margin-top: 28rpx; border-top: 1rpx solid #dedbd2; }
+.privacy-link { margin-top: 28rpx; }
+button[disabled] { opacity: .55; }
+@media (min-width: 900px) { .account-shell { max-width: 680px; } }

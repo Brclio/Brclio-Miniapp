@@ -17,7 +17,7 @@
 - 来源：[Brclio/brclio-design-system](https://github.com/Brclio/brclio-design-system)
 - 作者：Brclio（黄家宝）
 - 许可证：CC BY-NC-SA 4.0（署名、非商业性使用、相同方式共享）。
-- 使用内容：App 型模板、品牌配色、字体建议、作者资料与头像。当前内容空间、摄影模块与原生入口按相同设计语言适配。
+- 使用内容：App 型模板、品牌配色、字体建议、作者资料与头像。当前内容空间、摄影模块、原生对局与战报按相同设计语言适配。
 - 如需超出上述许可范围的商业使用，应确认权利人授权。此说明不为设计素材添加新的授权。
 
 ## ReadyGoDuel 互动适配
@@ -25,12 +25,13 @@
 - 原作：[AndersonHJB/ReadyGoDuel](https://github.com/AndersonHJB/ReadyGoDuel)
 - 作者：AI悦创／AndersonHJB
 - 本次参考版本：`e3efd5f3c1f40ac780cce0ff170b904922b1acf5`
-- 本项目重新实现双人同屏触屏反应，复用仓库的规则、Canvas 界面和本机存储源码；不是原 React 网页的完整镜像。
-- `0.1.1` 已将该模块公开登记为「放松 → 双人反应挑战」，路径 `/projects/ready-go-duel/`，并提供原生固定入口；完整版本的最终部署和微信发布状态见 [验证记录](docs/VERIFICATION.md)。不设置审核身份、时间或隐藏入口分流。
+- 默认网页以该固定提交的 React 源码与界面为基线；原生小程序适配触摸、无限模式、开始／GO／抢跑／胜利音效、彩头、设置与战报。用户本次明确允许移除声控，因此两端不再提供麦克风采集、录音及录音高光回放；不再声称当前完整源码与固定原作逐字一致。功能对照和仍待设备验收的项目见 [READY_GO_DUEL_PARITY.md](docs/READY_GO_DUEL_PARITY.md)，不以源码接入代替视觉、听觉或真机验收。
+- 本仓库原有的 1／3／5 分 Canvas 挑战保留为独立计分扩展，不改变默认原作玩法。该扩展的本机记录与可选账号备份遵循各自数据说明；已移除的声控与录音不进入备份范围。
+- 模块登记为「放松 → 双人反应挑战」，固定路径 `/projects/ready-go-duel/`，并提供原生固定入口；本次恢复的部署和微信发布状态需另行验收，见 [验证记录](docs/VERIFICATION.md)。不设置审核身份、时间或隐藏入口分流。
 - 原仓库 README 要求使用前获得作者授权，二次开发开源并告知作者链接。分发相关源码与互动模块时仍应遵守该要求，不将原作视为 MIT 或其他未授予的许可证。
 - 本项目源码仓库地址为 [Brclio/Brclio-Miniapp](https://github.com/Brclio/Brclio-Miniapp)。本工程不会自动向原作者发送消息，仓库发布与原作者告知是分别处理的事项。
 
-本次网页宿主和本机数据范围见 [模块来源说明](web/projects/ready-go-duel/SOURCE.md)。当前没有云端记录上传或备份。
+网页宿主和本机数据范围见 [模块来源说明](web/projects/ready-go-duel/SOURCE.md)。原作网页保留 `counter.bornforthis.cn` 的 PV 计数脚本及网站二维码的本地副本；原生小程序战报按用户要求重新设计，并使用用户提供的 Brclio 悦创小程序码，原文件字节保存在 `miniprogram/assets/duel-miniprogram-code.jpg`。本次移除声控、麦克风采集、录音与录音回放。原生战报仅在点击保存时请求相册写入权限。计分扩展的账号备份范围见账号说明。
 
 ## 运行依赖
 
@@ -38,4 +39,4 @@
 - lucide-react `0.460.0`：ISC License；部分图标源自 Cole Bemis 的 Feather（MIT），其余版权归 Lucide Contributors。
 - 构建保留依赖许可证注释；分发时应保留各依赖的版权和许可声明。
 
-esbuild 与 Wrangler 是构建、部署开发依赖。本项目不包含原项目的访问统计脚本。已恢复的可用摄影图片随同一 Cloudflare 项目分发，页面不依赖上游图片站点实时加载；第三方图片的原始地址仅作为来源记录保留。
+esbuild 与 Wrangler 是构建、部署开发依赖。ReadyGoDuel 独立网页保留原项目的访问统计脚本；原生小程序没有接入该脚本。已恢复的可用摄影图片随同一 Cloudflare 项目分发，页面不依赖上游图片站点实时加载；第三方图片的原始地址仅作为来源记录保留。

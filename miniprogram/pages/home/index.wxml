@@ -42,16 +42,16 @@
         <view class="duel-court"><view class="duel-player player-one"><text>01</text><text class="player-caption">准备好了吗</text></view><view class="duel-versus serif">vs.</view><view class="duel-player player-two"><text>02</text><text class="player-caption">就等你了</text></view></view>
         <view class="duel-bottom"><text class="duel-dot"></text><text>注意信号，看看谁更快。</text></view>
       </view>
-      <view class="game-details"><view class="entry-topline"><text class="feature-title serif">双人反应挑战</text><text class="small-label">同屏双人</text></view><view class="game-copy">一部手机，两个人。等待信号，再出手。</view><view class="game-tags"><text>1 / 3 / 5 分赛制</text><text>抢跑判定</text><text>本机记录</text></view><view class="game-action"><text>来一局</text><text aria-hidden="true">↗</text></view></view>
+      <view class="game-details"><view class="entry-topline"><text class="feature-title serif">双人反应挑战</text><text class="small-label">同屏双人</text></view><view class="game-copy">一部手机，两个人。等待信号，再出手。</view><view class="game-tags"><text>触摸 / 无限模式</text><text>惊喜彩头</text><text>原作音效</text></view><view class="game-action"><text>来一局</text><text aria-hidden="true">↗</text></view></view>
     </button>
-    <view class="play-note"><text class="small-label">玩法很简单</text><view class="play-note-title serif">面对面，才好玩。</view><view class="entry-copy">两人在同一部设备上操作，无需匹配。<view>对局记录留在本机，随时可以清空。</view></view></view>
+    <view class="play-note"><text class="small-label">玩法很简单</text><view class="play-note-title serif">面对面，才好玩。</view><view class="entry-copy">两人在同一部设备上操作，无需匹配。<view>还可进入计分扩展，保留最近 20 场本机战绩。</view></view></view>
   </view>
 
   <view wx:else class="tab-content">
     <view class="section-intro"><view class="intro-topline"><text class="eyebrow">YOUR LITTLE CORNER</text><text class="issue-number">03 / 我的</text></view><view class="intro-title serif">给喜欢的事，<view><text class="word-highlight">留个位置。</text></view></view></view>
     <view class="visitor-section">
-      <view class="visitor-topline"><view class="visitor-icon" aria-hidden="true"><view class="visitor-head"></view><view class="visitor-body"></view></view><view><view class="visitor-title serif">你好，访客。</view><view class="visitor-caption">现在，随心逛逛。</view></view><text class="visitor-badge">访客模式</text></view>
-      <view class="account-note"><view class="account-title"><text class="status-dot" aria-hidden="true"></text>注册与登录筹备中</view><view class="entry-copy">当前无需账号，即可浏览摄影和体验放松。<view>账号功能开放后，会在这里与你见面。</view></view></view>
+      <view class="visitor-topline"><view class="visitor-icon" aria-hidden="true"><view class="visitor-head"></view><view class="visitor-body"></view></view><view><view class="visitor-title serif">你好，{{accountName || '访客'}}。</view><view class="visitor-caption">现在，随心逛逛。</view></view><text class="visitor-badge">{{accountName ? '共享账号' : '访客模式'}}</text></view>
+      <view class="account-note"><view class="account-title"><text class="status-dot" aria-hidden="true"></text>一个账号，带着记录出发</view><view class="entry-copy">使用 Brclio 共享账号登录，手动备份和恢复挑战数据。<view>摄影与挑战仍可无需登录使用。</view></view><button class="text-button" bindtap="openAccount" hover-class="button-pressed">登录 / 注册与挑战备份 →</button></view>
     </view>
     <view class="personal-links">
       <button class="personal-link" style="width: 100%; display: flex;" data-id="content-hub" bindtap="openFeature" hover-class="button-pressed" aria-label="浏览全部已发布的内容与项目"><view><view class="personal-link-title">全部内容</view><view class="personal-link-copy">摄影与放松，随时回来看看</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>

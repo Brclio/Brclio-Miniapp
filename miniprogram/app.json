@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/home/index",
+    "pages/account/index",
     "pages/gallery/index",
     "pages/duel/index",
     "pages/web/index",

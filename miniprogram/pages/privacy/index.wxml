@@ -2,32 +2,32 @@
   <view class="eyebrow">PRIVACY / DATA</view>
   <view class="document-title serif">隐私与数据说明</view>
   <view class="document-intro">关于权限、联网与留在本机的记录。</view>
-  <view class="privacy-date">更新日期：2026 年 10 月 20 日</view>
+  <view class="privacy-date">更新日期：2026 年 10 月 21 日</view>
 
   <view class="document-section">
     <text class="document-heading serif">1. 当前提供的服务</text>
-    <text class="document-copy">「Brclio 悦创」当前版本提供摄影与放松两个栏目：摄影包含 FirstSight_Online 的 8 组婚纱与 1 组孕期影像，共 169 张实际摄影照片，支持相册浏览与大图查看；放松提供同一设备上的双人反应挑战。摄影图片为原项目优化图片的本地展示版本，保留原有标题与说明。无需注册或登录，不提供预约、交易、评论或图片上传。</text>
-    <text class="document-copy">「我的」为访客模式。注册与登录功能筹备中，当前不创建账户，也不提供云端收藏或数据同步。</text>
+    <text class="document-copy">「Brclio 悦创」当前版本提供摄影与放松两个栏目：摄影包含 FirstSight_Online 的 8 组婚纱与 1 组孕期影像，共 169 张实际摄影照片，支持相册浏览与大图查看；放松提供同一设备上的 ReadyGoDuel 触摸、无限挑战，以及独立的计分扩展。摄影图片为原项目优化图片的本地展示版本，保留原有标题与说明。无需注册或登录，不提供预约、交易、评论或图片上传。</text>
+    <text class="document-copy">「我的」提供可选的 Brclio 共享账号注册、登录、资料设置与手动挑战备份。未登录仍可使用摄影与挑战。账号能力需要对应服务部署可用，微信生产使用还需配置合法 request 域名。</text>
   </view>
 
   <view class="document-section">
     <text class="document-heading serif">2. 权限与本机数据</text>
-    <text class="document-copy">当前功能不调用微信头像、昵称、手机号、位置、相册、相机、麦克风或通讯录等权限，不要求填写姓名、联系方式等个人资料，也不创建用户档案或云端备份。</text>
-    <text class="document-copy">双人反应挑战在微信本地缓存中保存赛制、振动等使用偏好，以及最近 20 场的对局时间、比分和反应成绩。这些信息仅保存在当前设备，不上传服务器或 GitHub，不提供云备份。可在挑战页面清空本机历史记录。</text>
+    <text class="document-copy">摄影浏览、触摸挑战和计分扩展不需要相册权限；只有主动保存战报图片时才申请相册写入权限，拒绝后仍可使用摄影和挑战。当前版本已移除声控，不采集录音，也不调用微信头像、昵称、手机号、位置、相机、麦克风或通讯录权限。自愿注册共享账号时，需要填写账号名、邮箱、邮件验证码及密码；邮箱用于验证账号，昵称可选。不会调用 wx.login 或读取微信身份。</text>
+    <text class="document-copy">ReadyGoDuel 在微信本地缓存保存标题、玩家名、等待时间和自定义彩头等设置。计分扩展在本地缓存中保存赛制、振动等使用偏好，以及最近 20 场的对局时间、比分和反应成绩。默认只保存在当前设备。登录后，只有点击备份并确认覆盖预览，才上传赛制、振动、玩家名和最近 20 场记录；恢复同样需要预览确认，先在本机保存一份完整恢复前副本。退出账号不删除挑战记录，可在挑战页面清空本机历史。</text>
     <text class="document-copy">摄影图片随小程序摄影分包内置。你可以通过微信设置清理该小程序的缓存；清理缓存可能使本机记录与偏好不再保留，微信会在下次打开时重新获取小程序代码包。</text>
   </view>
 
   <view class="document-section">
     <text class="document-heading serif">3. 内置内容与网络</text>
-    <text class="document-copy">摄影列表、照片详情、大图浏览和双人反应挑战均为小程序原生代码。摄影展示图片随摄影分包上传，游戏无需下载网页或访问外部 API。微信首次获取或更新小程序及分包需要正常网络连接，相关网络信息按微信平台的服务规则处理。</text>
-    <text class="document-copy">当前版本不接入广告或访问行为分析服务，不上传用户浏览记录、双人反应对局记录或使用偏好，也不提供云备份。</text>
+    <text class="document-copy">摄影列表、照片详情、大图浏览和双人反应挑战均为小程序原生代码。摄影展示图片随摄影分包上传，日常摄影和游戏无需下载网页或访问外部 API。账号与手动备份通过 pocket.bornforthis.cn 的固定接口转交 Brclio 中央账号服务；服务不可用时，本机摄影与挑战可继续使用。微信首次获取或更新小程序及分包需要正常网络连接，相关网络信息按微信平台的服务规则处理。</text>
+    <text class="document-copy">本小程序不接入广告或访问行为分析服务，不上传浏览记录。独立网页的 ReadyGoDuel 保留原作 PV 计数脚本，会向 counter.bornforthis.cn 发起请求；此项不在原生小程序中运行。共享账号资料与手动备份以明文 JSON 存放于私有 GitHub 仓库 BrclioData/BrclioUserData，每个用户独立目录，包括用户设置的明文密码；仓库授权管理者可读取，因此请勿复用其他服务密码。服务端 GitHub token 不下发小程序；本机只保存该用户的登录会话。Cloudflare 与 GitHub 可能处理完成服务所需的网络请求信息。</text>
   </view>
 
   <view class="document-section">
     <text class="document-heading serif">4. 联系与更新</text>
     <text class="document-copy">服务提供者：莆田市荔城区黄家蓉宝电脑店。如对隐私、数据或图片内容有疑问，可通过下列邮箱或微信右上角菜单中的「反馈与投诉」联系我们。</text>
     <text class="document-copy" selectable="true">联系邮箱：aiyuechuang@gmail.com</text>
-    <text class="document-copy">后续若新增需要个人信息或设备权限的功能，会更新本说明，并在使用前按微信要求说明用途和申请授权。</text>
+    <text class="document-copy">如需处理账号或云端备份，请通过上述邮箱联系并验证账号归属。当前只提供手动备份与恢复，尚未提供自助账号删除入口；Git 历史可能保留旧版本记录。后续新增权限时，会更新说明并按微信要求申请授权。</text>
   </view>
   <view class="privacy-footer">Brclio / 悦创 · 收藏影像，轻松片刻。</view>
 </view>

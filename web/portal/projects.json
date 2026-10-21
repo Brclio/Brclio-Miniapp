@@ -62,11 +62,11 @@
       "kind": "reaction",
       "title": "双人反应挑战",
       "subtitle": "两个人，一块屏幕。",
-      "description": "等 GO 出现后比一比反应，支持 1 / 3 / 5 分赛制、抢跑判定与本机战绩记录。",
+      "description": "原作触摸对决与无限挑战，保留开始音效、惊喜彩头和图片战报；另有计分与本机战绩扩展。",
       "path": "/projects/ready-go-duel/",
       "cover": "/projects/ready-go-duel/assets/avatar.png",
       "coverAlt": "Brclio 头像，双人反应挑战入口",
-      "disclosure": "同屏双人 · 本机记录",
+      "disclosure": "同屏双人 · 触摸与无限挑战",
       "label": "轻松互动",
       "action": "开始反应挑战"
     }

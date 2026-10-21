@@ -67,7 +67,7 @@ try {
   const registry = require(path.join(root, 'web/portal/catalog.js')).validateCatalog(JSON.parse(fs.readFileSync(path.join(outputRoot, 'projects.json'), 'utf8')));
   const version = require(path.join(root, 'package.json')).version;
   check(registry.version === version && site.version === version, '门户与原生版本一致');
-  check(registry.categories.find(function (item) { return item.id === 'relax'; }).status === 'active' && registry.projects.some(function (item) { return item.id === 'ready-go-duel' && item.category === 'relax' && item.status === 'active'; }) && fs.existsSync(path.join(outputRoot, 'projects/ready-go-duel/bundle.js')), '放松栏目及双人反应挑战如实登记并发布');
+  check(registry.categories.find(function (item) { return item.id === 'relax'; }).status === 'active' && registry.projects.some(function (item) { return item.id === 'ready-go-duel' && item.category === 'relax' && item.status === 'active'; }) && ['main.js', 'main.css', 'match/bundle.js'].every(function (file) { return fs.existsSync(path.join(outputRoot, 'projects/ready-go-duel', file)); }), '放松栏目、原版反应对决与积分扩展均已构建');
   check(require(path.join(appRoot, 'data/catalog.js')).features.map(function (feature) { return feature.id; }).sort().join(',') === 'content-hub,firstsight,ready-go-duel,relax,wedding-inspiration', '原生固定入口及历史分享入口登记完整');
   const photoData = JSON.parse(fs.readFileSync(path.join(root, 'web/projects/firstsight/original-data.json'), 'utf8'));
   const photoAssets = photoData.assets.filter(function (asset) { return asset.available; });

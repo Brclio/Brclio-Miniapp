@@ -1,8 +1,10 @@
 const catalog = require('../../data/catalog');
+const { createAccountClient } = require('../../lib/account');
 
 Page({
   data: {
     activeTab: 'photo',
+    accountName: '',
     featured: catalog.getFeature('firstsight')
   },
 
@@ -10,6 +12,11 @@ Page({
     if (typeof wx.setNavigationBarTitle === 'function') wx.setNavigationBarTitle({ title: 'Brclio 悦创' });
     const tab = options && options.tab;
     if (['photo', 'relax', 'mine'].indexOf(tab) !== -1) this.setData({ activeTab: tab });
+  },
+
+  onShow() {
+    const user = createAccountClient(wx).currentUser();
+    this.setData({ accountName: user ? user.nickname || user.username : '' });
   },
 
   switchTab(event) {
@@ -31,6 +38,10 @@ Page({
 
   openPrivacy() {
     wx.navigateTo({ url: '/pages/privacy/index' });
+  },
+
+  openAccount() {
+    wx.navigateTo({ url: '/pages/account/index' });
   },
 
   onShareAppMessage() {

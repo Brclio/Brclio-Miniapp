@@ -152,6 +152,7 @@
     },
     createOffscreenCanvas: function (options) { const canvas = decorateCanvas(document.createElement('canvas')); canvas.width = options && options.width || 1; canvas.height = options && options.height || 1; return canvas; },
     createImage: function () { return new Image(); },
+    createWebAudioContext: function () { const AudioContext = window.AudioContext || window.webkitAudioContext; return AudioContext ? new AudioContext() : null; },
     getWindowInfo: windowInfo,
     getSystemInfoSync: function () { return Object.assign(windowInfo(), { platform: 'web', system: 'Web', brand: 'browser', model: 'Web', language: navigator.language, SDKVersion: '3.7.0', version: '0.1.0', benchmarkLevel: 1 }); },
     getSystemInfo: function (options) { complete(options, wx.getSystemInfoSync()); },

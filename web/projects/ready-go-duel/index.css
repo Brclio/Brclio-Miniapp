@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Keep portal navigation in its own row, outside both players' touch zones. */
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { display: flex; flex-direction: column; height: 100dvh; }
+#root { flex: 1 1 auto; min-height: 0; position: relative; overflow: hidden; }
+#root > div { height: 100%; }
+#root .fixed.bottom-3 { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+.module-navigation {
+  position: relative;
+  z-index: 60;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 0 12px env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+  color: #64748b;
+  font: 11px/1.5 ui-sans-serif, system-ui, sans-serif;
+}
+.module-navigation a { display: inline-flex; align-items: center; min-height: 36px; text-decoration: none; }
+.module-navigation a:hover { color: #4f46e5; }
+.module-navigation a:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+@media (max-width: 350px) { .module-navigation { gap: 8px; font-size: 10px; padding-inline: 8px; } }

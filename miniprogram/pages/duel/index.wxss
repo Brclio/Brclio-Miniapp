@@ -1,9 +1,166 @@
-page { width: 100%; height: 100%; overflow: hidden; background: #fefcf6; }
-.duel-page { position: relative; overflow: hidden; background: #fefcf6; }
-.duel-canvas { display: block; }
-.duel-state { position: absolute; left: 0; top: 0; width: 100%; height: 100%; padding: 64rpx; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; background: #fefcf6; }
-.state-mark { color: #2b7fd8; font-size: 70rpx; line-height: 1; }
-.state-title { margin-top: 24rpx; font-size: 38rpx; font-weight: 700; }
-.state-copy { margin-top: 18rpx; color: #75716a; font-size: 25rpx; line-height: 1.9; }
-.state-button { margin-top: 38rpx; min-height: 44px; }
-.state-back { margin-top: 12rpx; min-height: 44px; }
+/* Native play surface adapted from Brclio Design System's app controls and sheets.
+   Brclio · CC BY-NC-SA 4.0. */
+page { width:100%; height:100%; overflow:hidden; background:#fefcf6; color:#1a1a2e; line-height:1.5; }
+.duel-mobile { width:100%; max-width:760px; margin:0 auto; padding:0 16px; overflow:hidden; display:flex; flex-direction:column; background:#fefcf6; }
+.duel-mobile button { width:auto; min-height:44px; padding:0; margin:0; border:0; line-height:1.4; font-size:14px; font-weight:600; border-radius:10px; background:transparent; }
+.duel-mobile image { display:block; flex-shrink:0; }
+.duel-mobile button[disabled] { color:#a09a8e; background:#eae4d8; }
+.control-pressed { opacity:.72; }
+.game-tools { display:flex; gap:8px; align-items:center; padding:12px 0; flex-shrink:0; }
+.mode-control { display:flex; gap:4px; padding:3px; border-radius:12px; background:#f0ebdf; flex:1; min-width:0; }
+.duel-mobile .mode-button { flex:1; min-width:0; min-height:44px; padding:0 8px; display:flex; align-items:center; justify-content:center; font-size:13px; color:#817b71; white-space:nowrap; }
+.duel-mobile .mode-selected { color:#2b7fd8; background:#fefcf6; }
+.duel-mobile .tool-button { width:44px; height:44px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#f3eee3; }
+.tool-button image { width:21px; height:21px; opacity:.75; }
+.sound-off image { opacity:.4; }
+.round-heading { padding:0 2px 14px; flex-shrink:0; }
+.round-title { font-size:22px; font-weight:700; line-height:1.35; letter-spacing:-.4px; overflow-wrap:anywhere; }
+.round-caption { font-size:12px; color:#817b71; margin-top:5px; line-height:1.6; }
+.play-court { display:flex; flex-direction:column; flex:1; min-height:0; position:relative; }
+.touch-zone { display:flex; align-items:center; justify-content:center; flex:1; min-height:70px; border-radius:16px; overflow:hidden; transition:background-color .2s; }
+.touch-zone.p1 { order:1; background:#f8e9e5; color:#b74551; }
+.touch-zone.p2 { order:3; background:#e7eff4; color:#2b7fd8; }
+.court-go .touch-zone.p1 { background:#f3d9d1; }
+.court-go .touch-zone.p2 { background:#d6e6f2; }
+.touch-zone.p1.zone-winner { background:#f2d5cd; }
+.touch-zone.p2.zone-winner { background:#d5e6f2; }
+.zone-loser { opacity:.62; }
+.zone-content { width:100%; height:100%; display:flex; align-items:center; justify-content:center; gap:18px; padding:18px 16px; }
+.opposed-player { transform:rotate(180deg); }
+.player-emblem { width:66px; height:66px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:rgba(232,74,95,.08); }
+.p2 .player-emblem { background:rgba(43,127,216,.09); }
+.zone-winner .player-emblem { background:#f4d758; }
+.player-emblem image { width:35px; height:35px; }
+.zone-winner .player-emblem image { width:43px; height:43px; }
+.zone-label { min-width:0; max-width:230px; }
+.zone-eyebrow { font-size:10px; letter-spacing:.7px; line-height:1.5; opacity:.8; }
+.has-reward { letter-spacing:0; }
+.zone-name { font-size:27px; font-weight:700; line-height:1.35; margin:5px 0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.zone-instruction { font-size:11px; line-height:1.5; color:#81756e; }
+.p2 .zone-instruction { color:#6e7e89; }
+.status-rail { order:2; height:50px; min-height:50px; display:flex; align-items:center; justify-content:center; gap:9px; flex-shrink:0; }
+.signal-dot { width:7px; height:7px; background:#c6b56d; border-radius:50%; flex-shrink:0; }
+.status-main { font-size:13px; color:#5c584e; font-weight:600; }
+.status-note { font-size:11px; color:#928b7e; }
+.status-WAITING .signal-dot { background:#e84a5f; }
+.status-WAITING .status-main { color:#9c7231; }
+.go-word { color:#2b7fd8; font-size:32px; font-weight:800; line-height:1; letter-spacing:-1px; }
+.status-GO .status-note { color:#2b7fd8; }
+.result-name { max-width:48%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:700; }
+.result-name.p1,.round-winner.p1 { color:#c94e5d; }
+.result-name.p2,.round-winner.p2 { color:#2b7fd8; }
+.result-time { color:#1a1a2e; font-family:Georgia,'Songti SC',serif; font-size:28px; line-height:1; }
+.time-unit { color:#817b71; font-family:-apple-system,'PingFang SC',sans-serif; font-size:11px; }
+.false-result { color:#a46c4d; font-size:12px; }
+.game-dock { min-height:98px; padding:12px 0 calc(12px + env(safe-area-inset-bottom)); flex-shrink:0; }
+.duel-mobile .main-action { flex:1; min-width:0; width:100%; min-height:48px; padding:12px 16px; display:flex; align-items:center; justify-content:center; gap:12px; color:#fefcf6; background:#2b7fd8; font-size:15px; font-weight:600; text-align:center; border-radius:10px; }
+.game-dock>.main-action { justify-content:space-between; }
+.action-arrow { font-size:23px; font-weight:400; line-height:1; }
+.dock-hint { margin-top:8px; text-align:center; font-size:11px; color:#928b7e; }
+.in-game-note { min-height:73px; display:flex; align-items:center; justify-content:center; gap:9px; font-size:12px; color:#817b71; text-align:center; }
+.note-mark { color:#2b7fd8; font-size:24px; line-height:1; }
+.result-utilities { display:flex; gap:8px; margin-bottom:8px; }
+.duel-mobile .utility-button { flex:1; min-width:0; min-height:44px; padding:8px 6px; display:flex; align-items:center; justify-content:center; gap:5px; color:#6d6a60; background:#f2ede2; border-radius:8px; font-size:12px; white-space:nowrap; }
+.utility-button image { width:15px; height:15px; opacity:.75; }
+.duel-mobile .reward-utility { background:#f4efd9; color:#8c7834; }
+.reward-result { padding:8px 12px; margin-bottom:8px; background:#f4efd9; border-radius:8px; display:flex; align-items:baseline; gap:10px; }
+.reward-result-label { color:#968342; font-size:10px; white-space:nowrap; }
+.reward-result-content { color:#6c5b2b; font-size:13px; line-height:1.6; font-weight:600; word-break:break-all; }
+.reward-result-scroll { flex:1; min-width:0; height:42px; }
+.confetti-layer { position:absolute; inset:0; z-index:45; overflow:hidden; pointer-events:none; }
+.confetti { position:absolute; top:-20px; width:6px; height:9px; border-radius:1px; animation:confetti-fall 2s ease-out forwards; }
+.sheet-backdrop { position:absolute; left:0; top:0; right:0; bottom:0; z-index:60; display:flex; align-items:flex-end; justify-content:center; background:rgba(26,26,46,.32); }
+.native-sheet { display:flex; flex-direction:column; width:100%; max-width:760px; max-height:94%; padding:10px 20px calc(16px + env(safe-area-inset-bottom)); border-radius:24px 24px 0 0; background:#fefcf6; box-shadow:0 -8px 28px rgba(26,26,46,.08); }
+.sheet-grip { width:30px; height:4px; border-radius:99px; background:#dbd4c6; margin:0 auto 12px; flex-shrink:0; }
+.sheet-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-shrink:0; }
+.sheet-kicker { display:block; font-size:9px; letter-spacing:1.6px; color:#2b7fd8; line-height:1.5; font-weight:600; }
+.sheet-title { font-size:22px; font-weight:700; color:#1a1a2e; line-height:1.45; margin-top:4px; }
+.duel-mobile .sheet-close { width:44px; height:44px; min-width:44px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:#f1ecdf; color:#8c8476; font-size:26px; font-weight:400; }
+.sheet-scroll { width:100%; min-height:0; flex-shrink:1; }
+.settings-scroll { height:390px; max-height:52vh; }
+.rewards-scroll { height:360px; max-height:52vh; }
+.summary-scroll { height:32vh; max-height:330px; }
+.sheet-actions { display:flex; gap:8px; align-items:stretch; padding-top:16px; flex-shrink:0; }
+.duel-mobile .secondary-action { flex:1; min-width:0; min-height:48px; padding:12px 10px; display:flex; align-items:center; justify-content:center; background:#f0ebdf; color:#6d6a60; font-size:14px; }
+.duel-mobile .reset-action { color:#c94e5d; flex:.7; }
+.sheet-actions .main-action { flex:1.5; }
+.form-field { margin-bottom:18px; min-width:0; }
+.field-label { display:block; color:#6d6a60; font-size:12px; font-weight:600; line-height:1.5; margin-bottom:8px; }
+.red-label { color:#c94e5d; }.blue-label { color:#2b7fd8; }
+.native-input-row { display:flex; align-items:center; min-width:0; height:48px; border:1px solid #e5dfd1; border-radius:10px; background:#faf7ef; overflow:hidden; }
+.native-input-row input { flex:1; min-width:0; width:0; height:46px; padding:0 12px; box-sizing:border-box; color:#1a1a2e; font-size:14px; line-height:1.5; }
+.duel-mobile .input-action { width:44px; min-width:44px; height:46px; border-radius:0; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.input-action image { width:19px; height:19px; opacity:.7; }
+.name-fields { display:flex; gap:12px; }
+.name-fields .form-field { flex:1; min-width:0; }
+.name-fields .native-input-row input { padding:0 10px; }
+.name-fields .input-action { width:44px; min-width:44px; }
+.wait-field { padding:0 0 18px; border-bottom:1px solid #e5dfd1; margin-bottom:18px; }
+.field-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.field-heading .field-label { margin:0; }
+.wait-value { color:#2b7fd8; font-size:13px; font-weight:600; }
+.wait-field slider { margin:16px 4px 12px; }
+.slider-labels { display:flex; justify-content:space-between; color:#a09787; font-size:10px; }
+.settings-more>.field-label { margin-bottom:0; }
+.duel-mobile .settings-link { display:flex; width:100%; min-height:48px; align-items:center; justify-content:space-between; gap:16px; border-bottom:1px solid #eae4d8; border-radius:0; padding:9px 0; color:#5e5b52; text-align:left; font-size:13px; font-weight:400; }
+.settings-link>text:last-child { font-size:19px; color:#2b7fd8; }
+.settings-link view { min-width:0; }
+.link-caption { display:block; color:#9b9283; font-size:10px; margin-top:3px; }
+.sheet-footnote { display:block; font-size:10px; line-height:1.7; color:#a09787; padding:12px 0 2px; }
+.reward-categories { width:100%; height:52px; flex-shrink:0; margin-bottom:6px; white-space:nowrap; }
+.category-track { display:inline-flex; gap:8px; padding:0 0 8px; min-width:100%; }
+.duel-mobile .category-button { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:9px 14px; border-radius:9px; background:#f1ecdf; color:#8c8476; font-size:12px; font-weight:400; white-space:nowrap; flex-shrink:0; }
+.duel-mobile .category-selected { background:#e4edf3; color:#2b7fd8; font-weight:600; }
+.reward-group { padding:16px 0; border-bottom:1px solid #e5dfd1; }
+.reward-group:first-child { padding-top:0; }
+.reward-player { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:#c94e5d; margin-bottom:10px; }
+.reward-group.p2 .reward-player { color:#2b7fd8; }
+.player-dot { width:6px; height:6px; border-radius:50%; background:#e84a5f; }
+.p2 .player-dot { background:#2b7fd8; }
+.reward-options { display:flex; gap:4px; margin-top:4px; }
+.duel-mobile .reward-options button { display:flex; flex:1; align-items:center; justify-content:center; gap:5px; min-width:0; min-height:44px; font-size:11px; color:#8b8274; font-weight:400; white-space:nowrap; }
+.reward-options image { width:15px; height:15px; opacity:.6; }
+.duel-mobile .reward-options .option-selected { color:#2b7fd8; background:#edf1ee; }
+.reward-password { display:flex; align-items:center; gap:12px; margin:4px 0 6px; font-size:12px; color:#8b8274; }
+.reward-password>text { flex-shrink:0; }
+.reward-password input { flex:1; min-width:0; height:44px; padding:0 10px; background:#faf7ef; border:1px solid #e5dfd1; border-radius:8px; font-size:14px; box-sizing:border-box; }
+.locked-reward { height:52px; padding:0 12px; border-radius:10px; display:flex; align-items:center; gap:8px; background:#f4efd9; color:#8d7b3e; font-size:12px; }
+.locked-reward image { width:18px; height:18px; }
+.secret-dots { margin-left:auto; letter-spacing:2px; opacity:.6; }
+.locked-actions { display:flex; gap:12px; margin-top:4px; }
+.duel-mobile .locked-actions button { flex:1; min-width:0; min-height:44px; font-size:12px; color:#2b7fd8; font-weight:400; }
+.locked-actions button:last-child { color:#9b9283; }
+.decrypted-reward { margin:16px 0; padding:12px; background:#f4efd9; border-radius:8px; }
+.decrypted-label { display:block; color:#968342; font-size:10px; }
+.decrypted-content { display:block; color:#6c5b2b; font-size:15px; font-weight:600; line-height:1.6; margin-top:5px; word-break:break-all; }
+.duel-mobile .import-rewards { width:100%; min-height:48px; display:flex; align-items:center; gap:8px; color:#2b7fd8; font-size:12px; font-weight:400; text-align:left; }
+.import-rewards image { width:16px; height:16px; opacity:.65; }
+.import-format { margin-left:auto; color:#9b9283; font-size:10px; }
+.password-backdrop { z-index:70; background:rgba(26,26,46,.38); }
+.password-body { padding-bottom:12px; flex-shrink:1; min-height:0; }
+.password-check { width:100%; height:52px; padding:0 12px; border:1px solid #e5dfd1; background:#faf7ef; border-radius:10px; font-size:24px; letter-spacing:5px; text-align:center; box-sizing:border-box; }
+.summary-score { display:flex; align-items:center; padding:0 8px 18px; border-bottom:1px solid #e5dfd1; margin-bottom:4px; flex-shrink:0; }
+.summary-player { flex:1; color:#c94e5d; font-size:12px; min-width:0; }
+.summary-player.p2 { text-align:right; color:#2b7fd8; }
+.summary-player>text:first-child { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.summary-wins { display:block; font-size:38px; font-weight:700; line-height:1.4; }
+.summary-wins text { font-family:-apple-system,'PingFang SC',sans-serif; font-size:11px; font-weight:400; }
+.summary-divider { color:#d6cdbc; font-size:32px; font-family:Georgia,'Songti SC',serif; font-style:italic; margin:0 16px; }
+.round-row { display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid #eae4d8; }
+.round-number { width:28px; flex-shrink:0; color:#a89b81; font-family:Georgia,'Songti SC',serif; font-size:18px; }
+.round-detail { flex:1; min-width:0; }
+.round-winner { display:block; font-size:13px; font-weight:600; }
+.round-reward { display:block; margin-top:4px; font-size:11px; color:#928879; line-height:1.6; word-break:break-all; }
+.round-mark { color:#b5ab98; font-size:21px; }
+.empty-rounds { display:block; padding:32px 12px; text-align:center; color:#a09787; font-size:13px; }
+.report-backdrop { z-index:80; }
+.report-preview { width:100%; height:55vh; max-height:500px; min-height:0; flex-shrink:1; background:#f3eee1; border-radius:8px; overflow:hidden; padding:8px; }
+.report-image { width:100%; height:100%; }
+.report-note { display:block; font-size:10px; color:#a09787; text-align:center; padding-top:10px; flex-shrink:0; }
+.report-canvas { position:absolute; left:-2000px; top:-2000px; pointer-events:none; }
+.match-page { position:relative; overflow:hidden; background:#fefcf6; }.duel-canvas { display:block; }.duel-state { position:absolute; inset:0; padding:64rpx; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; background:#fefcf6; }.state-title { font-size:38rpx; font-weight:700; }.state-copy { display:block; margin-top:18rpx; color:#75716a; font-size:25rpx; }.duel-state button { margin-top:24rpx; }
+@keyframes confetti-fall { from { top:30%; opacity:1; transform:rotate(0); } to { top:110%; opacity:0; transform:rotate(360deg); } }
+@media (max-width:350px) { .duel-mobile { padding:0 12px; }.game-tools { gap:6px; padding:8px 0 10px; }.duel-mobile .mode-button { padding:0 6px; font-size:12px; }.round-title { font-size:21px; }.round-heading { padding-bottom:10px; }.zone-content { padding:12px; gap:12px; }.player-emblem { width:53px; height:53px; }.player-emblem image { width:30px; height:30px; }.zone-name { font-size:24px; }.zone-instruction { font-size:10px; }.zone-eyebrow { font-size:9px; letter-spacing:.2px; }.native-sheet { padding-left:16px; padding-right:16px; }.sheet-title { font-size:21px; }.sheet-actions { gap:6px; }.duel-mobile .utility-button { font-size:11px; gap:4px; }.name-fields { gap:10px; } }
+@media (max-height:620px) { .game-tools { padding-top:7px; padding-bottom:8px; }.round-heading { padding-bottom:9px; }.round-caption { font-size:11px; margin-top:3px; }.touch-zone { min-height:60px; }.zone-content { padding-top:10px; padding-bottom:10px; }.zone-name { margin:2px 0; }.player-emblem { width:50px; height:50px; }.player-emblem image { width:29px; height:29px; }.status-rail { height:44px; min-height:44px; }.game-dock { padding-top:8px; padding-bottom:calc(8px + env(safe-area-inset-bottom)); min-height:90px; }.native-sheet { max-height:96%; }.sheet-header { margin-bottom:12px; }.sheet-title { font-size:20px; }.sheet-actions { padding-top:12px; } }
+@media (min-width:900px) { .duel-mobile { padding-left:28px; padding-right:28px; }.round-heading { padding-top:8px; padding-bottom:20px; }.touch-zone { border-radius:20px; }.zone-content { gap:28px; }.zone-name { font-size:32px; }.player-emblem { width:82px; height:82px; }.player-emblem image { width:42px; height:42px; }.native-sheet { max-width:600px; } }
+@media (prefers-reduced-motion:reduce) { .touch-zone { transition:none; }.confetti { animation:none; display:none; } }

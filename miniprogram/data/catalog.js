@@ -31,7 +31,7 @@ const features = Object.freeze([
     title: '双人反应挑战',
     subtitle: '同屏双人，比一比反应速度',
     category: '放松',
-    description: '两人在同一部设备上进行反应挑战，支持 1、3、5 分赛制、抢跑判定和本机历史记录。',
+    description: '原作触摸对决与无限挑战，包含开始音效、彩头、设置和战报；另保留 1、3、5 分计分与本机战绩扩展。',
     path: '/projects/ready-go-duel/?entry=wechat'
   }),
   Object.freeze({

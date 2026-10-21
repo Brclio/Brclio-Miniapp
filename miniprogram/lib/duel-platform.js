@@ -121,6 +121,8 @@ function createDuelPlatform(options) {
   const platform = {
     cloudBackupSupported: false,
     createCanvas: function () { return canvas; },
+    createWebAudioContext: function () { if (!disposed && typeof api.createWebAudioContext === 'function') return api.createWebAudioContext(); },
+    createInnerAudioContext: function (options) { if (!disposed && typeof api.createInnerAudioContext === 'function') return api.createInnerAudioContext(options); },
     createImage: function () {
       if (disposed || typeof canvas.createImage !== 'function') return null;
       const image = canvas.createImage();
@@ -132,6 +134,14 @@ function createDuelPlatform(options) {
     getPerformance: function () { return null; },
     getWindowInfo: windowInfo,
     getSystemInfoSync: windowInfo,
+    getMenuButtonBoundingClientRect: function () {
+      if (!options.customNavigation || typeof api.getMenuButtonBoundingClientRect !== 'function') return null;
+      const rect = api.getMenuButtonBoundingClientRect();
+      if (!rect) return null;
+      const pageTop = positive(nativeInfo.screenTop, Math.max(0, (nativeInfo.screenHeight || bounds.height) - (nativeInfo.windowHeight || bounds.height)));
+      const canvasTop = pageTop + (bounds.top || 0);
+      return Object.assign({}, rect, { top: rect.top - canvasTop, bottom: rect.bottom - canvasTop });
+    },
     requestAnimationFrame: requestFrame,
     cancelAnimationFrame: cancelFrame,
     showModal: function (value) { return invoke('showModal', value); },

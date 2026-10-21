@@ -32,19 +32,32 @@
     },
     {
       "id": "ready-go-duel",
-      "kind": "canvas",
+      "kind": "react",
       "source": "web/projects/ready-go-duel",
-      "files": [
-        "index.html",
-        "page.css",
-        "local.js"
-      ],
       "assets": [
         {
           "source": "web/projects/ready-go-duel/assets",
           "target": "assets"
         }
-      ]
+      ],
+      "entry": "main.tsx",
+      "html": "index.html",
+      "tailwind": "index.css",
+      "canvasExtension": {
+        "source": "match",
+        "target": "match",
+        "files": [
+          "index.html",
+          "page.css",
+          "local.js"
+        ],
+        "assets": [
+          {
+            "source": "web/projects/ready-go-duel/assets",
+            "target": "assets"
+          }
+        ]
+      }
     }
   ]
 }

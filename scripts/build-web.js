@@ -4,6 +4,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const esbuild = require('esbuild');
+const { execFileSync } = require('node:child_process');
 const { bundleGame } = require('./bundle-game');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist/web');
@@ -51,8 +52,23 @@ for (const project of published) {
   const source = sourcePath(project.source);
   fs.mkdirSync(folder, { recursive: true });
   if (project.kind === 'react') {
-    esbuild.buildSync({ entryPoints: [outputPath(source, project.entry)], outdir: folder, entryNames: 'main', bundle: true, minify: true, format: 'esm', target: ['es2020'], define: { 'process.env.NODE_ENV': '"production"' }, legalComments: 'eof' });
+    esbuild.buildSync({ entryPoints: [outputPath(source, project.entry)], outdir: folder, entryNames: 'main', bundle: true, minify: true, format: 'esm', jsx: 'automatic', target: ['es2020'], define: { 'process.env.NODE_ENV': '"production"' }, legalComments: 'eof' });
     fs.copyFileSync(outputPath(source, project.html), path.join(folder, 'index.html'));
+    if (project.tailwind) {
+      // Compile the original Tailwind 3 utilities locally; no browser CDN runtime.
+      execFileSync(process.execPath, [require.resolve('tailwindcss/lib/cli.js'), '--input', outputPath(source, project.tailwind), '--output', path.join(folder, 'main.css'), '--content', path.join(source, '**/*.{html,js,ts,jsx,tsx}'), '--minify'], { cwd: root, stdio: 'inherit' });
+    }
+    if (project.canvasExtension) {
+      const extension = project.canvasExtension;
+      const extensionSource = outputPath(source, extension.source);
+      const extensionOutput = outputPath(folder, extension.target);
+      fs.mkdirSync(extensionOutput, { recursive: true });
+      for (const file of extension.files) fs.copyFileSync(outputPath(extensionSource, file), outputPath(extensionOutput, file));
+      fs.copyFileSync(path.join(root, 'web/runtime.js'), path.join(extensionOutput, 'runtime.js'));
+      fs.copyFileSync(path.join(root, 'web/style.css'), path.join(extensionOutput, 'style.css'));
+      fs.writeFileSync(path.join(extensionOutput, 'bundle.js'), bundleGame().code);
+      for (const asset of extension.assets || []) fs.cpSync(sourcePath(asset.source), outputPath(extensionOutput, asset.target), { recursive: true });
+    }
   } else {
     for (const file of project.files) fs.copyFileSync(outputPath(source, file), outputPath(folder, file));
     if (project.kind === 'canvas') {

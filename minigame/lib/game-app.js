@@ -1,6 +1,7 @@
 'use strict';
 
 const { createDuel } = require('./duel-engine');
+const { createDuelAudio } = require('./duel-audio');
 const storage = require('./storage');
 const catalog = require('../data/catalog');
 
@@ -21,6 +22,7 @@ function createGameApp(platform, options) {
   // WeChat Performance.now() is microseconds; the engine and timers use ms.
   const now = performance && typeof performance.now === 'function' ? function () { return performance.now() / 1000; } : Date.now;
   let prefs = storage.read();
+  const audio = createDuelAudio(wx, { enabled: prefs.soundEnabled, assetBase: opt.audioAssetBase });
   let engine = createDuel({ targetScore: prefs.targetScore, now });
   let screen = 'home';
   let controls = [];
@@ -180,6 +182,7 @@ function createGameApp(platform, options) {
     const s = engine.snapshot();
     const active = s.phase === 'waiting' || s.phase === 'go' || s.phase === 'judging';
     header('举手决斗', 'READY GO DUEL · 同屏反应挑战');
+    button(254, 14, 48, 34, prefs.soundEnabled ? '声音 ●' : '声音 ○', toggleSound, { fill: C.soft, color: C.muted, size: 10, radius: 17 });
     button(310, 14, 56, 34, '玩法', showRules, { fill: C.soft, color: C.muted, size: 12, radius: 17 });
     rounded(24, 85, 342, 92, 16, C.soft);
     text(names()[0], 85, 109, 13, C.red, 600, 'center');
@@ -262,6 +265,7 @@ function createGameApp(platform, options) {
     text(prefs.haptics ? '已开启 ●' : '已关闭 ○', 344, 443, 12, C.blue, 600, 'right');
     button(24, 479, 342, 48, '隐私与数据', function () { screen = 'privacy'; draw(); }, { fill: C.soft, color: C.ink, left: true, arrow: true });
     button(24, 539, 342, 48, '原作与来源', function () { wx.setClipboardData({ data: 'https://github.com/AndersonHJB/ReadyGoDuel', success: function () { notify('原作链接已复制'); } }); }, { fill: C.soft, color: C.ink, left: true, arrow: true });
+    button(24, 599, 342, 26, prefs.soundEnabled ? '游戏音效 · 已开启' : '游戏音效 · 已关闭', toggleSound, { fill: C.soft, color: C.muted, size: 11 });
     text('Brclio · 写代码，教编程，做产品', 24, 632, 12, C.muted);
     text('举手决斗  v0.1.0', 24, 659, 11, C.muted);
     footer();
@@ -293,7 +297,7 @@ function createGameApp(platform, options) {
     text('好玩，轻一点。', 24, 116, 30, C.ink, 800, 'left', true);
     const cloudBackup = wx.cloudBackupSupported === true;
     const sections = [
-      ['01', '只在本机记住', ['赛制、触感设置与最近 20 场战绩，', '保存在这台设备的微信本地缓存中。']],
+      ['01', '只在本机记住', ['赛制、声音、触感与最近 20 场战绩，', '保存在这台设备的本地缓存中。']],
       ['02', '不需要个人信息', ['当前版本不请求登录、摄像头、麦克风、', '定位或通讯录，也不接入广告与统计 SDK。']],
       cloudBackup ? ['03', '云端备份由你决定', ['默认关闭；开启后经 Cloudflare 将匿名', '对局记录保存到 GitHub 私有仓库。']] :
         ['03', '没有服务器上传', ['当前版本不主动发送网络请求。', '手动分享时，将使用微信提供的分享功能。']],
@@ -312,7 +316,7 @@ function createGameApp(platform, options) {
   }
 
   function clearRecords() {
-    wx.showModal({ title: '清除本机战绩？', content: '将删除本机保存的对决记录。赛制和触感设置会保留。', confirmText: '清除', confirmColor: C.red, success: function (response) {
+    wx.showModal({ title: '清除本机战绩？', content: '将删除本机保存的对决记录。赛制、声音和触感设置会保留。', confirmText: '清除', confirmColor: C.red, success: function (response) {
       if (disposed || !response.confirm) return;
       if (persist({ matches: [] })) notify('本机战绩已清除');
       draw();
@@ -352,6 +356,7 @@ function createGameApp(platform, options) {
           signaling = true; draw();
           const next = engine.go(roundId);
           signaling = false;
+          if (next.phase === 'go') audio.play('go');
           draw(); schedule(next);
         };
         if (requestFrame) frameId = requestFrame(drawGo);
@@ -367,7 +372,20 @@ function createGameApp(platform, options) {
     if (prefs.haptics && typeof wx.vibrateShort === 'function') wx.vibrateShort({ type: 'light', fail: function () {} });
   }
 
-  function startRound() { message = ''; const s = engine.startRound(); draw(); schedule(s); }
+  function toggleSound() {
+    persist({ soundEnabled: !prefs.soundEnabled });
+    audio.setEnabled(prefs.soundEnabled);
+    if (prefs.soundEnabled) audio.play('test');
+    draw();
+  }
+
+  function startRound() {
+    message = '';
+    const before = engine.snapshot();
+    const s = engine.startRound();
+    if (s.roundId !== before.roundId) audio.play('start');
+    draw(); schedule(s);
+  }
 
   function press(player) {
     const before = engine.snapshot();
@@ -378,6 +396,8 @@ function createGameApp(platform, options) {
   function afterAction(s) {
     if (s.phase === 'result' || s.phase === 'complete') {
       clearRoundTimers(); vibrate();
+      if (s.result.reason === 'false-start') audio.play('false');
+      else if (s.result.reason === 'reaction') audio.play('win');
       if (s.phase === 'complete' && savedSession !== sessionId) {
         const bests = [s.bestTimes.p1, s.bestTimes.p2].filter(function (ms) { return typeof ms === 'number'; });
         const saved = storage.recordMatch({ id: sessionId, at: Date.now(), names: names().slice(), winner: s.matchWinner === 'p1' ? 0 : 1, scores: [s.scores.p1, s.scores.p2], bestMs: bests.length ? Math.min.apply(null, bests) : null });
@@ -390,6 +410,7 @@ function createGameApp(platform, options) {
 
   function pauseRound() {
     clearRoundTimers(); signaling = false;
+    audio.stop();
     engine.cancelRound(); message = '本回合已暂停，比分保留。'; draw();
   }
 
@@ -405,10 +426,11 @@ function createGameApp(platform, options) {
     } else { screen = screen === 'history' || screen === 'privacy' ? 'about' : 'home'; draw(); }
   }
 
-  function goHome() { clearRoundTimers(); screen = 'home'; if (typeof wx.setKeepScreenOn === 'function') wx.setKeepScreenOn({ keepScreenOn: false }); draw(); }
+  function goHome() { clearRoundTimers(); audio.stop(); screen = 'home'; if (typeof wx.setKeepScreenOn === 'function') wx.setKeepScreenOn({ keepScreenOn: false }); draw(); }
 
   function handleTouch(event) {
     if (disposed || hidden) return;
+    audio.unlock();
     // Capture all hits before a redraw replaces controls; simultaneous touches
     // are both passed to the engine and can produce a fair tie.
     const targets = (event.changedTouches || event.touches || []).map(function (touch) {
@@ -429,8 +451,8 @@ function createGameApp(platform, options) {
   }
   wx.onTouchStart(handleTouch);
 
-  function handleHide() { if (disposed) return; hidden = true; clearRoundTimers(); engine.cancelRound(); signaling = false; message = '刚才离开了一下，本回合重新开始。'; }
-  function handleShow() { if (disposed) return; hidden = false; prefs = storage.read(); resize(); }
+  function handleHide() { if (disposed) return; hidden = true; clearRoundTimers(); audio.stop(); engine.cancelRound(); signaling = false; message = '刚才离开了一下，本回合重新开始。'; }
+  function handleShow() { if (disposed) return; hidden = false; prefs = storage.read(); audio.setEnabled(prefs.soundEnabled); resize(); }
   function handleResize() { if (disposed) return; pauseRound(); resize(); }
   if (typeof wx.onHide === 'function') wx.onHide(handleHide);
   if (typeof wx.onShow === 'function') wx.onShow(handleShow);
@@ -448,6 +470,7 @@ function createGameApp(platform, options) {
     if (disposed) return;
     disposed = true; hidden = true; signaling = false;
     clearRoundTimers();
+    audio.dispose();
     if (toastTimer !== null) { clearTimeout(toastTimer); toastTimer = null; }
     engine.cancelRound(); controls = [];
     if (avatar) { avatar.onload = null; avatar.onerror = null; avatar = null; }
@@ -459,4 +482,4 @@ function createGameApp(platform, options) {
   return { canvas, draw, dispose, snapshot: function () { return { screen, duel: engine.snapshot() }; } };
 }
 
-module.exports = { createGameApp };
+module.exports = { createGameApp, createDuelAudio };

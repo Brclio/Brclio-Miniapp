@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { createDuelPlatform } = require('../miniprogram/lib/duel-platform');
-const { createGameApp } = require('../minigame/lib/game-app');
+const { createGameApp, createDuelAudio } = require('../minigame/lib/game-app');
 const { KEY } = require('../minigame/lib/storage');
 
 // Use the real page bridge and shared rules/rendering together. A page Canvas
@@ -236,14 +236,21 @@ function pageHost(t) {
   let definition;
   let creates = 0;
   const source = fs.readFileSync(path.resolve(__dirname, '../miniprogram/pages/duel/index.js'), 'utf8');
+  function pageRequire(id) {
+    if (id === '../../lib/duel') return { createDuelAudio, createGameApp() { creates += 1; return createGameApp.apply(null, arguments); } };
+    if (id === '../../lib/duel-platform') return require('../miniprogram/lib/duel-platform');
+    if (id.startsWith('../../lib/ready-go-')) return require('../miniprogram/lib/' + id.slice('../../lib/'.length));
+    if (id === './legacy') {
+      const legacyModule = { exports: {} };
+      vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../miniprogram/pages/duel/legacy.js'), 'utf8'), { wx: h.api, module: legacyModule, require: pageRequire }, { filename: 'miniprogram/pages/duel/legacy.js' });
+      return legacyModule.exports;
+    }
+    throw new Error('Unexpected page dependency: ' + id);
+  }
   vm.runInNewContext(source, {
     wx: h.api,
     Page(value) { definition = value; },
-    require(id) {
-      if (id === '../../lib/duel') return { createGameApp() { creates += 1; return createGameApp.apply(null, arguments); } };
-      if (id === '../../lib/duel-platform') return require('../miniprogram/lib/duel-platform');
-      throw new Error('Unexpected page dependency: ' + id);
-    }
+    require: pageRequire
   }, { filename: 'miniprogram/pages/duel/index.js' });
   const page = Object.assign({}, definition, {
     data: Object.assign({}, definition.data),
@@ -261,7 +268,7 @@ function pageHost(t) {
 
 test('page selector results arriving after unload or hide do not resurrect the game', (t) => {
   const p = pageHost(t);
-  p.page.onLoad(); p.page.onShow();
+  p.page.onLoad({ view: 'match' }); p.page.onShow();
   assert.equal(p.queries.length, 0, 'onShow before onReady must not query Canvas');
   p.page.onReady();
   assert.equal(p.queries.length, 1);
@@ -281,7 +288,7 @@ test('page selector results arriving after unload or hide do not resurrect the g
 
 test('page resize rejects an older measurement and touch cancellation pauses an active round', (t) => {
   const p = pageHost(t);
-  p.page.onLoad(); p.page.onReady();
+  p.page.onLoad({ view: 'match' }); p.page.onReady();
   p.queries[0](p.result());
   assert.equal(p.creates, 1);
   assert.equal(p.page.data.status, 'ready');

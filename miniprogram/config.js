@@ -2,6 +2,6 @@
 // Never include a secret in this file.
 module.exports = {
   webOrigin: 'https://pocket.bornforthis.cn',
-  cloudSyncEnabled: false,
+  cloudSyncEnabled: true,
   version: '0.1.0'
 };
