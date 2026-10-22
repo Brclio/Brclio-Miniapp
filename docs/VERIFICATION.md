@@ -1,3 +1,9 @@
+# 2026-10-22 ReadyGoDuel 网页正式上线
+
+原作网页与资源缓存修复已从干净提交 `525edee1942ccc2ccb1cdc81dfc58e56e0d80a85` 部署到 Pages Production [e0d2ffbd](https://e0d2ffbd.brclio-miniapp-wechat.pages.dev)。完整构建、247 项测试及发布检查通过；两个正式域名各 1,617 个公开文件、合计 3,234 项长度／SHA-256 检查，以及合计 20 项只读接口／路由探测全部通过。业务域名校验文件仍在，两域均返回 200。ReadyGo 发布 HTML 使用内容指纹 JS／CSS，避免备用域名四小时的同名旧资源缓存。
+
+本轮浏览器自动控制连接超时，未完成新的正式域名交互截图；此前同字节游戏的桌面／手机尺寸及实际对局证据继续保留，不能把 HTTPS 核验冒充新的浏览器交互。本次只发布独立网页，未上传新小程序包或操作微信审核；摄影与悦学的已提交版本完整保留，其他并行开发内容未混入部署。详细来源、缓存问题、重试及证据边界见 [READY_GO_DUEL_RELEASE.md](READY_GO_DUEL_RELEASE.md)。以下为此前各阶段记录。
+
 # 2026-10-22 悦学增量验收
 
 「悦学 / 词了个词」已完成源码接入、242 项测试、发布检查、网页正式域名端到端验证、1,425 个在线资源字节校验及微信模拟器真实通关。最终网页与远程资源部署为 [ae91a338](https://ae91a338.brclio-miniapp-wechat.pages.dev)。当前小程序 request 合法域名校验仍未通过；本轮没有上传包含悦学的新开发包、提交审核或正式发布。完整证据和待办见 [LINGOTILES_VERIFICATION.md](LINGOTILES_VERIFICATION.md)，功能与来源对照见 [LINGOTILES_PARITY.md](LINGOTILES_PARITY.md)。以下历史记录保留各自阶段边界。
