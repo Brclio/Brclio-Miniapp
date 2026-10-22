@@ -8,10 +8,16 @@ const root = path.resolve(__dirname, '../web/projects/lingotiles');
 const read = file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
 const snapshot = read('SNAPSHOT.json');
 
-test('all 1454 imported source and resource files retain the fixed upstream Git blob bytes', () => {
-  assert.equal(snapshot.commit, 'a6a3841b846d72932301d43ddb9c30e756a22c7b');
-  assert.equal(snapshot.files.length, 1454);
+test('all imported source and resource files retain their pinned upstream Git blob bytes', () => {
+  assert.equal(snapshot.repository, 'https://github.com/Brclio/brclio-lingotiles');
+  assert.match(snapshot.commit, /^[a-f0-9]{40}$/);
+  assert.ok(snapshot.files.length > 0);
+  const paths = new Set();
   for (const item of snapshot.files) {
+    assert.equal(paths.has(item.path), false, item.path);
+    paths.add(item.path);
+    assert.match(item.path, /^(?:src\/|public\/|PRODUCT\.md$|DESIGN\.md$)/);
+    assert.ok(!item.path.split('/').includes('..'));
     const local = item.path.startsWith('public/') ? item.path : 'upstream/' + item.path;
     const bytes = fs.readFileSync(path.join(root, local));
     const hash = crypto.createHash('sha1').update('blob ' + bytes.length + '\0').update(bytes).digest('hex');
@@ -20,10 +26,11 @@ test('all 1454 imported source and resource files retain the fixed upstream Git 
   }
 });
 
-test('the complete dictionary has 100000 unique records with six intact stage profiles and lookup indexes', () => {
+test('the complete dictionary matches its manifest with unique records, intact stages and lookup indexes', () => {
   const manifest = read('public/vocabulary/manifest.json');
-  assert.equal(manifest.total, 100000);
-  assert.deepEqual(manifest.stages.map(stage => stage.count), [662, 958, 3109, 5716, 8625, 80930]);
+  assert.ok(manifest.total > 0);
+  assert.equal(manifest.stages.reduce((sum, stage) => sum + stage.count, 0), manifest.total);
+  assert.equal(new Set(manifest.stages.map(stage => stage.id)).size, manifest.stages.length);
   const words = new Map();
   for (const stage of manifest.stages) {
     let count = 0;
@@ -39,16 +46,19 @@ test('the complete dictionary has 100000 unique records with six intact stage pr
     }
     assert.equal(count, stage.count);
   }
-  assert.equal(words.size, 100000);
+  assert.equal(words.size, manifest.total);
+  const indexed = new Set();
   for (const [letter, file] of Object.entries(manifest.lookupFiles)) {
     const lookup = read('public/' + file.replace(/^\//, ''));
-    for (const spelling of Object.keys(lookup)) assert.ok(words.has(spelling), letter + ':' + spelling);
+    for (const spelling of Object.keys(lookup)) { assert.ok(words.has(spelling), letter + ':' + spelling); indexed.add(spelling); }
   }
+  assert.equal(indexed.size, words.size);
 });
 
 test('every available illustration resolves to an imported image and keeps exact word/POS/meaning identity', () => {
   const manifest = read('public/images/words/index/manifest.json');
-  assert.deepEqual([manifest.total, manifest.ready, manifest.pending], [100000, 1083, 98917]);
+  assert.equal(manifest.total, read('public/vocabulary/manifest.json').total);
+  assert.equal(manifest.ready + manifest.pending, manifest.total);
   const seen = new Set();
   for (const bucket of Object.values(manifest.buckets)) {
     const entries = read('public/' + bucket.path);
@@ -63,7 +73,7 @@ test('every available illustration resolves to an imported image and keeps exact
     }
   }
   assert.equal(seen.size, manifest.ready);
-  assert.equal(snapshot.files.filter(file => file.path.endsWith('.webp')).length, 1083);
+  assert.equal(snapshot.files.filter(file => /^public\/images\/words\/.*\.webp$/.test(file.path)).length, manifest.ready);
 });
 
 test('web rules and persistence retain upstream behavior while resources stay under the learning module', () => {

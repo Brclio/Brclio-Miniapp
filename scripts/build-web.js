@@ -47,6 +47,7 @@ const firstsightAssetPaths = published.some(function (project) { return project.
   JSON.parse(fs.readFileSync(path.join(root, 'web/projects/firstsight/original-data.json'), 'utf8')).assets.filter(function (asset) { return asset.available === true; }).map(function (asset) { return asset.url; }).sort() : [];
 if (new Set(firstsightAssetPaths).size !== firstsightAssetPaths.length || firstsightAssetPaths.some(function (url) { return typeof url !== 'string' || !/^\/projects\/firstsight\/assets\/original\/[a-f0-9]{20}\.(?:jpe?g|png|webp|gif|avif)$/.test(url); })) throw new Error('Invalid FirstSight asset paths');
 if (published.some(function (project) { return project.id === 'firstsight'; }) && firstsightAssetPaths.length === 0) throw new Error('Published FirstSight has no imported photos');
+if (published.some(project => project.id === 'lingotiles')) require('./build-lingotiles-web').checkLingotilesWeb();
 // Only generated output is cleared; credentials and source remain outside it.
 fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });

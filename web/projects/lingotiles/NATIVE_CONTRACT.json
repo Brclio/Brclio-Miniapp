@@ -1,0 +1,426 @@
+{
+  "version": 1,
+  "repository": "https://github.com/Brclio/brclio-lingotiles",
+  "reviewedCommit": "a6a3841b846d72932301d43ddb9c30e756a22c7b",
+  "reviewedOn": "2026-10-22",
+  "reviewKind": "implementation-audit",
+  "reviewPolicy": "此文件由功能审查明确维护。同步/导入/构建不得自动覆盖。源码变动后先检查新增功能、原生页面与适配器、持久化迁移，再更新功能映射与审查哈希并运行回归；哈希一致仅表示已审查基线未变，不能宣称完整功能对齐或真机验收通过。",
+  "scope": {
+    "behavior": "PRODUCT.md 与 src 中非测试的 TS/TSX/JS/JSX/MJS/CJS、数据JSON、Vue/Svelte/WXML/WXS/HTML/WASM；新增、删除、修改均触发复审。",
+    "excluded": "测试、测试夹具、样式、public资源，以及 src/data/illustrations.seed.json 不触发功能门禁。图片与词库资源仍须通过来源、索引、构建和线上完整性检查。"
+  },
+  "files": {
+    "PRODUCT.md": {
+      "sha256": "9a8630fc36ec6b20e4d4625dcd2e51f84a8bbdc6e1d92375acb64718178f8c06",
+      "bytes": 4449
+    },
+    "src/App.tsx": {
+      "sha256": "3678291fe73a62e53870b5db21bd4fbd12b9a3c87d469e40150ca17bfead6317",
+      "bytes": 42981
+    },
+    "src/components/CurriculumPicker.tsx": {
+      "sha256": "7fd63467eb7b4bb502801cf806846de9e581dd550f2c6201b5bb30836e4d5b4d",
+      "bytes": 3882
+    },
+    "src/components/HistoryPanel.tsx": {
+      "sha256": "5cd345cb87c9875b331eba0df830d8d8eb7e8c27d2ecb3385e9e81fa820d2d29",
+      "bytes": 7571
+    },
+    "src/components/MatchFusion.tsx": {
+      "sha256": "deb96c308b5d565456433df11864ce12ddb48d2a632eaecedd13ca8a136b3843",
+      "bytes": 10173
+    },
+    "src/components/VictoryCelebration.tsx": {
+      "sha256": "cdfee84cb037ba3b338a36231e97d0f49e2487fe8d5446eb99c811ac1fea3e31",
+      "bytes": 4927
+    },
+    "src/components/VocabularyNotebook.tsx": {
+      "sha256": "a721731eb8df7fed354bf83891dba5f30c601bac623b80e987fcedde1d65c439",
+      "bytes": 8192
+    },
+    "src/components/WordHarvest.tsx": {
+      "sha256": "8113f05ddc02af701cc38f6e4fdadf8a9e48d7de64dc9cbeeacafae383d26184",
+      "bytes": 2275
+    },
+    "src/components/WordIllustration.tsx": {
+      "sha256": "edecbaeb49166c36881a9003f49b009aee87d0d75a425a421d5dac55ad0d9ccd",
+      "bytes": 1315
+    },
+    "src/data/illustrationSchema.ts": {
+      "sha256": "5c25c594939f06f7370d090c1b2fc570e3396d7f3ab9a3ca7d54de5648c2cf32",
+      "bytes": 957
+    },
+    "src/data/library.ts": {
+      "sha256": "7849743b0ca7a20829c5c8444046999436e5251658af07817950f0c6a0089a1d",
+      "bytes": 9206
+    },
+    "src/data/librarySchema.ts": {
+      "sha256": "e39c590b9158aff3aca16e9963426e9552ec3deda0672e60706e7ad880e98954",
+      "bytes": 1711
+    },
+    "src/data/vocabulary.ts": {
+      "sha256": "c433fc95ad5c16fde51548cd8e0858efceb378d1300233b1518f934717d38a87",
+      "bytes": 12641
+    },
+    "src/game/engine.ts": {
+      "sha256": "24c4398f0de305383db3b62c7db8f1c6f5a6c229c752b92cdec4396fcc17dff8",
+      "bytes": 12561
+    },
+    "src/game/history.ts": {
+      "sha256": "4a82a82bdf849fa3df9b07a1acc2db6d9a5c2d203d702141b926668c2cd75363",
+      "bytes": 12861
+    },
+    "src/game/matchPresentation.ts": {
+      "sha256": "2eba2fa0a74350324a318518266ae3b5fee5c6649559bd49b05446e25da7fd73",
+      "bytes": 1604
+    },
+    "src/game/preferences.ts": {
+      "sha256": "4f99eecc0f03ef1011a761bd5d448aa7a6f4856a52d4c98a60a6c5a603e1399b",
+      "bytes": 1472
+    },
+    "src/game/progress.ts": {
+      "sha256": "8f16027b3604f80a2ee6449cc43d9062a6aa6d7ff906e919f0b78c167a73ef4d",
+      "bytes": 7165
+    },
+    "src/game/wordIllustrations.ts": {
+      "sha256": "ad5523e202897b192780d86b9e99f023ed8bd6449f80e5bb150049070126ad44",
+      "bytes": 8035
+    },
+    "src/main.tsx": {
+      "sha256": "57f8329af6cf3d99fa911f582fabbe28c923051b213d0e572cae88932de8f10e",
+      "bytes": 252
+    }
+  },
+  "features": [
+    {
+      "id": "learning-navigation",
+      "coverage": "adapted",
+      "upstreamFiles": [
+        "PRODUCT.md",
+        "src/App.tsx",
+        "src/main.tsx"
+      ],
+      "nativeFiles": [
+        "miniprogram/pages/lingotiles/index.js",
+        "miniprogram/pages/lingotiles/index.wxml"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-page.test.js"
+      ],
+      "notes": "原生页面与三视图导航；活动局离开确认、规则弹层、手机触控与分享。新增视图、阶段或规则必须重新审查。"
+    },
+    {
+      "id": "themes-and-curriculum",
+      "coverage": "shared",
+      "upstreamFiles": [
+        "src/components/CurriculumPicker.tsx",
+        "src/data/library.ts",
+        "src/data/librarySchema.ts",
+        "src/data/vocabulary.ts"
+      ],
+      "nativeFiles": [
+        "miniprogram/lib/lingotiles.js",
+        "miniprogram/pages/lingotiles/index.js"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-model.test.js",
+        "tests/lingotiles-page.test.js"
+      ],
+      "notes": "经典六主题、分级配置、选阶段/关次、标准或延长记忆时长；不把课程或清单接口变化当成纯资源刷新。"
+    },
+    {
+      "id": "stacked-matching-and-tools",
+      "coverage": "shared",
+      "upstreamFiles": [
+        "src/game/engine.ts",
+        "src/App.tsx"
+      ],
+      "nativeFiles": [
+        "miniprogram/lib/lingotiles.js",
+        "miniprogram/pages/lingotiles/index.js",
+        "miniprogram/pages/lingotiles/index.wxml"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-model.test.js",
+        "tests/lingotiles-page.test.js"
+      ],
+      "notes": "叠层可用性、通用词性与相同释义、七槽、撤回/提示/安全洗牌、3/2/2道具、分数和星级。分数与道具初始值仍在原生页面管理。"
+    },
+    {
+      "id": "memory-pause-and-completion-time",
+      "coverage": "adapted",
+      "upstreamFiles": [
+        "src/App.tsx"
+      ],
+      "nativeFiles": [
+        "miniprogram/pages/lingotiles/index.js"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-page.test.js"
+      ],
+      "notes": "记忆与消除分段；重叠暂停/说明/合成只扣一次，后台按实际时间，末组配对即冻结时间，合成完成后展示结果。"
+    },
+    {
+      "id": "vocabulary-notebook",
+      "coverage": "adapted",
+      "upstreamFiles": [
+        "src/components/VocabularyNotebook.tsx",
+        "src/data/library.ts"
+      ],
+      "nativeFiles": [
+        "miniprogram/lib/lingotiles.js",
+        "miniprogram/pages/lingotiles/index.js",
+        "miniprogram/pages/lingotiles/index.wxml"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-model.test.js",
+        "tests/lingotiles-page.test.js"
+      ],
+      "notes": "中英文搜索、阶段/已学/收藏筛选、分页、完整释义、当前页先文字后插图、失效搜索取消；原生18词/页是手机排版选择。"
+    },
+    {
+      "id": "pronunciation",
+      "coverage": "adapted",
+      "upstreamFiles": [
+        "src/App.tsx",
+        "src/components/VocabularyNotebook.tsx"
+      ],
+      "nativeFiles": [
+        "miniprogram/pages/lingotiles/index.js",
+        "web/lingotiles-audio.mjs"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-page.test.js",
+        "tests/lingotiles-audio.test.js"
+      ],
+      "notes": "网页使用设备语音；原生经固定同域代理获取有道发音，错误提示真实。不能把浏览器speechSynthesis接口直接视为已原生支持。"
+    },
+    {
+      "id": "word-illustration-index-and-fallback",
+      "coverage": "adapted",
+      "upstreamFiles": [
+        "src/game/wordIllustrations.ts",
+        "src/data/illustrationSchema.ts",
+        "src/components/WordIllustration.tsx"
+      ],
+      "nativeFiles": [
+        "miniprogram/lib/lingotiles.js",
+        "scripts/lingotiles-native-runtime.js",
+        "miniprogram/pages/lingotiles/index.js",
+        "miniprogram/pages/lingotiles/index.wxml"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-model.test.js",
+        "tests/lingotiles-source.test.js"
+      ],
+      "notes": "英文/词性/释义义项一致、按桶读取、缺图或失败保留文字；public图片/索引和静态插图seed属于资源更新，不因单纯图片增长要求功能复审。"
+    },
+    {
+      "id": "match-fusion-motion",
+      "coverage": "partial",
+      "upstreamFiles": [
+        "src/components/MatchFusion.tsx",
+        "src/game/matchPresentation.ts",
+        "src/App.tsx"
+      ],
+      "nativeFiles": [
+        "miniprogram/pages/lingotiles/index.js",
+        "miniprogram/pages/lingotiles/index.wxml",
+        "miniprogram/pages/lingotiles/index.wxss"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-page.test.js"
+      ],
+      "notes": "已有默认关闭、偏好持久化、可关闭、展示锁板、展示不计时和减少动效；三牌来源聚合/飞入固定收获目标的轨迹尚未等价实现。"
+    },
+    {
+      "id": "harvest-and-missing-illustration-export",
+      "coverage": "adapted",
+      "upstreamFiles": [
+        "src/components/WordHarvest.tsx",
+        "src/game/wordIllustrations.ts"
+      ],
+      "nativeFiles": [
+        "miniprogram/pages/lingotiles/index.js",
+        "miniprogram/pages/lingotiles/index.wxml",
+        "miniprogram/lib/lingotiles.js"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-model.test.js",
+        "tests/lingotiles-page.test.js"
+      ],
+      "notes": "配对后收获完整词卡、展开回看、同义项图、待配图队列与JSON分享。折叠态最新词卡使用文字摘要，展开态展示图片。"
+    },
+    {
+      "id": "progress-and-preferences",
+      "coverage": "adapted",
+      "upstreamFiles": [
+        "src/game/progress.ts",
+        "src/game/preferences.ts"
+      ],
+      "nativeFiles": [
+        "miniprogram/lib/lingotiles.js",
+        "scripts/lingotiles-native-runtime.js",
+        "miniprogram/pages/lingotiles/index.js"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-model.test.js",
+        "tests/lingotiles-page.test.js"
+      ],
+      "notes": "已学、收藏、星级/最佳成绩、连续天数、重复run去重；wx存储读失败保护原档，写失败显示临时状态。"
+    },
+    {
+      "id": "completion-history-and-csv",
+      "coverage": "adapted",
+      "upstreamFiles": [
+        "src/game/history.ts",
+        "src/components/HistoryPanel.tsx"
+      ],
+      "nativeFiles": [
+        "miniprogram/lib/lingotiles.js",
+        "scripts/lingotiles-native-runtime.js",
+        "miniprogram/pages/lingotiles/index.js",
+        "miniprogram/pages/lingotiles/index.wxml"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-model.test.js",
+        "tests/lingotiles-page.test.js"
+      ],
+      "notes": "每次通关独立记录、原生逐次文件替代IndexedDB、不固定截断、分页概览/排序、CSV防公式和文件分享、持久化失败仍可导出。接口与字段变化需检查存档迁移。"
+    },
+    {
+      "id": "victory-celebration",
+      "coverage": "partial",
+      "upstreamFiles": [
+        "src/components/VictoryCelebration.tsx",
+        "src/App.tsx"
+      ],
+      "nativeFiles": [
+        "miniprogram/pages/lingotiles/index.js",
+        "miniprogram/pages/lingotiles/index.wxml",
+        "miniprogram/pages/lingotiles/index.wxss"
+      ],
+      "regressionTests": [
+        "tests/lingotiles-page.test.js"
+      ],
+      "notes": "已实现静态成功标志、星级与结果操作；尚未实现上游约2.6秒Canvas彩纸和星星庆祝。"
+    }
+  ],
+  "runtimeExports": {
+    "BOARD_HEIGHT": "number",
+    "BOARD_WIDTH": "number",
+    "CompletionHistoryStore": "function",
+    "EMPTY_PROGRESS": "object",
+    "INITIAL_TOOLS": "object",
+    "LEVELS": "array",
+    "PROGRESS_STORAGE_KEY": "string",
+    "STAGE_PROFILES": "array",
+    "TRAY_CAPACITY": "number",
+    "appendCompletion": "function",
+    "assetUrl": "function",
+    "completionsToCsv": "function",
+    "courseLevelId": "function",
+    "createGame": "function",
+    "csvCell": "function",
+    "exportCompletionsCsv": "function",
+    "exportCsvFile": "function",
+    "exportMissingIllustrationsFile": "function",
+    "getAvailableTiles": "function",
+    "getCompletionPage": "function",
+    "getCompletionSummary": "function",
+    "getCurrentStreak": "function",
+    "getHint": "function",
+    "getMissingIllustrations": "function",
+    "getWordIllustration": "function",
+    "isTileAvailable": "function",
+    "loadCourseLevel": "function",
+    "loadIllustrationManifest": "function",
+    "loadManifest": "function",
+    "loadMatchAnimation": "function",
+    "loadProgress": "function",
+    "loadWordIllustrations": "function",
+    "markSeen": "function",
+    "readVocabularyPage": "function",
+    "recordIllustrationPractice": "function",
+    "recordResult": "function",
+    "saveMatchAnimation": "function",
+    "saveProgress": "function",
+    "searchVocabulary": "function",
+    "seededRandom": "function",
+    "selectTile": "function",
+    "shuffleBoard": "function",
+    "stageProfile": "function",
+    "toggleSaved": "function",
+    "totalRounds": "function",
+    "undoMove": "function",
+    "validateCompletion": "function",
+    "wordsByIds": "function"
+  },
+  "requiredPageHandlers": [
+    "goView",
+    "showRules",
+    "closeRules",
+    "chooseTheme",
+    "changeMode",
+    "chooseStage",
+    "goRound",
+    "chooseDuration",
+    "startMemory",
+    "startPlaying",
+    "pickTile",
+    "useTool",
+    "togglePause",
+    "toggleAnimation",
+    "toggleReducedMotion",
+    "toggleSound",
+    "restart",
+    "nextChallenge",
+    "toggleSave",
+    "toggleDefinition",
+    "toggleHarvest",
+    "imageError",
+    "notebookFilter",
+    "notebookStage",
+    "notebookSearch",
+    "loadNotebook",
+    "loadHistory",
+    "exportHistory",
+    "exportMissing",
+    "speak"
+  ],
+  "knownDifferences": [
+    {
+      "feature": "match-fusion-motion",
+      "kind": "incomplete-motion-parity",
+      "details": "上游按三张牌的真实来源位置聚合，并飞入固定收获区；当前原生为居中完整词卡淡入淡出。内容、锁板和计时语义已接入，但运动交互尚不等价。"
+    },
+    {
+      "feature": "victory-celebration",
+      "kind": "missing-optional-celebration",
+      "details": "上游默认有约2.6秒Canvas彩纸和星星；当前原生仅静态成功标志和星级。不得以当前契约通过宣称该交互已完整迁移。"
+    },
+    {
+      "feature": "pronunciation",
+      "kind": "platform-adaptation",
+      "details": "网页使用SpeechSynthesis；原生使用同域词典音频代理，需网络与微信合法域名配置。"
+    },
+    {
+      "feature": "completion-history-and-csv",
+      "kind": "platform-adaptation",
+      "details": "网页IndexedDB改为原生用户目录逐次文件；原生导出通过微信文件分享。分页仍枚举和排序全部记录，大量历史的真机性能需单独验收。"
+    },
+    {
+      "feature": "harvest-and-missing-illustration-export",
+      "kind": "mobile-presentation",
+      "details": "收获折叠态最新词卡为文字摘要；有图词卡在展开收获区和结果复盘中显示。"
+    }
+  ],
+  "requiredRegressionTests": [
+    "tests/lingotiles-model.test.js",
+    "tests/lingotiles-page.test.js",
+    "tests/lingotiles-source.test.js",
+    "tests/lingotiles-audio.test.js",
+    "tests/lingotiles-update-contract.test.js"
+  ],
+  "deviceVerification": "合法域名、iOS/Android音频、存储容量、文件分享、字体触控和安全区另行验收；本契约不替代实际设备证据。"
+}

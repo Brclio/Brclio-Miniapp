@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "description": "Reapply the mobile web integration to pristine upstream source. Each context must match exactly once.",
+  "patches": [
+    {
+      "file": "App.tsx",
+      "edits": [
+        {
+          "before": "  useEffect(() => { loadIllustrationManifest().then(setPictureCoverage).catch(() => {}); }, []);\n  useEffect(() => {\n    if (view === 'game') preloadWordIllustrations(level.words);\n  }, [view, level.words]);\n\n",
+          "after": "  useEffect(() => { loadIllustrationManifest().then(setPictureCoverage).catch(() => {}); }, []);\n  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [view, phase, level.id]);\n  useEffect(() => {\n    if (view === 'game' && phase !== 'ready') preloadWordIllustrations(level.words);\n  }, [view, phase, level.words]);\n\n"
+        },
+        {
+          "before": "    } catch (failure) {\n      if (request === courseRequest.current) setCourseError(failure instanceof Error ? failure.message : '本关词汇暂时无法读取，请重试。');\n    } finally { if (request === courseRequest.current) setCourseLoading(false); }\n",
+          "after": "    } catch (failure) {\n      if (request === courseRequest.current) setCourseError(failure instanceof Error && !/fetch|network|load failed/i.test(failure.message) ? failure.message : '本关词汇暂时无法连接，请检查网络后重试。');\n    } finally { if (request === courseRequest.current) setCourseLoading(false); }\n"
+        },
+        {
+          "before": "\n  return <div className={`app ${hasWordHarvest ? 'has-word-harvest' : ''}`}>\n    <header className=\"app-header\">\n      <button className=\"brand\" aria-label=\"LingoTiles 首页\" onClick={() => goView('game')}><span className=\"brand-icon\">L</span><span className=\"brand-copy\">LingoTiles<small>词了个词</small></span></button>\n      <nav className=\"main-nav\" aria-label=\"主导航\">\n",
+          "after": "\n  return <div className={`app phase-${phase} view-${view} ${hasWordHarvest ? 'has-word-harvest' : ''}`}>\n    <header className=\"app-header\">\n      <button className=\"brand\" aria-label=\"LingoTiles 首页\" onClick={() => guardNavigation(() => { clearFusion(); setView('game'); setPhase('ready'); setGame(null); setPaused(false); })}><span className=\"brand-icon\">L</span><span className=\"brand-copy\">LingoTiles<small>词了个词</small></span></button>\n      <nav className=\"main-nav\" aria-label=\"主导航\">\n"
+        },
+        {
+          "before": "      </nav>\n      <div className=\"header-right\"><span className=\"streak\"><Flame size={16} />{currentStreak > 0 ? `连续 ${currentStreak} 天` : '每天一点进步'}</span><button className=\"icon-button\" aria-label={sound ? '关闭消除朗读' : '开启消除朗读'} aria-pressed={sound} title={sound ? '消除时自动朗读：已开启' : '消除时自动朗读：已关闭'} onClick={() => { setSound(!sound); if (sound && 'speechSynthesis' in window) window.speechSynthesis.cancel(); notify(sound ? '已关闭消除时的自动朗读。' : '已开启消除时的自动朗读。'); }}>{sound ? <Volume2 size={17} /> : <VolumeX size={17} />}</button></div>\n    </header>\n",
+          "after": "      </nav>\n      <div className=\"header-right\"><a className=\"portal-return\" href=\"/?category=learn\">悦学 ↗</a><span className=\"streak\"><Flame size={16} />{currentStreak > 0 ? `连续 ${currentStreak} 天` : '每天一点进步'}</span><button className=\"icon-button\" aria-label={sound ? '关闭消除朗读' : '开启消除朗读'} aria-pressed={sound} title={sound ? '消除时自动朗读：已开启' : '消除时自动朗读：已关闭'} onClick={() => { setSound(!sound); if (sound && 'speechSynthesis' in window) window.speechSynthesis.cancel(); notify(sound ? '已关闭消除时的自动朗读。' : '已开启消除时的自动朗读。'); }}>{sound ? <Volume2 size={17} /> : <VolumeX size={17} />}</button></div>\n    </header>\n"
+        }
+      ]
+    },
+    {
+      "file": "data/library.ts",
+      "edits": [
+        {
+          "before": "function resourceUrl(path: string) {\n  return `${import.meta.env?.BASE_URL ?? '/'}${path.replace(/^\\//, '')}`;\n}\n",
+          "after": "function resourceUrl(path: string) {\n  return `/projects/lingotiles/${path.replace(/^\\//, '')}`;\n}\n"
+        }
+      ]
+    },
+    {
+      "file": "components/VocabularyNotebook.tsx",
+      "edits": [
+        {
+          "before": "      } catch (failure) {\n        if (!controller.signal.aborted) { setError(failure instanceof Error ? failure.message : '词库暂时无法读取，请重试。'); setLoading(false); }\n      }\n",
+          "after": "      } catch (failure) {\n        if (!controller.signal.aborted) { setError(failure instanceof Error && !/fetch|network|load failed/i.test(failure.message) ? failure.message : '词库暂时无法连接，请检查网络后重试。'); setLoading(false); }\n      }\n"
+        }
+      ]
+    }
+  ]
+}

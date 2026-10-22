@@ -223,9 +223,8 @@ test('native illustration indexes load only the current senses and recover from 
   await assert.rejects(() => f.model.loadIllustrationManifest(), /网络/);
   f.state.failRequest = false;
   const manifest = await f.model.loadIllustrationManifest();
-  assert.equal(manifest.total, 100000);
-  assert.equal(manifest.ready, 1083);
-  assert.equal(manifest.pending, 98917);
+  const expected = JSON.parse(fs.readFileSync(path.join(root, 'web/projects/lingotiles/public/images/words/index/manifest.json'), 'utf8'));
+  assert.deepEqual([manifest.total, manifest.ready, manifest.pending], [expected.total, expected.ready, expected.pending]);
   const part = Object.values(manifest.buckets)[0];
   const words = JSON.parse(fs.readFileSync(path.join(root, 'web/projects/lingotiles/public', part.path), 'utf8'));
   const word = words.find(value => !f.model.getWordIllustration(value));

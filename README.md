@@ -1,6 +1,6 @@
 # Brclio 悦创
 
-`0.1.1` 微信普通小程序，提供「摄影 / 放松 / 悦学 / 我的」四个原生入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
+`0.1.2` 微信普通小程序，提供「摄影 / 放松 / 悦学 / 我的」四个原生入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
 
 摄影、挑战与学习界面均使用小程序原生代码，不加载外部网页。摄影包含正确来源 [FirstSight_Online](https://github.com/AndersonHJB/FirstSight_Online) 的 8 组婚纱、1 组孕期影像，共 169 张实际照片；放松提供 ReadyGoDuel 同屏双人反应挑战；悦学接入 [LingoTiles「词了个词」](https://github.com/Brclio/brclio-lingotiles)，保留经典主题与 10 万词分级学习，重新设计手机界面。「我的」提供可选的 Brclio 共享账号和手动挑战备份；学习数据仅保存在本机，不进入账号备份。本次悦学为源码接入，部署与微信发布分别验收。
 
@@ -40,6 +40,8 @@ npm run build
 npm test
 npm run check:release
 ```
+
+词了个词会继续从原仓库维护更新：`npm run sync:lingotiles -- --ref main` 检查差异，用报告中的完整 SHA 加 `--apply` 才同步全部源码、词库与插图。网页适配由补丁生成，原生功能变化有审查门禁，避免后续漏接新功能。操作与回退步骤见 [持续更新流程](docs/LINGOTILES_UPDATES.md)。
 
 正常构建只读取本地摄影素材、来源清单、原生展示文件和固定 LingoTiles 源码／资源，不需要 GitHub token 或网络。首次安装构建依赖及补全来源资源是独立的联网步骤。增加来源提交须先审查源数据和固定提交，不能直接把仓库内所有素材视为应发布内容。摄影来源见 [SOURCE.md](web/projects/firstsight/SOURCE.md)，学习来源与资源边界见 [LINGOTILES_PARITY.md](docs/LINGOTILES_PARITY.md)。
 

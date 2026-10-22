@@ -3,5 +3,5 @@
 module.exports = {
   webOrigin: 'https://pocket.bornforthis.cn',
   cloudSyncEnabled: true,
-  version: '0.1.1'
+  version: '0.1.2'
 };

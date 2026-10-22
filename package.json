@@ -1,11 +1,11 @@
 {
   "name": "brclio-miniapp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "workspaces": [
     "packages/ready-go-duel-runtime"
   ],
-  "description": "Brclio 悦创 · 摄影与放松内容空间",
+  "description": "Brclio 悦创 · 摄影、放松与悦学内容空间",
   "scripts": {
     "preview": "node scripts/preview-server.js",
     "test": "node --test tests/*.test.js",
@@ -22,7 +22,10 @@
     "wechat:preview": "node scripts/wechat.js preview",
     "wechat:upload": "node scripts/wechat.js upload",
     "build:native": "node scripts/build-native.js",
-    "prepare:photos": "node scripts/prepare-native-photos.js --refresh"
+    "prepare:photos": "node scripts/prepare-native-photos.js --refresh",
+    "sync:lingotiles": "node scripts/sync-lingotiles.mjs",
+    "adapt:lingotiles": "node scripts/build-lingotiles-web.js",
+    "check:lingotiles": "node scripts/build-lingotiles-web.js && node scripts/check-lingotiles-contract.js"
   },
   "engines": {
     "node": ">=20"
