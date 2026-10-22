@@ -44,6 +44,7 @@
       "html": "index.html",
       "tailwind": "index.css",
       "runtimePackage": "@brclio/ready-go-duel-runtime",
+      "fingerprintAssets": true,
       "canvasExtension": {
         "source": "match",
         "target": "match",

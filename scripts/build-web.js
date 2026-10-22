@@ -7,6 +7,7 @@ const esbuild = require('esbuild');
 const { execFileSync } = require('node:child_process');
 const { createRequire } = require('node:module');
 const { bundleGame } = require('./bundle-game');
+const { fingerprintAssets } = require('./fingerprint-assets');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist/web');
 const portal = path.join(root, 'web/portal');
@@ -33,6 +34,8 @@ const ids = new Set();
 for (const project of config.projects) {
   if (!/^[a-z][a-z0-9-]{0,47}$/.test(project.id) || ids.has(project.id)) throw new Error('Invalid or duplicate project ID');
   if (!['react', 'static', 'canvas'].includes(project.kind)) throw new Error('Unsupported project kind');
+  if (project.fingerprintAssets !== undefined && typeof project.fingerprintAssets !== 'boolean') throw new Error('Invalid asset fingerprint option');
+  if (project.fingerprintAssets && (project.kind !== 'react' || !project.tailwind)) throw new Error('Asset fingerprints require React and compiled Tailwind assets');
   ids.add(project.id);
 }
 for (const item of registry.projects) {
@@ -56,10 +59,15 @@ for (const project of published) {
     const runtime = project.runtimePackage ? createRequire(require.resolve(project.runtimePackage + '/package.json', { paths: [root] })) : null;
     const alias = runtime ? Object.fromEntries(['react', 'react-dom', 'lucide-react'].map(function (name) { return [name, path.dirname(runtime.resolve(name + '/package.json'))]; })) : undefined;
     esbuild.buildSync({ entryPoints: [outputPath(source, project.entry)], outdir: folder, entryNames: 'main', bundle: true, minify: true, format: 'esm', jsx: 'automatic', target: ['es2020'], define: { 'process.env.NODE_ENV': '"production"' }, alias: alias, legalComments: 'eof' });
-    fs.copyFileSync(outputPath(source, project.html), path.join(folder, 'index.html'));
     if (project.tailwind) {
       // Compile the original Tailwind 3 utilities locally; no browser CDN runtime.
       execFileSync(process.execPath, [require.resolve('tailwindcss/lib/cli.js'), '--input', outputPath(source, project.tailwind), '--output', path.join(folder, 'main.css'), '--content', path.join(source, '**/*.{html,js,ts,jsx,tsx}'), '--minify'], { cwd: root, stdio: 'inherit' });
+    }
+    if (project.fingerprintAssets) {
+      const html = fs.readFileSync(outputPath(source, project.html), 'utf8');
+      fs.writeFileSync(path.join(folder, 'index.html'), fingerprintAssets(folder, html));
+    } else {
+      fs.copyFileSync(outputPath(source, project.html), path.join(folder, 'index.html'));
     }
     if (project.canvasExtension) {
       const extension = project.canvasExtension;

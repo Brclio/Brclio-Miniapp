@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const child = require('node:child_process');
+const { verifyFingerprintedAssets } = require('./fingerprint-assets');
 const root = path.resolve(__dirname, '..');
 const release = process.argv.includes('--release');
 let failed = false;
@@ -68,6 +69,11 @@ try {
   const version = require(path.join(root, 'package.json')).version;
   check(registry.version === version && site.version === version, '门户与原生版本一致');
   check(registry.categories.find(function (item) { return item.id === 'relax'; }).status === 'active' && registry.projects.some(function (item) { return item.id === 'ready-go-duel' && item.category === 'relax' && item.status === 'active'; }) && ['main.js', 'main.css', 'match/bundle.js'].every(function (file) { return fs.existsSync(path.join(outputRoot, 'projects/ready-go-duel', file)); }), '放松栏目、原版反应对决与积分扩展均已构建');
+  const buildConfig = JSON.parse(fs.readFileSync(path.join(root, 'projects.config.json'), 'utf8'));
+  for (const item of buildConfig.projects.filter(function (item) { return item.fingerprintAssets && registry.projects.some(function (entry) { return entry.id === item.id && entry.status === 'active'; }); })) {
+    const folder = path.join(outputRoot, 'projects', item.id);
+    check(verifyFingerprintedAssets(folder, fs.readFileSync(path.join(folder, 'index.html'), 'utf8')), '网页引用内容指纹资源，哈希及兼容文件一致 ' + item.id);
+  }
   check(registry.categories.find(function (item) { return item.id === 'learn'; }).status === 'active' && registry.projects.some(function (item) { return item.id === 'lingotiles' && item.category === 'learn' && item.status === 'active'; }) && ['index.html', 'main.js', 'main.css', 'vocabulary/manifest.json', 'images/words/index/manifest.json'].every(function (file) { return fs.existsSync(path.join(outputRoot, 'projects/lingotiles', file)); }), '悦学栏目、词了个词及按需词库与现有插图索引均已构建');
   const nativeCatalog = require(path.join(appRoot, 'data/catalog.js'));
   check(nativeCatalog.features.map(function (feature) { return feature.id; }).sort().join(',') === 'content-hub,firstsight,learn,lingotiles,ready-go-duel,relax,wedding-inspiration' && nativeCatalog.getFeatureRoute('lingotiles') === '/pages/lingotiles/index', '原生固定入口及历史分享入口登记完整');
