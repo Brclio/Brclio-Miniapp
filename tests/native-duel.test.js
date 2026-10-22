@@ -239,6 +239,7 @@ function pageHost(t) {
   function pageRequire(id) {
     if (id === '../../lib/duel') return { createDuelAudio, createGameApp() { creates += 1; return createGameApp.apply(null, arguments); } };
     if (id === '../../lib/duel-platform') return require('../miniprogram/lib/duel-platform');
+    if (id === '../../lib/account-sync') return { storage: h.api, onHide() {} };
     if (id.startsWith('../../lib/ready-go-')) return require('../miniprogram/lib/' + id.slice('../../lib/'.length));
     if (id === './legacy') {
       const legacyModule = { exports: {} };

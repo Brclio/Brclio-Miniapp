@@ -2,7 +2,7 @@
 
 const { createDuel } = require('./duel-engine');
 const { createDuelAudio } = require('./duel-audio');
-const storage = require('./storage');
+const storageModule = require('./storage');
 const catalog = require('../data/catalog');
 
 // Canvas layout adapts the Brclio app template's warm paper, typography,
@@ -14,6 +14,7 @@ const SERIF = "'Songti SC', 'Noto Serif SC', serif";
 function createGameApp(platform, options) {
   const wx = platform;
   const opt = options || {};
+  const storage = storageModule.createStorage(opt.storage || (typeof wx.getStorageSync === 'function' ? wx : undefined));
   const requestFrame = typeof wx.requestAnimationFrame === 'function' ? wx.requestAnimationFrame.bind(wx) : typeof requestAnimationFrame === 'function' ? requestAnimationFrame : null;
   const cancelFrame = typeof wx.cancelAnimationFrame === 'function' ? wx.cancelAnimationFrame.bind(wx) : typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame : null;
   const canvas = wx.createCanvas();
@@ -296,7 +297,12 @@ function createGameApp(platform, options) {
     header('隐私与数据', 'YOUR DEVICE, YOUR LITTLE MOMENTS');
     text('好玩，轻一点。', 24, 116, 30, C.ink, 800, 'left', true);
     const cloudBackup = wx.cloudBackupSupported === true;
-    const sections = [
+    const sections = opt.accountSyncSupported ? [
+      ['01', '先保存在本机', ['赛制、声音、触感与最近 20 场战绩，', '操作时先保存，断网也能继续玩。']],
+      ['02', '登录后自动同步', ['使用小程序账号同步设置和计分记录，', '访客也能游玩；退出后切回访客存档。']],
+      ['03', '每个账号分别保存', ['记录只进入当前登录账号，', '联网后自动重试未完成的同步。']],
+      ['04', '清理当前战绩', ['清空记录后会同步这一修改。', '赛制、声音和触感设置继续保留。']]
+    ] : [
       ['01', '只在本机记住', ['赛制、声音、触感与最近 20 场战绩，', '保存在这台设备的本地缓存中。']],
       ['02', '不需要个人信息', ['当前版本不请求登录、摄像头、麦克风、', '定位或通讯录，也不接入广告与统计 SDK。']],
       cloudBackup ? ['03', '云端备份由你决定', ['默认关闭；开启后经 Cloudflare 将匿名', '对局记录保存到 GitHub 私有仓库。']] :
@@ -316,7 +322,7 @@ function createGameApp(platform, options) {
   }
 
   function clearRecords() {
-    wx.showModal({ title: '清除本机战绩？', content: '将删除本机保存的对决记录。赛制、声音和触感设置会保留。', confirmText: '清除', confirmColor: C.red, success: function (response) {
+    wx.showModal({ title: opt.accountSyncSupported ? '清除当前战绩？' : '清除本机战绩？', content: opt.accountSyncSupported ? '将清空当前记录，登录后会同步这一修改。赛制、声音和触感设置会保留。' : '将删除本机保存的对决记录。赛制、声音和触感设置会保留。', confirmText: '清除', confirmColor: C.red, success: function (response) {
       if (disposed || !response.confirm) return;
       if (persist({ matches: [] })) notify('本机战绩已清除');
       draw();

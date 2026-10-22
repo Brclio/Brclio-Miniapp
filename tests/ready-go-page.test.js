@@ -25,6 +25,7 @@ function host() {
     setTimeout(callback, delay) { const id = ++nextId; tasks.set(id, { callback, at: time + delay }); return id; }, clearTimeout: (id) => tasks.delete(id),
     require(id) {
       if (id === './legacy') return { data: {} };
+      if (id === '../../lib/account-sync') return { storage: api, onHide() {} };
       if (id === '../../lib/duel') return { createDuelAudio: () => sound };
       if (id === '../../lib/ready-go-model') return { createReadyGo: (options) => createReadyGo(Object.assign({}, options, { now: () => time, random: () => 0 })) };
       if (id === '../../lib/ready-go-report') return { drawReadyGoReport: () => reportPromise };

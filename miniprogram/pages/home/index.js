@@ -1,34 +1,66 @@
 const catalog = require('../../data/catalog');
-const { createAccountClient } = require('../../lib/account');
+const account = require('../../lib/account');
+const sync = require('../../lib/account-sync');
 
 Page({
   data: {
     activeTab: 'photo',
-    accountName: '',
+    accountUser: null,
+    accountLabel: '',
+    accountInitial: '',
+    syncMessage: '',
     featured: catalog.getFeature('firstsight')
   },
 
   onLoad(options) {
+    this._alive = true;
+    this.setData({ syncMessage: sync.getStatus().message });
+    this._unsubscribeSync = sync.subscribe(status => { if (this._alive) this.setData({ syncMessage: status.message }); });
     if (typeof wx.setNavigationBarTitle === 'function') wx.setNavigationBarTitle({ title: 'Brclio 悦创' });
     const tab = options && options.tab;
     if (['photo', 'relax', 'learn', 'mine'].indexOf(tab) !== -1) this.setData({ activeTab: tab });
   },
 
-  onShow() {
-    const user = createAccountClient(wx).currentUser();
-    this.setData({ accountName: user ? user.nickname || user.username : '' });
+  async onShow() {
+    this._alive = true;
+    const user = typeof account.getCachedUser === 'function' ? account.getCachedUser() : null;
+    this.applyAccountUser(user);
+    sync.onShow({ pull: true });
+    if (!user || this._accountRefreshing) return;
+    this._accountRefreshing = true;
+    try {
+      const session = await account.refreshSession();
+      if (this._alive) this.applyAccountUser(session && session.user);
+    } catch (_) {
+      if (this._alive) this.applyAccountUser(account.getCachedUser());
+    } finally { this._accountRefreshing = false; }
+  },
+
+  onHide() { sync.onHide(); },
+  onUnload() { this._alive = false; if (this._unsubscribeSync) this._unsubscribeSync(); },
+
+  applyAccountUser(user) {
+    const label = user ? user.displayName || user.username || (user.email ? user.email.split('@')[0] : '微信用户') : '';
+    this.setData({ accountUser: user, accountLabel: label, accountInitial: label.slice(0, 1).toUpperCase() });
+  },
+
+  openAccount(event) {
+    const mode = event && event.currentTarget && event.currentTarget.dataset.mode;
+    wx.navigateTo({ url: '/pages/account/index' + (mode === 'register' ? '?mode=register' : '') });
   },
 
   switchTab(event) {
     const tab = event.currentTarget.dataset.tab;
     if (['photo', 'relax', 'learn', 'mine'].indexOf(tab) === -1 || tab === this.data.activeTab) return;
     this.setData({ activeTab: tab });
+    if (tab === 'mine' && typeof account.getCachedUser === 'function') this.applyAccountUser(account.getCachedUser());
     if (typeof wx.pageScrollTo === 'function') wx.pageScrollTo({ scrollTop: 0, duration: 0 });
   },
 
   openFeature(event) {
     const id = event.currentTarget.dataset.id;
     if (!catalog.getFeature(id)) return;
+    sync.flush();
     wx.navigateTo({ url: catalog.getFeatureRoute(id) });
   },
 
@@ -38,10 +70,6 @@ Page({
 
   openPrivacy() {
     wx.navigateTo({ url: '/pages/privacy/index' });
-  },
-
-  openAccount() {
-    wx.navigateTo({ url: '/pages/account/index' });
   },
 
   onShareAppMessage() {

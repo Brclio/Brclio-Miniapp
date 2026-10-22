@@ -1,165 +1,259 @@
 'use strict';
-// Shared Brclio accounts. Brclio · CC BY-NC-SA 4.0.
-const API_ORIGIN = 'https://pocket.bornforthis.cn';
-const SESSION_KEY = 'brclio.shared-account.v1';
-const HISTORY_KEY = 'brclio.duel.v1';
-const RESTORE_KEY = 'brclio.duel.before-restore.v1';
-const ROUTES = { session: ['GET'], code: ['POST'], register: ['POST'], login: ['POST'], logout: ['POST'],
-  profile: ['PUT'], password: ['POST'], 'apps/miniapp/data': ['GET', 'PUT'] };
-const clone = value => JSON.parse(JSON.stringify(value));
-const object = value => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-const tokenValid = token => typeof token === 'string' && /^[\x21-\x7e]{16,4096}$/.test(token);
-function failure(message, status) { const error = new Error(message); error.status = status; return error; }
-function validateDuel(value) {
-  if (!object(value) || !object(value.preferences) || !Array.isArray(value.matches) || value.matches.length > 20) throw failure('挑战数据格式不兼容，已保留原数据。');
-  const preferences = value.preferences;
-  if (![1, 3, 5].includes(preferences.targetScore) || typeof preferences.haptics !== 'boolean' || !Array.isArray(preferences.names) || preferences.names.length !== 2 ||
-    !preferences.names.every(name => typeof name === 'string' && name.trim().length > 0 && name.length <= 16 && !/[\u0000-\u001f\u007f]/.test(name))) throw failure('挑战偏好格式不兼容，已保留原数据。');
-  const ids = new Set();
-  for (const match of value.matches) {
-    if (!object(match) || typeof match.id !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(match.id) || ids.has(match.id) ||
-      !Number.isSafeInteger(match.at) || match.at < 1577836800000 || ![0, 1].includes(match.winner) || !Array.isArray(match.scores) || match.scores.length !== 2 ||
-      !match.scores.every(score => Number.isInteger(score) && score >= 0 && score <= 5) || ![1, 3, 5].includes(match.scores[match.winner]) || match.scores[1 - match.winner] >= match.scores[match.winner] ||
-      !(match.bestMs === null || Number.isFinite(match.bestMs) && match.bestMs >= 0 && match.bestMs <= 5000) || !Array.isArray(match.names) || match.names.length !== 2 ||
-      !match.names.every(name => typeof name === 'string' && name.length > 0 && name.length <= 16)) throw failure('对局记录格式不兼容，已保留原数据。');
-    ids.add(match.id);
-  }
-  return clone(value);
+
+const config = require('../config');
+const STORAGE_KEY = 'brclio.miniapp-account.v1';
+const REVOCATIONS_KEY = 'brclio.miniapp-account-revocations.v1';
+const REQUEST_TIMEOUT = 45000;
+const WECHAT_LOGIN_TIMEOUT = 15000;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERNAME_PATTERN = /^[A-Za-z][A-Za-z0-9_]{3,23}$/;
+const CODE_PATTERN = /^\d{6}$/;
+
+function normalizeEmail(value) { return String(value || '').trim().toLowerCase(); }
+function expiryTime(value) {
+  if (typeof value === 'number') return value < 1000000000000 ? value * 1000 : value;
+  return typeof value === 'string' ? Date.parse(value) : NaN;
 }
-function createAccountClient(api) {
-  const pending = new Set();
-  let disposed = false, invalidated = false, version = 0, state;
-  function readState() {
-    const stored = api.getStorageSync(SESSION_KEY);
-    const generation = object(stored) && Number.isSafeInteger(stored.generation) && stored.generation >= 0 ? stored.generation : 0;
-    const session = object(stored) && tokenValid(stored.token) && object(stored.user) && typeof stored.user.id === 'string' ? { token: stored.token, user: clone(stored.user) } : null;
-    return { generation, session };
+function safeUser(value) {
+  if (!value || typeof value.id !== 'string' || !value.id || value.id.length > 128) return null;
+  const user = { id: value.id };
+  ['username', 'email', 'displayName'].forEach(key => {
+    user[key] = typeof value[key] === 'string' ? value[key].slice(0, key === 'email' ? 254 : 128) : '';
+  });
+  user.createdAt = typeof value.createdAt === 'number' && Number.isFinite(value.createdAt) ? value.createdAt : typeof value.createdAt === 'string' ? value.createdAt.slice(0, 128) : '';
+  user.avatarUrl = typeof value.avatarUrl === 'string' && /^https:\/\/[^\s]+$/.test(value.avatarUrl) ? value.avatarUrl.slice(0, 2048) : '';
+  user.providers = Array.isArray(value.providers) ? ['email', 'wechat'].filter(provider => value.providers.indexOf(provider) !== -1) : [];
+  return user;
+}
+function accountError(code, message, extra) {
+  const error = new Error(message);
+  error.code = code;
+  if (extra && Number.isFinite(Number(extra.retryAfter))) error.retryAfter = Math.max(0, Math.ceil(Number(extra.retryAfter)));
+  return error;
+}
+function endpoint(settings) {
+  const base = settings.accountBase || (settings.webOrigin ? settings.webOrigin + '/api/account' : '');
+  // A public HTTPS origin and the fixed account path are the only permitted destination.
+  return typeof base === 'string' && /^https:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?::443)?\/api\/account\/?$/i.test(base) ? base.replace(/\/$/, '') : '';
+}
+
+function createAccountClient(options) {
+  const settings = options || {};
+  const base = endpoint(settings.config || config);
+  const now = settings.now || Date.now;
+  let memorySession, generation = 0, pendingRefresh = null;
+  const subscribers = new Set();
+  let revocations, pendingRevocations = null;
+  const platform = () => settings.wx || (typeof wx !== 'undefined' ? wx : null);
+
+  function emit(reason) {
+    const value = memorySession;
+    const snapshot = value ? { user: safeUser(value.user), expiresAt: value.expiresAt, reason } : { user: null, expiresAt: null, reason };
+    subscribers.forEach(listener => { try { listener(snapshot); } catch (_) {} });
   }
-  try { state = readState(); } catch (_) { state = null; }
-  function signature(value) { return value && JSON.stringify([value.generation, value.session && value.session.token, value.session && value.session.user.id]); }
-  function changed() { return failure('账号已变化或页面已关闭，请重新打开账号页面。'); }
-  function assertCurrent(expected = state, expectedVersion = version) {
-    if (disposed || invalidated || expectedVersion !== version) throw changed();
-    if (!expected) throw failure('无法读取本机账号缓存，请稍后重试。');
-    if (signature(readState()) !== signature(expected)) { invalidated = true; version += 1; throw changed(); }
-    return expected;
+  function validExpiry(value) { return value === null || Number.isFinite(expiryTime(value)); }
+  function clearSession(reason) {
+    memorySession = null;
+    generation += 1;
+    const api = platform();
+    try { if (api && api.removeStorageSync) api.removeStorageSync(STORAGE_KEY); } catch (_) {}
+    emit(reason || 'logout');
   }
-  function currentUser() {
-    try { assertCurrent(); return state.session ? clone(state.session.user) : null; } catch (_) { return null; }
+  function readSession() {
+    let value = memorySession;
+    if (value === undefined) {
+      try { const api = platform(); value = api && api.getStorageSync ? api.getStorageSync(STORAGE_KEY) : null; } catch (_) { value = null; }
+    }
+    const user = value && safeUser(value.user);
+    if (!value || !user || typeof value.token !== 'string' || !value.token || !validExpiry(value.expiresAt)) {
+      if (value) clearSession();
+      else memorySession = null;
+      return null;
+    }
+    try {
+      if (loadRevocations().some(item => item.token === value.token)) { clearSession('logout'); return null; }
+    } catch (_) {}
+    memorySession = { token: value.token, expiresAt: value.expiresAt, user };
+    return memorySession;
   }
-  function persist(session, expected, expectedVersion) {
-    assertCurrent(expected, expectedVersion);
-    if (expected.generation >= Number.MAX_SAFE_INTEGER) throw failure('账号缓存版本已满，请联系维护者。');
-    // Keep the generation tombstone after logout so a late anonymous login
-    // cannot mistake login-then-logout for the original empty storage state.
-    const next = { version: 1, generation: expected.generation + 1, token: session ? session.token : null, user: session ? clone(session.user) : null };
-    api.setStorageSync(SESSION_KEY, next);
-    state = { generation: next.generation, session: session ? { token: next.token, user: next.user } : null }; version += 1;
+  function saveSession(value, reason) {
+    const user = value && safeUser(value.user);
+    if (!user || typeof value.token !== 'string' || !value.token || !validExpiry(value.expiresAt)) {
+      throw accountError('invalid_response', '登录结果暂时无法读取，请重试。');
+    }
+    const session = { token: value.token, expiresAt: value.expiresAt, user };
+    const changed = !memorySession || memorySession.token !== session.token || memorySession.user.id !== session.user.id;
+    memorySession = session;
+    if (changed) generation += 1;
+    try { const api = platform(); if (api && api.setStorageSync) api.setStorageSync(STORAGE_KEY, session); } catch (_) {}
+    emit(reason || 'login');
+    return { user: safeUser(user), expiresAt: session.expiresAt };
   }
-  async function request(route, method = 'GET', body) {
-    const expected = assertCurrent(), started = version;
-    if (!Object.prototype.hasOwnProperty.call(ROUTES, route) || !ROUTES[route].includes(method)) throw failure('账号请求无效');
-    const bodyText = body === undefined ? '' : JSON.stringify(body);
-    if (bodyText.length > 32000) throw failure('同步数据过大，已保留本机数据。');
+  function request(path, method, data, token) {
+    const requestGeneration = generation;
     return new Promise((resolve, reject) => {
-      const operation = { task: null, settled: false };
-      function finish(error, value) { if (operation.settled) return; operation.settled = true; pending.delete(operation); if (error) reject(error); else resolve(value); }
-      operation.cancel = () => finish(changed()); pending.add(operation);
-      try { operation.task = api.request({ url: API_ORIGIN + '/api/account/' + route, method, data: body,
-        timeout: 30000, enableCache: false, header: { Accept: 'application/json', 'X-Brclio-Client': 'native',
-          ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...(expected.session ? { Authorization: 'Bearer ' + expected.session.token } : {}) },
-        success(response) {
-          if (operation.settled) return;
-          try { assertCurrent(expected, started); } catch (error) { finish(error); return; }
-          const value = response.data;
-          if (!object(value) || JSON.stringify(value).length > 131072) return finish(failure('账号服务响应无效。'));
-          if (response.statusCode < 200 || response.statusCode >= 300) {
-            if (response.statusCode === 401 && route === 'apps/miniapp/data' && expected.session) { try { persist(null, expected, started); } catch (_) {} }
-            return finish(failure(typeof value.error === 'string' ? value.error.slice(0, 300) : '账号操作失败，请重试。', response.statusCode));
-          }
-          finish(null, value);
-        },
-        fail() { finish(failure('暂时无法连接账号服务，本机记录已保留。')); }
-      }); } catch (_) { finish(failure('账号请求未完成，本机记录已保留。')); }
+      const api = platform();
+      if (!base || !api || typeof api.request !== 'function') return reject(accountError('service_unavailable', '账号服务暂时不可用，请稍后重试。'));
+      const header = { 'Content-Type': 'application/json' };
+      if (token) header.Authorization = 'Bearer ' + token;
+      try {
+        api.request({ url: base + path, method, header, timeout: REQUEST_TIMEOUT,
+          ...(data === undefined ? {} : { data }),
+          success(response) {
+            const body = response.data;
+            if (response.statusCode >= 200 && response.statusCode < 300 && body && typeof body === 'object' && !body.error) return resolve(body);
+            const code = body && typeof body.error === 'string' ? body.error : 'request_failed';
+            const message = body && typeof body.message === 'string' && body.message.length <= 180 ? body.message : '操作未完成，请稍后重试。';
+            const error = accountError(code, message, body);
+            error.status = response.statusCode;
+            if (response.statusCode === 401 && token && path !== '/logout') {
+              const current = readSession();
+              if (current && current.token === token && generation === requestGeneration) clearSession('unauthorized');
+            }
+            reject(error);
+          },
+          fail() { reject(accountError('network_error', '连接失败，请检查网络后重试。')); }
+        });
+      } catch (_) { reject(accountError('network_error', '连接失败，请检查网络后重试。')); }
     });
   }
-  async function signIn(route, input) {
-    const expected = assertCurrent(), started = version;
-    const value = await request(route, 'POST', input);
-    if (!tokenValid(value.token) || !object(value.user) || typeof value.user.id !== 'string') throw failure('账号会话响应无效。');
-    persist({ token: value.token, user: value.user }, expected, started);
-    return currentUser();
+  function loadRevocations() {
+    if (revocations) return revocations;
+    const api = platform();
+    const value = api && api.getStorageSync ? api.getStorageSync(REVOCATIONS_KEY) : [];
+    revocations = Array.isArray(value) ? value.filter(item => item && typeof item.token === 'string' && item.token && item.token.length <= 512).map(item => ({ token: item.token, queuedAt: Number.isFinite(item.queuedAt) ? item.queuedAt : now() })) : [];
+    return revocations;
   }
-  async function refresh() {
-    const expected = assertCurrent(), started = version;
-    const value = await request('session');
-    assertCurrent(expected, started);
-    if (!value.user) { if (expected.session) persist(null, expected, started); return value; }
-    if (!object(value.user) || !expected.session || value.user.id !== expected.session.user.id) throw failure('账号会话不一致，请重新登录。');
-    persist({ token: expected.session.token, user: value.user }, expected, started); return value;
+  function persistRevocations() {
+    const api = platform();
+    if (!api || !api.setStorageSync) throw accountError('storage_unavailable', '本机存储暂不可用。');
+    api.setStorageSync(REVOCATIONS_KEY, loadRevocations());
   }
-  async function logout() {
-    const expected = assertCurrent(), started = version;
-    try { if (expected.session) await request('logout', 'POST', {}); }
-    finally {
-      // A closed page or another client's new login must win over this finally.
-      if (!disposed && !invalidated) {
-        let current = false;
-        try { assertCurrent(expected, started); current = true; } catch (_) {}
-        if (current) persist(null, expected, started);
-      }
-    }
+  function enqueueRevocation(token) {
+    const queue = loadRevocations();
+    if (!queue.some(item => item.token === token)) queue.push({ token, queuedAt: now() });
+    persistRevocations();
   }
-  async function loadCloud() {
-    const expected = assertCurrent(), started = version, owner = currentUser(); if (!owner) throw failure('请先登录账号。');
-    const value = await request('apps/miniapp/data');
-    assertCurrent(expected, started);
-    if (value.userId !== owner.id || value.appId !== 'miniapp' || value.version !== 1 || !Number.isSafeInteger(value.revision) || value.revision < 0 || !object(value.data)) throw failure('云端数据不兼容，已保留本机数据。');
+  async function revoke(token) {
+    try { await request('/logout', 'POST', {}, token); }
+    catch (error) { if (error.status !== 401) throw error; }
+    revocations = loadRevocations().filter(item => item.token !== token);
+    try { persistRevocations(); } catch (_) {}
+  }
+  function flushRevocations() {
+    if (pendingRevocations) return pendingRevocations;
+    const promise = (async () => {
+      let queue; try { queue = loadRevocations().slice(); } catch (_) { return { pending: null }; }
+      for (const item of queue) { try { await revoke(item.token); } catch (_) { break; } }
+      return { pending: loadRevocations().length };
+    })().finally(() => { if (pendingRevocations === promise) pendingRevocations = null; });
+    pendingRevocations = promise;
+    return promise;
+  }
+  async function authenticate(path, data, expectedGeneration) {
+    const currentGeneration = expectedGeneration === undefined ? generation : expectedGeneration;
+    if (currentGeneration !== generation) throw accountError('operation_canceled', '登录状态已变化，请重试。');
+    const result = await request(path, 'POST', data);
+    if (currentGeneration !== generation) throw accountError('operation_canceled', '登录状态已变化，请重试。');
+    return saveSession(result);
+  }
+  function requireEmail(email) {
+    const value = normalizeEmail(email);
+    if (value.length > 254 || !EMAIL_PATTERN.test(value)) throw accountError('invalid_email', '请输入正确的邮箱地址。');
     return value;
   }
-  function rawLocal() {
-    const value = api.getStorageSync(HISTORY_KEY);
-    if (value !== '' && value !== null && value !== undefined && !object(value)) throw failure('本机数据格式不兼容，已保留原数据。');
-    return value || {};
+  function registrationFields(input) {
+    const value = input || {};
+    const email = requireEmail(value.email);
+    const username = String(value.username || '').trim().toLowerCase();
+    if (!USERNAME_PATTERN.test(username)) throw accountError('invalid_username', '账号需为 4–24 位字母、数字或下划线，且以字母开头。');
+    const password = typeof value.password === 'string' ? value.password : '';
+    if (password.length < 8 || password.length > 128 || /[\x00-\x1f\x7f]/.test(password)) throw accountError('invalid_password', '密码需为 8–128 位。');
+    const code = String(value.code || '').trim();
+    if (!CODE_PATTERN.test(code)) throw accountError('invalid_code', '请输入 6 位邮箱验证码。');
+    return { email, username, password, code };
   }
-  function localSnapshot() {
-    const raw = rawLocal();
-    return validateDuel({ preferences: { targetScore: raw.targetScore === undefined ? 3 : raw.targetScore, haptics: raw.haptics === undefined ? true : raw.haptics,
-      names: raw.names === undefined ? ['红方', '蓝方'] : raw.names }, matches: raw.matches === undefined ? [] : raw.matches });
+  async function authedRequest(path, method, data) {
+    const session = readSession();
+    if (!session) throw accountError('session_expired', '请先登录。');
+    const expected = generation;
+    const result = await request(path, method, data, session.token);
+    if (expected !== generation || !memorySession || memorySession.token !== session.token) throw accountError('operation_canceled', '账号已变化，本次同步已取消。');
+    return result;
   }
-  async function backup(cloud, local) {
-    const expected = assertCurrent(), started = version;
-    if (!expected.session || cloud.userId !== expected.session.user.id || cloud.appId !== 'miniapp' || cloud.version !== 1 || !Number.isSafeInteger(cloud.revision) || cloud.revision < 0 || !object(cloud.data)) throw failure('账号或云端版本已变化，请重新读取云端。');
-    if (JSON.stringify(localSnapshot()) !== JSON.stringify(local)) throw failure('本机记录已变化，请重新预览再备份。');
-    const existing = object(cloud.data.duel) ? cloud.data.duel : {};
-    const duel = { ...existing, preferences: { ...(object(existing.preferences) ? existing.preferences : {}), ...local.preferences }, matches: local.matches };
-    const data = { ...cloud.data, duel };
-    // The shared API measures UTF-8 bytes, including Chinese player names.
-    let bytes = 0;
-    for (const char of JSON.stringify(data)) { const point = char.codePointAt(0); bytes += point <= 0x7f ? 1 : point <= 0x7ff ? 2 : point <= 0xffff ? 3 : 4; }
-    if (bytes > 12000) throw failure('备份超过 12000 字节，本机与云端数据均已保留。');
-    const saved = await request('apps/miniapp/data', 'PUT', { revision: cloud.revision, data });
-    assertCurrent(expected, started);
-    if (saved.userId !== expected.session.user.id || saved.appId !== 'miniapp' || saved.version !== 1 || saved.revision !== cloud.revision + 1 || !object(saved.data)) throw failure('备份响应不兼容，请重新读取云端核对；本机数据已保留。');
-    return saved;
-  }
-  async function restore(cloud, local) {
-    const expected = assertCurrent(), started = version;
-    const latest = await loadCloud();
-    assertCurrent(expected, started);
-    if (latest.userId !== cloud.userId || latest.revision !== cloud.revision) throw failure('云端已更新，请重新读取和预览。', 409);
-    if (JSON.stringify(localSnapshot()) !== JSON.stringify(local)) throw failure('本机记录已变化，请重新预览再恢复。');
-    const duel = validateDuel(cloud.data.duel), previous = clone(rawLocal());
-    const next = { ...previous, targetScore: duel.preferences.targetScore, haptics: duel.preferences.haptics, names: duel.preferences.names, matches: duel.matches };
-    // Preserve a complete local recovery copy before replacing only known game fields.
-    api.setStorageSync(RESTORE_KEY, { userId: cloud.userId, savedAt: Date.now(), data: previous });
-    api.setStorageSync(HISTORY_KEY, next);
-    return duel;
-  }
-  function dispose() {
-    if (disposed) return; disposed = true; version += 1;
-    for (const operation of Array.from(pending)) { operation.cancel(); try { if (operation.task && typeof operation.task.abort === 'function') operation.task.abort(); } catch (_) {} }
-  }
-  return { currentUser, request, refresh, login: input => signIn('login', input), register: input => signIn('register', input), logout, loadCloud, localSnapshot, backup, restore, dispose };
+  const client = {
+    flushRevocations,
+    getSessionSnapshot() { const session = readSession(); return session ? { user: safeUser(session.user), expiresAt: session.expiresAt } : { user: null, expiresAt: null }; },
+    subscribe(listener) { if (typeof listener !== 'function') return () => {}; subscribers.add(listener); return () => subscribers.delete(listener); },
+    readSync() { return authedRequest('/sync', 'GET'); },
+    writeSync(payload) { return authedRequest('/sync', 'PUT', payload); },
+    getCachedUser() { const session = readSession(); return session ? safeUser(session.user) : null; },
+    async refreshSession() {
+      const session = readSession();
+      if (!session) return null;
+      if (pendingRefresh && pendingRefresh.token === session.token) return pendingRefresh.promise;
+      const token = session.token, currentGeneration = generation;
+      const promise = request('/session', 'GET', undefined, token).then(result => {
+        if (currentGeneration !== generation) return null;
+        return saveSession({ ...result, token }, 'refresh');
+      }).catch(error => {
+        if (error.status === 401) return null;
+        throw error;
+      }).finally(() => { if (pendingRefresh && pendingRefresh.promise === promise) pendingRefresh = null; });
+      pendingRefresh = { token, promise };
+      return promise;
+    },
+    async sendEmailCode(email, purpose) {
+      const normalized = requireEmail(email);
+      if (['register', 'login', 'bind'].indexOf(purpose) === -1) throw accountError('invalid_purpose', '请选择正确的验证码用途。');
+      const session = purpose === 'bind' ? readSession() : null;
+      if (purpose === 'bind' && !session) throw accountError('session_expired', '请先登录后再绑定邮箱。');
+      return request('/email/code', 'POST', { email: normalized, purpose }, session && session.token);
+    },
+    async register(input) { return authenticate('/register', registrationFields(input)); },
+    async loginPassword(identifier, password) {
+      let value = String(identifier || '').trim();
+      if (value.indexOf('@') !== -1) value = requireEmail(value);
+      else if (!USERNAME_PATTERN.test(value)) throw accountError('invalid_identifier', '请输入邮箱或 4–24 位账号。');
+      else value = value.toLowerCase();
+      if (typeof password !== 'string' || !password || password.length > 128) throw accountError('invalid_password', '请输入密码。');
+      return authenticate('/login/password', { identifier: value, password });
+    },
+    async loginEmail(email, code) {
+      const value = String(code || '').trim();
+      if (!CODE_PATTERN.test(value)) throw accountError('invalid_code', '请输入 6 位邮箱验证码。');
+      return authenticate('/login/email', { email: requireEmail(email), code: value });
+    },
+    async loginWechat() {
+      const currentGeneration = generation;
+      const api = platform();
+      if (!api || typeof api.login !== 'function') throw accountError('wechat_unavailable', '微信登录暂时不可用，请选择其他方式。');
+      const code = await new Promise((resolve, reject) => {
+        api.login({ timeout: WECHAT_LOGIN_TIMEOUT, success(result) { result && result.code ? resolve(result.code) : reject(accountError('wechat_login_failed', '未能完成微信登录，请重试。')); },
+          fail() { reject(accountError('wechat_login_failed', '未能完成微信登录，请重试。')); } });
+      });
+      return authenticate('/login/wechat', { code }, currentGeneration);
+    },
+    async bindEmail(input) {
+      const data = registrationFields(input), session = readSession();
+      if (!session) throw accountError('session_expired', '登录已过期，请重新登录。');
+      const currentGeneration = generation;
+      const result = await request('/bind/email', 'POST', data, session.token);
+      if (currentGeneration !== generation) throw accountError('operation_canceled', '登录状态已变化，请重试。');
+      return saveSession({ ...result, token: result.token || session.token, expiresAt: result.expiresAt === undefined ? session.expiresAt : result.expiresAt });
+    },
+    async logout() {
+      const session = readSession();
+      // Queue revocation before ending this device's session. Retrying an old
+      // token never changes a newer login, and tokens never enter UI snapshots.
+      let queueError;
+      if (session) { try { enqueueRevocation(session.token); } catch (error) { queueError = error; } }
+      clearSession();
+      if (session) { await revoke(session.token); if (queueError) throw queueError; }
+      return { ok: true };
+    }
+  };
+  return client;
 }
-module.exports = { createAccountClient, validateDuel, SESSION_KEY, HISTORY_KEY, RESTORE_KEY, API_ORIGIN };
+
+module.exports = Object.assign(createAccountClient(), { createAccountClient, STORAGE_KEY, REVOCATIONS_KEY, REQUEST_TIMEOUT, WECHAT_LOGIN_TIMEOUT, normalizeEmail, expiryTime });

@@ -37,7 +37,7 @@ function host(overrides = {}) {
   class ClockDate extends Date { constructor(...args) { super(...(args.length ? args : [now])); } static now() { return now; } }
   vm.runInNewContext(fs.readFileSync(path.join(pagePath, 'index.js'), 'utf8'), {
     Page: value => { definition = value; }, wx: api, Date: ClockDate, console,
-    require: id => id === '../../lib/lingotiles' ? model : id === '../../config' ? { webOrigin: 'https://example.test' } : require(id),
+    require: id => id === '../../lib/lingotiles' ? model : id === '../../lib/account-sync' ? { storage: api, onHide() {} } : id === '../../config' ? { webOrigin: 'https://example.test' } : require(id),
     setTimeout: (callback, delay) => schedule(callback, delay, 0), clearTimeout: id => tasks.delete(id),
     setInterval: (callback, delay) => schedule(callback, delay, delay), clearInterval: id => tasks.delete(id)
   });

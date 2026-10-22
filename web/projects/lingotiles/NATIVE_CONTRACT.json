@@ -340,6 +340,7 @@
     "loadProgress": "function",
     "loadWordIllustrations": "function",
     "markSeen": "function",
+    "prepareHistorySync": "function",
     "readVocabularyPage": "function",
     "recordIllustrationPractice": "function",
     "recordResult": "function",

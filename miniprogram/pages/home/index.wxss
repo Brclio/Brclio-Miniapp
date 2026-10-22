@@ -111,3 +111,16 @@
   .photo-cover { height: 640rpx; }
   .category-tab { min-height: 104rpx; }
 }
+
+.header-actions { display: flex; align-items: center; gap: 16rpx; flex-shrink: 0; }
+.header-actions .header-button { padding-left: 0; }
+.header-actions button { flex-shrink: 0; white-space: nowrap; }
+.header-account { background: transparent; color: #2b7fd8; font-size: 23rpx; padding: 20rpx 0; min-height: 44px; }
+.visitor-auth-actions { display: flex; align-items: stretch; gap: 16rpx; margin-top: 28rpx; }
+.visitor-login { flex: 1; background: #2b7fd8; color: #fefcf6; padding: 18rpx 22rpx; border-radius: 8rpx; display: flex; align-items: center; justify-content: space-between; font-size: 24rpx; gap: 14rpx; }
+.visitor-register { background: #f3efdf; color: #6d623d; border-radius: 8rpx; padding: 18rpx 22rpx; display: flex; align-items: center; font-size: 24rpx; }
+.member-avatar, .member-initial { width: 72rpx; height: 72rpx; border-radius: 50%; flex-shrink: 0; }
+.member-initial { display: flex; align-items: center; justify-content: center; background: #f4d758; color: #665421; font-size: 33rpx; }
+.member-title-block { flex: 1; min-width: 0; }
+.member-title-block .visitor-title, .member-title-block .visitor-caption { overflow-wrap: anywhere; }
+.member-account-link { width: 100%; display: flex; align-items: center; justify-content: space-between; color: #2b7fd8; background: transparent; font-size: 24rpx; margin-top: 22rpx; padding: 18rpx 0; border-top: 1rpx solid #dedbd2; }

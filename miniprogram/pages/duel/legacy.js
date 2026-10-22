@@ -2,6 +2,7 @@
 
 const { createGameApp } = require('../../lib/duel');
 const { createDuelPlatform, readWindowInfo } = require('../../lib/duel-platform');
+const accountSync = require('../../lib/account-sync');
 
 module.exports = {
   data: { canvasWidth: 390, canvasHeight: 740, status: 'loading', errorMessage: '' },
@@ -45,7 +46,7 @@ module.exports = {
           if (initialize) {
             if (!field.node.getContext('2d')) throw new Error('Canvas unavailable');
             this._platform = createDuelPlatform({ wx, canvas: field.node, bounds, windowInfo: info });
-            this._game = createGameApp(this._platform, { initialScreen: 'duel', avatarSrc: '/assets/avatar.png', audioAssetBase: '/assets/duel-audio' });
+            this._game = createGameApp(this._platform, { storage: accountSync.storage, accountSyncSupported: true, initialScreen: 'duel', avatarSrc: '/assets/avatar.png', audioAssetBase: '/assets/duel-audio' });
             this._platform.show();
             this.setData({ status: 'ready', errorMessage: '' });
           } else if (this._platform) {

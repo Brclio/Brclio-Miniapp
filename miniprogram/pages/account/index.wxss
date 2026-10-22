@@ -1,28 +1,66 @@
-/* Adapted from Brclio Design System app template. Brclio · CC BY-NC-SA 4.0. */
-.account-shell { padding-top: 38rpx; }
-.account-shell .document-title { font-size: 40rpx; }
-.account-tabs { display: flex; margin: 36rpx 0 26rpx; border-bottom: 1rpx solid #dedbd2; }
-.account-tab { flex: 1; min-width: 0; padding: 22rpx 12rpx; color: #75716a; background: transparent; border-bottom: 4rpx solid transparent; }
-.account-tab.selected { color: #2b7fd8; border-bottom-color: #2b7fd8; font-weight: 600; }
-.account-form label { display: block; margin: 24rpx 0 10rpx; font-size: 25rpx; }
-.account-input { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; min-height: 92rpx; height: 92rpx; border: 1rpx solid #d6d0c4; border-radius: 10rpx; padding: 16rpx 22rpx; background: #faf6eb; font-size: 26rpx; }
-.account-form .primary-button, .account-form .secondary-button { margin-top: 28rpx; }
-.account-note { color: #75716a; font-size: 23rpx; line-height: 1.85; margin: 22rpx 0; }
-.account-message { color: #6a552a; font-size: 25rpx; padding: 22rpx 24rpx; margin-top: 28rpx; background: #f5edcf; border-radius: 8rpx; overflow-wrap: anywhere; }
-.code-row { display: flex; gap: 14rpx; align-items: center; }
-.code-row .account-input { flex: 1; width: 0; }
-.code-row .secondary-button { font-size: 23rpx; flex-shrink: 0; padding: 22rpx 18rpx; margin: 0; }
-.account-identity { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; margin: 38rpx 0; padding-bottom: 28rpx; border-bottom: 1rpx solid #dedbd2; overflow-wrap: anywhere; }
-.account-identity > view { flex: 1; min-width: 0; }
-.account-identity .text-button { flex-shrink: 0; }
-.identity-name { font-size: 34rpx; font-weight: 600; }
-.account-identity .muted { font-size: 23rpx; }
-.section-label { font-size: 28rpx; font-weight: 600; }
-.sync-count { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10rpx; margin-top: 22rpx; font-size: 24rpx; color: #75716a; }
-.sync-count .serif { font-size: 58rpx; color: #1a1a2e; }
-.cloud-count { margin-left: auto; font-size: 23rpx; }
-.sync-section .secondary-button { margin-top: 18rpx; }
-.settings-section { padding-top: 32rpx; margin-top: 28rpx; border-top: 1rpx solid #dedbd2; }
-.privacy-link { margin-top: 28rpx; }
-button[disabled] { opacity: .55; }
-@media (min-width: 900px) { .account-shell { max-width: 680px; } }
+/* Native adaptation of Brclio Design System's app template, tabs and inputs.
+   Brclio · CC BY-NC-SA 4.0. */
+.account-shell { max-width: 840rpx; padding-top: 14rpx; }
+.account-header { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; padding: 14rpx 0 22rpx; border-bottom: 1rpx solid #dedbd2; }
+.account-brand { display: flex; align-items: center; gap: 13rpx; min-width: 0; }
+.account-brand-avatar { width: 58rpx; height: 58rpx; border-radius: 50%; flex-shrink: 0; }
+.account-brand-name { font-size: 23rpx; font-weight: 700; }
+.account-kicker { font-size: 13rpx; letter-spacing: 1.5rpx; color: #817d76; margin-top: 2rpx; }
+.browse-button { background: transparent; padding: 14rpx 0 14rpx 12rpx; color: #2b7fd8; font-size: 22rpx; white-space: nowrap; flex-shrink: 0; }
+.auth-intro, .profile-intro { padding: 42rpx 0 30rpx; }
+.auth-intro .eyebrow, .profile-intro .eyebrow { font-size: 17rpx; letter-spacing: 2rpx; }
+.account-heading { margin-top: 14rpx; font-size: 36rpx; font-weight: 700; line-height: 1.6; overflow-wrap: anywhere; }
+.account-subtitle { color: #75716a; font-size: 23rpx; margin-top: 7rpx; }
+.auth-tabs { display: flex; border-bottom: 1rpx solid #dedbd2; margin-bottom: 24rpx; }
+.auth-tab { flex: 1; background: transparent; color: #75716a; padding: 18rpx; font-size: 27rpx; border-bottom: 4rpx solid transparent; margin-bottom: -1rpx; }
+.auth-tab-active { color: #2b7fd8; border-bottom-color: #2b7fd8; font-weight: 700; }
+.login-methods { display: flex; padding: 5rpx; background: #f3efe4; border-radius: 8rpx; gap: 6rpx; margin: 0 0 28rpx; }
+.login-method { flex: 1; padding: 16rpx 4rpx; background: transparent; color: #75716a; font-size: 22rpx; border-radius: 5rpx; }
+.login-method-active { background: #fefcf6; color: #2b7fd8; font-weight: 600; }
+.field-group { margin-top: 23rpx; }
+.field-label { display: block; color: #4a4a5a; font-size: 23rpx; margin-bottom: 10rpx; }
+.account-input { box-sizing: border-box; width: 100%; height: 94rpx; padding: 20rpx 22rpx; border: 1rpx solid #d9d5ca; border-radius: 8rpx; background: #faf8f1; color: #1a1a2e; font-size: 26rpx; line-height: 1.5; }
+.account-input[disabled] { opacity: .65; }
+.code-row { display: flex; gap: 14rpx; align-items: stretch; }
+.code-input { flex: 1; min-width: 0; }
+.code-button { display: flex; align-items: center; justify-content: center; min-width: 208rpx; padding: 17rpx 15rpx; border: 1rpx solid #d0ddec; border-radius: 8rpx; background: #edf3f9; color: #2b7fd8; font-size: 23rpx; flex-shrink: 0; }
+.consent-group { display: flex; align-items: center; flex-wrap: wrap; font-size: 21rpx; color: #75716a; margin-top: 26rpx; min-height: 44px; }
+.consent-label { display: flex; align-items: center; min-height: 44px; }
+.consent-label checkbox { transform: scale(.78); transform-origin: left center; margin-right: -4rpx; }
+.privacy-link { display: inline-flex; align-items: center; padding: 12rpx 0; font-size: 21rpx; color: #2b7fd8; background: transparent; min-height: 44px; }
+.submit-button { width: 100%; margin-top: 16rpx; display: flex; justify-content: space-between; align-items: center; border-radius: 8rpx; font-size: 27rpx; }
+.submit-button text { font-size: 31rpx; }
+button[disabled] { opacity: .5; }
+.auth-divider { display: flex; justify-content: center; align-items: center; gap: 20rpx; color: #817d76; font-size: 20rpx; margin: 31rpx 0 22rpx; }
+.auth-divider::before, .auth-divider::after { content: ''; display: block; width: 100rpx; height: 1rpx; background: #dedbd2; }
+.wechat-button { width: 100%; display: flex; align-items: center; gap: 17rpx; padding: 18rpx 23rpx; background: #eef2e8; color: #43613d; border-radius: 8rpx; font-size: 25rpx; text-align: left; }
+.wechat-mark { width: 48rpx; height: 48rpx; border-radius: 50%; color: #fefcf6; background: #43613d; font-size: 22rpx; display: flex; align-items: center; justify-content: center; }
+.wechat-arrow { margin-left: auto; font-size: 30rpx; }
+.wechat-caption { font-size: 20rpx; color: #817d76; text-align: center; margin-top: 12rpx; }
+.account-message { padding: 20rpx 23rpx; border-radius: 8rpx; font-size: 23rpx; margin-top: 25rpx; line-height: 1.75; overflow-wrap: anywhere; }
+.account-error { background: #fae9e7; color: #a13c4d; }
+.account-notice { background: #f6efcf; color: #75622c; }
+.account-footer { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; border-top: 1rpx solid #dedbd2; margin-top: 42rpx; padding-top: 21rpx; color: #817d76; font-size: 20rpx; }
+.account-footer button { background: transparent; font-size: 20rpx; color: #75716a; padding: 12rpx 0 12rpx 18rpx; }
+.profile-summary { display: flex; align-items: center; gap: 22rpx; padding: 10rpx 0 28rpx; }
+.profile-avatar, .profile-initial { width: 104rpx; height: 104rpx; border-radius: 50%; flex-shrink: 0; }
+.profile-initial { display: flex; align-items: center; justify-content: center; background: #f4d758; color: #665421; font-size: 43rpx; }
+.profile-name { min-width: 0; }
+.profile-label { font-size: 30rpx; font-weight: 600; overflow-wrap: anywhere; }
+.profile-badge { display: inline-block; font-size: 19rpx; color: #2b7fd8; background: #edf3f9; padding: 1rpx 12rpx; border-radius: 4rpx; margin-top: 8rpx; }
+.profile-fields { border-top: 1rpx solid #dedbd2; }
+.profile-field { display: flex; align-items: baseline; justify-content: space-between; gap: 24rpx; padding: 24rpx 0; border-bottom: 1rpx solid #dedbd2; font-size: 24rpx; }
+.profile-field text:first-child { flex-shrink: 0; color: #817d76; }
+.profile-field text:last-child { overflow-wrap: anywhere; text-align: right; }
+.bind-email-button { width: 100%; display: flex; justify-content: space-between; font-size: 25rpx; margin-top: 28rpx; border-radius: 8rpx; }
+.local-note { display: flex; align-items: center; gap: 15rpx; color: #75716a; font-size: 22rpx; padding: 27rpx 0 8rpx; }
+.local-note-mark { color: #2b7fd8; font-size: 35rpx; }
+.retry-session { font-size: 22rpx; }
+.sync-summary { margin-top: 18rpx; padding: 24rpx 0; border-top: 1rpx solid #dedbd2; border-bottom: 1rpx solid #dedbd2; }
+.sync-heading { display: flex; justify-content: space-between; align-items: center; gap: 18rpx; font-size: 25rpx; color: #1a1a2e; }
+.sync-badge { font-size: 20rpx; color: #2b7fd8; }
+.sync-copy { margin-top: 12rpx; color: #75716a; font-size: 22rpx; line-height: 1.8; }
+.sync-retry { margin-top: 12rpx; font-size: 22rpx; padding: 12rpx 0; color: #2b7fd8; }
+.logout-button { width: 100%; background: transparent; border: 1rpx solid #d9d5ca; border-radius: 8rpx; padding: 20rpx; color: #4a4a5a; font-size: 25rpx; margin-top: 18rpx; }
+.cancel-bind { font-size: 23rpx; margin-top: 20rpx; }
+@media (min-width: 900px) { .account-shell { max-width: 540px; } .account-heading { font-size: 24px; } }

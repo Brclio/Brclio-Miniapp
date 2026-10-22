@@ -1,7 +1,20 @@
-# Copy to .dev.vars for local testing only; never commit the populated file.
-# Production secrets: wrangler secret put GITHUB_TOKEN / DATA_HMAC_KEY
-GITHUB_TOKEN="replace-with-private-repository-contents-read-write-token"
-DATA_HMAC_KEY="replace-with-at-least-32-cryptographically-random-characters"
-PUBLIC_ORIGIN="https://pocket.brclio.com"
-EXTRA_ALLOWED_ORIGIN="https://pocket.bornforthis.cn"
-SYNC_ENABLED="false"
+# Server-only independent miniapp accounts. Copy to ignored .dev.vars.
+# All placeholders below must be configured before ACCOUNT_ENABLED=true.
+# See docs/ACCOUNT_SETUP.md. Do not place secrets in miniprogram/config.js.
+ACCOUNT_ENABLED="false"
+ACCOUNT_HMAC_SECRET="replace-with-at-least-32-random-characters-and-keep-stable"
+GITHUB_APP_ID="5422366"
+GITHUB_APP_CLIENT_ID="Iv23liYOn19I2ZrQXQSq"
+# JSON-escaped newlines are accepted; keep the whole PEM in a single value.
+GITHUB_APP_PRIVATE_KEY="replace-with-complete-app-pem"
+GITHUB_USERDATA_BRANCH="main"
+GITHUB_DATA_BRANCH="main"
+EMAIL_PROVIDER="gmail"
+SMTP_USERNAME="your-sender@gmail.com"
+SMTP_APP_PASSWORD="replace-with-gmail-app-password"
+EMAIL_FROM="your-sender@gmail.com"
+WECHAT_APP_ID="wx59aa532fbf6fa540"
+WECHAT_APP_SECRET="replace-with-miniapp-appsecret"
+# Alternative email provider: remove SMTP_* and use EMAIL_PROVIDER=resend.
+# RESEND_API_KEY="replace-with-resend-api-key"
+# EMAIL_FROM="Brclio <verified-sender@example.com>"

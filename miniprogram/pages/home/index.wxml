@@ -4,7 +4,7 @@
       <image class="brand-avatar" src="/assets/avatar.png" mode="aspectFill" aria-label="Brclio 品牌头像" />
       <view><view class="brand-title">Brclio <text class="brand-slash">悦创</text></view><view class="brand-caption">收藏影像，保持好奇。</view></view>
     </view>
-    <button class="header-button" bindtap="openAbout" hover-class="button-pressed" aria-label="查看关于 Brclio 悦创">关于 <text aria-hidden="true">↗</text></button>
+    <view class="header-actions"><button class="header-account" style="width: auto; display: flex;" bindtap="openAccount" hover-class="button-pressed" aria-label="{{accountUser ? '打开我的账号' : '登录或注册账号'}}">{{accountUser ? '我的账号' : '登录'}}</button><button class="header-button" style="width: auto; display: flex;" bindtap="openAbout" hover-class="button-pressed" aria-label="查看关于 Brclio 悦创">关于 <text aria-hidden="true">↗</text></button></view>
   </view>
 
   <view class="category-nav" aria-label="内容栏目">
@@ -65,9 +65,15 @@
 
   <view wx:else class="tab-content">
     <view class="section-intro"><view class="intro-topline"><text class="eyebrow">YOUR LITTLE CORNER</text><text class="issue-number">04 / 我的</text></view><view class="intro-title serif">给喜欢的事，<view><text class="word-highlight">留个位置。</text></view></view></view>
-    <view class="visitor-section">
-      <view class="visitor-topline"><view class="visitor-icon" aria-hidden="true"><view class="visitor-head"></view><view class="visitor-body"></view></view><view><view class="visitor-title serif">你好，{{accountName || '访客'}}。</view><view class="visitor-caption">现在，随心逛逛。</view></view><text class="visitor-badge">{{accountName ? '共享账号' : '访客模式'}}</text></view>
-      <view class="account-note"><view class="account-title"><text class="status-dot" aria-hidden="true"></text>一个账号，带着记录出发</view><view class="entry-copy">使用 Brclio 共享账号登录，手动备份和恢复挑战数据。<view>摄影与挑战仍可无需登录使用。</view></view><button class="text-button" bindtap="openAccount" hover-class="button-pressed">登录 / 注册与挑战备份 →</button></view>
+    <view wx:if="{{accountUser}}" class="visitor-section member-section">
+      <view class="visitor-topline"><image wx:if="{{accountUser.avatarUrl}}" class="member-avatar" src="{{accountUser.avatarUrl}}" mode="aspectFill" /><view wx:else class="member-initial serif" aria-hidden="true">{{accountInitial}}</view><view class="member-title-block"><view class="visitor-title serif">你好，{{accountLabel}}。</view><view class="visitor-caption">{{accountUser.email || '微信账号已登录'}}</view></view><text class="visitor-badge">已登录</text></view>
+      <button class="member-account-link" style="width: 100%; display: flex;" bindtap="openAccount" hover-class="button-pressed"><text>管理我的账号</text><text aria-hidden="true">→</text></button>
+      <view class="entry-copy">{{syncMessage || '记录先存本机，联网后自动同步到你的账号。'}}</view>
+    </view>
+    <view wx:else class="visitor-section">
+      <view class="visitor-topline"><view class="visitor-icon" aria-hidden="true"><view class="visitor-head"></view><view class="visitor-body"></view></view><view><view class="visitor-title serif">你好，访客。</view><view class="visitor-caption">现在，随心逛逛。</view></view><text class="visitor-badge">访客模式</text></view>
+      <view class="visitor-auth-actions"><button class="visitor-login" style="display: flex; flex: 1;" bindtap="openAccount" hover-class="button-pressed">登录 / 微信登录 <text aria-hidden="true">→</text></button><button class="visitor-register" style="display: flex; width: auto;" data-mode="register" bindtap="openAccount" hover-class="button-pressed">注册账号</button></view>
+      <view class="account-note"><view class="account-title"><text class="status-dot" aria-hidden="true"></text>记录，先留在这台设备</view><view class="entry-copy">随时浏览摄影、参与挑战与学习，也可继续以访客身份使用。<view>登录后自动同步进度和记录，换设备也能继续。</view></view></view>
     </view>
     <view class="personal-links">
       <button class="personal-link" style="width: 100%; display: flex;" data-id="content-hub" bindtap="openFeature" hover-class="button-pressed" aria-label="浏览全部已发布的内容与项目"><view><view class="personal-link-title">全部内容</view><view class="personal-link-copy">摄影、放松与悦学，随时回来看看</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>

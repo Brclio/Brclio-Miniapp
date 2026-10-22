@@ -29,7 +29,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', require('../package.json').version, '--desc', 'Brclio 悦创：新增悦学「词了个词」，经典六关与10万词分级；词库及1083张现有插图按需加载；学习、收藏与通关足迹本机保存，可导出CSV，不进入账号备份。保留9组169张原生摄影、触摸/无限双人挑战、原音效、品牌战报与计分扩展；账号及挑战手动备份可选。', '--info-output', path.join(root, 'artifacts/wechat-upload.json')]
+    upload: ['upload', '--project', root, '--version', require('../package.json').version, '--desc', 'Brclio 悦创 0.1.3：独立账号支持邮箱验证码注册、邮箱或账号密码登录、邮箱验证码登录及微信一键注册登录；登录持续有效至主动退出；学习进度、收藏、近期通关与计分挑战记录自动同步，断网先存本机、联网重试，账号隔离。保留摄影、双人反应与分级悦学。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + require('../package.json').version + '.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');

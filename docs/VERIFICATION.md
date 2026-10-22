@@ -1,3 +1,7 @@
+> 当前 `0.1.3` 的永久登录、自动同步、GitHub 提交、Pages 部署与微信开发版上传以 [ACCOUNT_SYNC_RELEASE.md](ACCOUNT_SYNC_RELEASE.md) 为准；下文保留此前阶段的实际记录，不作为本版发布状态。
+
+> 2026-10-22 独立账号更新：新指定的 Miniapp-UserData 与 Miniapp-Data 两个私有仓库已通过 App 实际读写、读回和删除；installation `174043179` 的全部仓库安装范围由用户明确授权保留，运行 token 仅申请固定单个仓库。319 项测试、构建和 84 项发布检查通过，13 项 Pages production 配置均为 Encrypted，正式部署为 [da68dc74](https://da68dc74.brclio-miniapp-wechat.pages.dev)。生产 Gmail 的 3 封验证码已实际收件，真实隔离账号联调 22 个请求、29 项检查通过；两个测试用户当前文件清理通过，Git 历史和 abuse 计数保留。原生账号页已渲染；用户后台截图已确认 pocket 的 request/uploadFile/downloadFile/业务域名及 AppID，19:20 官方 CLI 网络缓存清理与完整退出重启后，19:21 原生微信一键登录成功，页面显示「已登录」「微信登录成功，欢迎来到悦创」，`urlCheck: true` 与系统代理保持启用；退出后再次微信登录已实测复用同一用户，微信账号邮箱绑定仍待实际提交验收；本轮没有小程序上传、真机、审核或正式发布，也没有源码提交或推送。准确证据与待办见 [ACCOUNT_VERIFICATION.md](ACCOUNT_VERIFICATION.md)。下方是此前各阶段历史记录。
+
 # 2026-10-22 ReadyGoDuel 音效修复上线
 
 当前 Pages Production 已更新为 [d977c756](https://d977c756.brclio-miniapp-wechat.pages.dev)，源码 `37aa43d6e82207e35c2f2e1d58b1b5295259ad37`，站点版本 `0.1.2`。新增实际 React 组件的离线回归，复现并修复 WAITING 中切换声音不影响 GO 的旧状态问题；原音色、时长、布局与报告代码保持不变。全量 282 项测试、完整构建与发布检查通过；两正式域名合计 58 项核心资源字节校验和 20 项只读接口检查全部通过。指纹脚本更新为 `main-3ab4b01721b76c67.js`，CSS 保持原字节。

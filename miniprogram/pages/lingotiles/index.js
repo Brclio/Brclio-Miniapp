@@ -2,6 +2,7 @@
 // Brclio · CC BY-NC-SA 4.0. Native mobile presentation of LingoTiles.
 const model = require('../../lib/lingotiles');
 const config = require('../../config');
+const accountSync = require('../../lib/account-sync');
 const PAGE_SIZE = 18;
 const HISTORY_SIZE = 12;
 const KIND_LABELS = { word: '单词', pos: '词性', meaning: '含义' };
@@ -58,7 +59,7 @@ Page({
     this._finishedSeconds = null;
     this._savedRun = false;
     let reduceMotion = false;
-    try { reduceMotion = wx.getStorageSync(MOTION_KEY) === true; } catch (_) { /* Session preferences remain usable. */ }
+    try { reduceMotion = accountSync.storage.getStorageSync(MOTION_KEY) === true; } catch (_) { /* Session preferences remain usable. */ }
     this.update({ matchAnimation: model.loadMatchAnimation(), reduceMotion,
       stageOptions: ['所有阶段'].concat(model.STAGE_PROFILES.map(item => item.title)) });
     this.refreshProgress();
@@ -73,6 +74,7 @@ Page({
     this.keepAwake(this.data.phase === 'memory' || this.data.phase === 'playing');
   },
   onHide() {
+    accountSync.onHide();
     clearInterval(this._ticker);
     this._ticker = null;
     this.stopAudio();
@@ -460,7 +462,7 @@ Page({
   },
   toggleReducedMotion(event) {
     this.update({ reduceMotion: event.detail.value });
-    try { wx.setStorageSync(MOTION_KEY, event.detail.value); } catch (_) { this.notify('减少动效设置仅在本次生效。'); }
+    try { accountSync.storage.setStorageSync(MOTION_KEY, event.detail.value); } catch (_) { this.notify('减少动效设置仅在本次生效。'); }
   },
   toggleSound(event) {
     const enabled = event && event.detail ? event.detail.value : !this.data.sound;

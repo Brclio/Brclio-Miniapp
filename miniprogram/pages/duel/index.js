@@ -4,6 +4,7 @@ const legacy = require('./legacy');
 const { createDuelAudio } = require('../../lib/duel');
 const { createReadyGo } = require('../../lib/ready-go-model');
 const { drawReadyGoReport } = require('../../lib/ready-go-report');
+const accountSync = require('../../lib/account-sync');
 
 Page(Object.assign({}, legacy, {
   data: Object.assign({}, legacy.data, {
@@ -20,17 +21,18 @@ Page(Object.assign({}, legacy, {
     this._legacy = !!(options && options.view === 'match');
     if (this._legacy) { this.setData({ view: 'match' }); legacy.onLoad.call(this, options); return; }
     this._alive = true; this._visible = true; this._timers = new Set(); this._generation = 0;
-    this._model = createReadyGo({ storage: wx });
+    this._model = createReadyGo({ storage: accountSync.storage });
     this._audio = createDuelAudio(wx, { enabled: true, assetBase: '/assets/duel-audio' });
     this._keyboardListener = (event) => { if (this._alive && this._visible) this.setData({ keyboardHeight: Math.max(0, event.height || 0) }); };
     if (wx.onKeyboardHeightChange) wx.onKeyboardHeightChange(this._keyboardListener);
-    this.measureWindow(); this.sync();
+    this.measureWindow(); this.sync(); this._audio.setEnabled(this.data.soundEnabled);
     try { const count = Number(wx.getStorageSync('RGD_LOCAL_VISITS') || 0) + 1; wx.setStorageSync('RGD_LOCAL_VISITS', count); this.setData({ visitCount: count }); } catch (_) {}
     if (wx.showShareMenu) wx.showShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] });
   },
   onReady() { if (this._legacy) legacy.onReady.call(this); else this.measureWindow(); },
   onShow() { if (this._legacy) { legacy.onShow.call(this); return; } this._visible = true; this.measureWindow(); if (wx.setKeepScreenOn) wx.setKeepScreenOn({ keepScreenOn: true }); },
   onHide() {
+    accountSync.onHide();
     if (this._legacy) { legacy.onHide.call(this); return; }
     this._visible = false; this._generation += 1; this.clearTimers();
     if (this._audio) this._audio.stop();

@@ -3,8 +3,33 @@
 // Kept outside the web project: native requests and storage never change globals.
 const temporaryValues = new Map();
 const unreadableKeys = new Set();
+const HISTORY_KEY = 'lingotiles.history.v1';
+const HISTORY_LIMIT = 200;
+const HISTORY_BYTES = 200 * 1024 - 1024;
+const GUEST_HISTORY_CLAIM = 'brclio.lingotiles.guest-history-claim.v1';
+const guestSnapshots = new Map();
+let accountSync = null;
+let historyFactory = null;
+let unsubscribeSync = null;
 function platform() { return typeof wx === 'undefined' ? null : wx; }
 function copy(value) { return JSON.parse(JSON.stringify(value)); }
+function captureGuestOwner() {
+  try { if (historyFactory && getScope() !== 'guest') new historyFactory().captureGuest(); }
+  catch (_) { /* A later history read retries without using another scope. */ }
+}
+function configureAccountSync(value) {
+  if (unsubscribeSync) unsubscribeSync();
+  accountSync = value || null;
+  unsubscribeSync = accountSync && accountSync.subscribe ? accountSync.subscribe(captureGuestOwner) : null;
+  captureGuestOwner();
+}
+function getScope() {
+  const scope = accountSync && accountSync.getScope ? accountSync.getScope() : 'guest';
+  if (scope !== 'guest' && !/^[a-f0-9]{32}$/.test(scope)) throw new Error('账号数据暂不可读取');
+  return scope;
+}
+function storageApi() { return accountSync && accountSync.storage || platform(); }
+function memoryKey(scope, key) { return scope + '\0' + key; }
 
 function assetUrl(path) {
   // The config stays external to the bundle so configure.js can update it.
@@ -30,28 +55,30 @@ function nativeFetch(url) {
 
 const nativeStorage = {
   getItem(key) {
-    if (temporaryValues.has(key)) return temporaryValues.get(key);
-    const api = platform();
+    const scoped = memoryKey(getScope(), key);
+    if (temporaryValues.has(scoped)) return temporaryValues.get(scoped);
+    const api = storageApi();
     if (!api) return null;
     try {
-      const value = api.getStorageSync(key);
-      unreadableKeys.delete(key);
-      return value === undefined || value === '' ? null : String(value);
+      const value = api.getItem ? api.getItem(key) : api.getStorageSync(key);
+      unreadableKeys.delete(scoped);
+      return value === undefined || value === '' || value === null ? null : typeof value === 'string' ? value : JSON.stringify(value);
     } catch (error) {
-      unreadableKeys.add(key);
+      unreadableKeys.add(scoped);
       throw error;
     }
   },
   setItem(key, value) {
-    const api = platform();
+    const scoped = memoryKey(getScope(), key);
+    const api = storageApi();
     try {
-      if (!api || !api.setStorageSync) throw new Error('本地存储不可用');
+      if (!api || (!api.setItem && !api.setStorageSync)) throw new Error('本地存储不可用');
       // A fallback display after a denied read must not overwrite unknown progress.
-      if (unreadableKeys.has(key)) throw new Error('原有进度暂时不可读取，已保护原始存档');
-      api.setStorageSync(key, value);
-      temporaryValues.delete(key);
+      if (unreadableKeys.has(scoped)) throw new Error('原有进度暂时不可读取，已保护原始存档');
+      if (api.setItem) api.setItem(key, value); else api.setStorageSync(key, value);
+      temporaryValues.delete(scoped);
     } catch (error) {
-      temporaryValues.set(key, value);
+      temporaryValues.set(scoped, value);
       throw error;
     }
   }
@@ -64,17 +91,52 @@ function hash(text) {
   for (let i = 0; i < text.length; i++) { value ^= text.charCodeAt(i); value = Math.imul(value, 16777619); }
   return (value >>> 0).toString(16).padStart(8, '0');
 }
+function jsonBytes(value) {
+  const text = JSON.stringify(value);
+  let bytes = 0;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code < 0x80) bytes++;
+    else if (code < 0x800) bytes += 2;
+    else if (code >= 0xd800 && code <= 0xdbff && text.charCodeAt(i + 1) >= 0xdc00 && text.charCodeAt(i + 1) <= 0xdfff) { bytes += 4; i++; }
+    else bytes += 3;
+  }
+  return bytes;
+}
+function recentRecords(records) {
+  const selected = [];
+  let bytes = 2;
+  for (const record of records.slice().sort(newestFirst).slice(0, HISTORY_LIMIT)) {
+    const value = {};
+    for (const key of ['id', 'levelId', 'levelTitle', 'mode', 'wordCount', 'gameSeconds', 'studySeconds', 'totalSeconds', 'score', 'stars', 'assists', 'completedAt', 'stageId', 'stageTitle', 'round']) {
+      if (record[key] !== undefined) value[key] = record[key];
+    }
+    const next = bytes + jsonBytes(value) + (selected.length ? 1 : 0);
+    if (next > HISTORY_BYTES) break;
+    selected.push(value);
+    bytes = next;
+  }
+  return selected;
+}
 
 /** One immutable file per completion avoids a storage-key limit or capped history. */
 function createHistoryClass(validateCompletion, completionsToCsv) {
-  return class NativeCompletionHistoryStore {
-    constructor(api = platform(), directory) {
+  function valid(record) {
+    try { return !!record && typeof record === 'object' && !Array.isArray(record) && ['string', 'number'].includes(typeof record.levelId) && validateCompletion(record); }
+    catch (_) { return false; }
+  }
+  const HistoryStore = class NativeCompletionHistoryStore {
+    constructor(api = platform(), directory, scope = getScope()) {
       this.api = api;
-      this.directory = directory || (api && api.env ? api.env.USER_DATA_PATH + '/lingotiles-history-v1' : '');
+      if (scope !== 'guest' && !/^[a-f0-9]{32}$/.test(scope)) throw new Error('账号数据暂不可读取');
+      this.scope = scope;
+      this.guestDirectory = api && api.env ? api.env.USER_DATA_PATH + '/lingotiles-history-v1' : '';
+      this.directory = directory || (scope === 'guest' ? this.guestDirectory : this.guestDirectory && this.guestDirectory + '/users/' + scope);
       this.temporary = new Map();
       this.fileCache = new Map();
       this.writeQueue = Promise.resolve();
       this.nonce = 0;
+      this.guestImported = false;
     }
 
     filesystem() {
@@ -82,38 +144,148 @@ function createHistoryClass(validateCompletion, completionsToCsv) {
       return this.api.getFileSystemManager();
     }
 
-    read() {
+    active() { return getScope() === this.scope; }
+
+    readFiles(directory = this.directory, cache = this.fileCache, allowedNames) {
       const records = new Map();
       let persisted = true;
       try {
         const fs = this.filesystem();
-        try { fs.accessSync(this.directory); } catch (_) { fs.mkdirSync(this.directory, true); }
-        const names = fs.readdirSync(this.directory);
+        try { fs.accessSync(directory); } catch (_) { fs.mkdirSync(directory, true); }
+        let names = fs.readdirSync(directory);
         const present = new Set(names);
-        for (const name of this.fileCache.keys()) if (!present.has(name)) this.fileCache.delete(name);
+        if (allowedNames) {
+          if (allowedNames.some(name => !present.has(name))) persisted = false;
+          const allowed = new Set(allowedNames);
+          names = names.filter(name => allowed.has(name));
+        }
+        for (const name of cache.keys()) if (!present.has(name)) cache.delete(name);
         for (const name of names) {
           if (!/^round-[a-f0-9]+-\d+\.json$/.test(name)) continue;
           // Damaged files cause a visible persistence notice; valid history stays exportable.
           try {
             // Files are immutable after rename. Read each body once per app open;
             // newly added files are still discovered without an O(N) disk reread.
-            let value = this.fileCache.get(name);
+            let value = cache.get(name);
             if (!value) {
-              value = JSON.parse(fs.readFileSync(this.directory + '/' + name, 'utf8'));
-              if (!validateCompletion(value)) throw new Error('无效记录');
-              this.fileCache.set(name, value);
+              value = JSON.parse(fs.readFileSync(directory + '/' + name, 'utf8'));
+              if (!valid(value)) throw new Error('无效记录');
+              cache.set(name, value);
             }
             if (!records.has(value.id)) records.set(value.id, value);
           } catch (_) { persisted = false; }
         }
       } catch (_) { persisted = false; }
+      return { records, persisted };
+    }
+
+    writeRecord(value) {
+      const fs = this.filesystem();
+      try { fs.accessSync(this.directory); } catch (_) { fs.mkdirSync(this.directory, true); }
+      const prefix = this.directory + '/round-' + hash(value.id) + '-';
+      let index = 0, destination, pending;
+      while (true) {
+        destination = prefix + index + '.json';
+        try { fs.accessSync(destination); index++; } catch (_) { break; }
+      }
+      try {
+        pending = destination + '.pending-' + (++this.nonce);
+        fs.writeFileSync(pending, JSON.stringify(value), 'utf8');
+        fs.renameSync(pending, destination);
+        this.fileCache.set(destination.slice(this.directory.length + 1), value);
+      } catch (error) {
+        if (pending) { try { fs.unlinkSync(pending); } catch (_) {} }
+        throw error;
+      }
+    }
+
+    captureGuest() {
+      if (this.scope === 'guest' || !this.active() || !accountSync || !accountSync.getGuestOwner || accountSync.getGuestOwner() !== this.scope) return null;
+      const snapshot = () => {
+        const fs = this.filesystem();
+        try { fs.accessSync(this.guestDirectory); } catch (_) { fs.mkdirSync(this.guestDirectory, true); }
+        return { version: 1, owner: this.scope, files: fs.readdirSync(this.guestDirectory).filter(name => /^round-[a-f0-9]+-\d+\.json$/.test(name)).sort() };
+      };
+      let saved;
+      try { saved = this.api.getStorageSync(GUEST_HISTORY_CLAIM); }
+      catch (error) { if (!guestSnapshots.has(this.scope)) guestSnapshots.set(this.scope, snapshot()); throw error; }
+      if (saved === undefined || saved === null || saved === '') {
+        saved = guestSnapshots.get(this.scope) || snapshot();
+        guestSnapshots.set(this.scope, saved);
+        this.api.setStorageSync(GUEST_HISTORY_CLAIM, saved);
+      }
+      if (!saved || saved.version !== 1 || saved.owner !== this.scope || !Array.isArray(saved.files) || saved.files.some(name => typeof name !== 'string' || !/^round-[a-f0-9]+-\d+\.json$/.test(name))) throw new Error(STORAGE_NOTICE);
+      return saved;
+    }
+
+    importGuest() {
+      if (this.guestImported || this.scope === 'guest' || !this.active() || !accountSync || !accountSync.getGuestOwner || accountSync.getGuestOwner() !== this.scope) return;
+      const fs = this.filesystem(), marker = this.directory + '/guest-imported-v1.json';
+      try { fs.accessSync(this.directory); } catch (_) { fs.mkdirSync(this.directory, true); }
+      // An existing but unreadable marker must not turn into permission to
+      // claim guest records created after the original migration.
+      if (fs.readdirSync(this.directory).includes('guest-imported-v1.json')) {
+        const value = JSON.parse(fs.readFileSync(marker, 'utf8'));
+        if (!value || value.version !== 1 || value.owner !== this.scope) throw new Error(STORAGE_NOTICE);
+        this.guestImported = true;
+        return;
+      }
+      const snapshot = this.captureGuest();
+      if (!snapshot) return;
+      const guest = this.readFiles(this.guestDirectory, new Map(), snapshot.files);
+      const own = this.readFiles();
+      for (const record of guest.records.values()) if (!own.records.has(record.id)) this.writeRecord(copy(record));
+      if (!guest.persisted || !own.persisted) throw new Error(STORAGE_NOTICE);
+      const pending = marker + '.pending-' + (++this.nonce);
+      try {
+        fs.writeFileSync(pending, JSON.stringify({ version: 1, owner: this.scope }), 'utf8');
+        fs.renameSync(pending, marker);
+        this.guestImported = true;
+      } catch (error) { try { fs.unlinkSync(pending); } catch (_) {} throw error; }
+    }
+
+    read() {
+      let imported = true;
+      try { this.importGuest(); } catch (_) { imported = false; }
+      const local = this.readFiles(), records = local.records;
+      for (const id of this.temporary.keys()) if (records.has(id)) this.temporary.delete(id);
+      let persisted = local.persisted && imported, cloudReadable = true;
+      if (this.active()) {
+        try {
+          const api = storageApi();
+          let cloud = api && api.getStorageSync ? api.getStorageSync(HISTORY_KEY) : null;
+          if (typeof cloud === 'string' && cloud !== '') cloud = JSON.parse(cloud);
+          if (cloud !== undefined && cloud !== null && cloud !== '' && !Array.isArray(cloud)) throw new Error('无效记录');
+          for (const record of cloud || []) {
+            if (!valid(record)) { cloudReadable = false; continue; }
+            if (records.has(record.id)) continue;
+            const value = copy({ ...record, completedAt: new Date(record.completedAt).toISOString() });
+            try { this.writeRecord(value); records.set(value.id, value); this.temporary.delete(value.id); }
+            catch (_) { this.temporary.set(value.id, value); persisted = false; }
+          }
+        } catch (_) { cloudReadable = false; }
+        if (persisted && cloudReadable) this.publish([...records.values()]);
+      }
       for (const [id, value] of this.temporary) if (!records.has(id)) records.set(id, value);
       if (this.temporary.size) persisted = false;
       return { records: [...records.values()].sort(newestFirst), persisted, ...(!persisted ? { error: STORAGE_NOTICE } : {}) };
     }
 
+    publish(records) {
+      if (!this.active()) return;
+      try {
+        const api = storageApi();
+        if (!api || !api.setStorageSync) return;
+        const recent = recentRecords(records);
+        const previous = api.getStorageSync(HISTORY_KEY);
+        if (JSON.stringify(previous) !== JSON.stringify(recent)) api.setStorageSync(HISTORY_KEY, recent);
+      } catch (_) { /* Complete files remain the source for a later sync retry. */ }
+    }
+
+    prepareSync() { return this.read(); }
+
     append(record) {
-      if (!record || !validateCompletion(record)) return Promise.resolve({ persisted: false, duplicate: false, error: '通关记录内容无效，未能保存。' });
+      if (!valid(record)) return Promise.resolve({ persisted: false, duplicate: false, error: '通关记录内容无效，未能保存。' });
       const immutable = copy({ ...record, completedAt: new Date(record.completedAt).toISOString() });
       const operation = this.writeQueue.then(() => {
         const view = this.read();
@@ -121,25 +293,12 @@ function createHistoryClass(validateCompletion, completionsToCsv) {
         const alreadyTemporary = this.temporary.has(immutable.id);
         if (previous && !alreadyTemporary) return { persisted: view.persisted, duplicate: true, ...(!view.persisted ? { error: STORAGE_NOTICE } : {}) };
         const value = previous || immutable;
-        let pending;
         try {
-          const fs = this.filesystem();
-          const prefix = this.directory + '/round-' + hash(value.id) + '-';
-          let index = 0;
-          let destination;
-          while (true) {
-            destination = prefix + index + '.json';
-            try { fs.accessSync(destination); index++; } catch (_) { break; }
-          }
-          pending = destination + '.pending-' + (++this.nonce);
-          fs.writeFileSync(pending, JSON.stringify(value), 'utf8');
-          // Rename succeeds only after the whole immutable record is written.
-          fs.renameSync(pending, destination);
-          this.fileCache.set(destination.slice(this.directory.length + 1), value);
+          this.writeRecord(value);
           this.temporary.delete(immutable.id);
+          if (this.active()) this.read();
           return { persisted: true, duplicate: !!previous };
         } catch (_) {
-          if (pending) { try { this.filesystem().unlinkSync(pending); } catch (_) {} }
           if (!alreadyTemporary) this.temporary.set(immutable.id, immutable);
           return { persisted: false, duplicate: alreadyTemporary, error: STORAGE_NOTICE };
         }
@@ -171,6 +330,9 @@ function createHistoryClass(validateCompletion, completionsToCsv) {
 
     async close() { await this.writeQueue; }
   };
+  historyFactory = HistoryStore;
+  captureGuestOwner();
+  return HistoryStore;
 }
 
 function writeExportFile(text, extension, prefix = 'lingotiles') {
@@ -182,4 +344,4 @@ function writeExportFile(text, extension, prefix = 'lingotiles') {
   return filePath;
 }
 
-module.exports = { nativeFetch, assetUrl, nativeStorage, createHistoryClass, writeExportFile };
+module.exports = { nativeFetch, assetUrl, nativeStorage, createHistoryClass, writeExportFile, configureAccountSync, getScope };

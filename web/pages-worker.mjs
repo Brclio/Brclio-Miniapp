@@ -1,5 +1,5 @@
 // One Pages project serves the portal and its registered modules.
-// Shared accounts use a fixed gateway; legacy anonymous storage remains disabled.
+// Native miniapp accounts use their own private GitHub repositories.
 import { proxyAccount } from './account-proxy.mjs';
 import { pronounceWord } from './lingotiles-audio.mjs';
 export function createPagesWorker({ activeProjectIds = [], firstsightAssetPaths = [], version = 'unknown' } = {}) {
@@ -8,7 +8,7 @@ const firstsightAssets = new Set(firstsightAssetPaths);
 return {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
-    if (path.startsWith('/api/account/')) return proxyAccount(request);
+    if (path === '/api/account' || path.startsWith('/api/account/')) return proxyAccount(request, env);
     if (path === '/api/lingotiles/pronounce' && active.has('lingotiles')) return pronounceWord(request);
     if (path === '/api/health' && request.method === 'GET') {
       return Response.json({ ok: true, service: 'brclio-pocket', version, syncAvailable: false }, { headers: { 'Cache-Control': 'no-store' } });

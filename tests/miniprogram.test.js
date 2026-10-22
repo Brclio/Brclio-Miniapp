@@ -14,7 +14,7 @@ function loadPage(file, extra) {
   const calls = [];
   vm.runInNewContext(fs.readFileSync(path.join(root, file), 'utf8'), {
     Page(value) { definition = value; },
-    require() { return catalogFor('https://pocket.example.com'); },
+    require(id) { return id === '../../lib/account-sync' ? { flush() {}, getStatus() { return { message: '' }; }, subscribe() { return () => {}; } } : catalogFor('https://pocket.example.com'); },
     wx: { navigateTo(data) { calls.push({ method: 'navigateTo', data }); }, redirectTo(data) { calls.push({ method: 'redirectTo', data }); }, reLaunch(data) { calls.push({ method: 'reLaunch', data }); }, pageScrollTo() {} },
     ...extra
   });

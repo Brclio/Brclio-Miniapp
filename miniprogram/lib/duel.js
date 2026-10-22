@@ -384,58 +384,64 @@ var require_storage = __commonJS({
   "minigame/lib/storage.js"(exports2, module2) {
     var KEY = "brclio.duel.v1";
     var DEFAULTS = { targetScore: 3, haptics: true, soundEnabled: true, names: ["\u7EA2\u65B9", "\u84DD\u65B9"], matches: [] };
-    function raw() {
-      const value = wx.getStorageSync(KEY);
-      if (value === "" || value === null || value === void 0) return {};
-      if (typeof value !== "object" || Array.isArray(value)) throw new Error("Incompatible local challenge data");
-      return value;
-    }
-    function normalize(value) {
-      return {
-        targetScore: [1, 3, 5].indexOf(value.targetScore) >= 0 ? value.targetScore : 3,
-        haptics: typeof value.haptics === "boolean" ? value.haptics : true,
-        soundEnabled: typeof value.soundEnabled === "boolean" ? value.soundEnabled : true,
-        names: Array.isArray(value.names) && value.names.length === 2 ? value.names.map(function(name, i) {
-          return typeof name === "string" ? name.trim().slice(0, 16) || DEFAULTS.names[i] : DEFAULTS.names[i];
-        }) : DEFAULTS.names.slice(),
-        matches: Array.isArray(value.matches) ? value.matches.filter(function(match) {
-          return match && typeof match.id === "string" && Number.isFinite(match.at) && [0, 1].indexOf(match.winner) >= 0 && Array.isArray(match.scores) && match.scores.length === 2 && match.scores.every(function(score) {
-            return Number.isInteger(score) && score >= 0;
-          }) && (match.bestMs === null || Number.isFinite(match.bestMs) && match.bestMs >= 0) && Array.isArray(match.names) && match.names.length === 2 && match.names.every(function(name) {
-            return typeof name === "string";
-          });
-        }).slice(0, 20) : []
-      };
-    }
-    function read() {
-      try {
-        return normalize(raw());
-      } catch (_) {
-        return normalize({});
+    function createStorage(api) {
+      function platform() {
+        return api || wx;
       }
-    }
-    function save(patch) {
-      try {
-        const previous = raw();
-        const value = __spreadValues(__spreadValues(__spreadValues({}, normalize(previous)), previous), patch);
-        wx.setStorageSync(KEY, value);
-        return true;
-      } catch (_) {
-        return false;
+      function raw() {
+        const value = platform().getStorageSync(KEY);
+        if (value === "" || value === null || value === void 0) return {};
+        if (typeof value !== "object" || Array.isArray(value)) throw new Error("Incompatible local challenge data");
+        return value;
       }
-    }
-    function recordMatch(match) {
-      try {
-        const current = normalize(raw());
-        if (current.matches.some(function(item) {
-          return item.id === match.id;
-        })) return true;
-        return save({ matches: [match].concat(current.matches).slice(0, 20) });
-      } catch (_) {
-        return false;
+      function normalize(value) {
+        return {
+          targetScore: [1, 3, 5].indexOf(value.targetScore) >= 0 ? value.targetScore : 3,
+          haptics: typeof value.haptics === "boolean" ? value.haptics : true,
+          soundEnabled: typeof value.soundEnabled === "boolean" ? value.soundEnabled : true,
+          names: Array.isArray(value.names) && value.names.length === 2 ? value.names.map(function(name, i) {
+            return typeof name === "string" ? name.trim().slice(0, 16) || DEFAULTS.names[i] : DEFAULTS.names[i];
+          }) : DEFAULTS.names.slice(),
+          matches: Array.isArray(value.matches) ? value.matches.filter(function(match) {
+            return match && typeof match.id === "string" && Number.isFinite(match.at) && [0, 1].indexOf(match.winner) >= 0 && Array.isArray(match.scores) && match.scores.length === 2 && match.scores.every(function(score) {
+              return Number.isInteger(score) && score >= 0;
+            }) && (match.bestMs === null || Number.isFinite(match.bestMs) && match.bestMs >= 0) && Array.isArray(match.names) && match.names.length === 2 && match.names.every(function(name) {
+              return typeof name === "string";
+            });
+          }).slice(0, 20) : []
+        };
       }
+      function read() {
+        try {
+          return normalize(raw());
+        } catch (_) {
+          return normalize({});
+        }
+      }
+      function save(patch) {
+        try {
+          const previous = raw();
+          const value = __spreadValues(__spreadValues(__spreadValues({}, normalize(previous)), previous), patch);
+          platform().setStorageSync(KEY, value, { changedKeys: Object.keys(patch) });
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }
+      function recordMatch(match) {
+        try {
+          const current = normalize(raw());
+          if (current.matches.some(function(item) {
+            return item.id === match.id;
+          })) return true;
+          return save({ matches: [match].concat(current.matches).slice(0, 20) });
+        } catch (_) {
+          return false;
+        }
+      }
+      return { read, save, recordMatch, KEY };
     }
-    module2.exports = { read, save, recordMatch, KEY };
+    module2.exports = Object.assign(createStorage(), { createStorage });
   }
 });
 
@@ -451,7 +457,7 @@ var require_catalog = __commonJS({
 // minigame/lib/game-app.js
 var { createDuel } = require_duel_engine();
 var { createDuelAudio } = require_duel_audio();
-var storage = require_storage();
+var storageModule = require_storage();
 var catalog = require_catalog();
 var C = { cream: "#fefcf6", ink: "#1a1a2e", muted: "#64646e", blue: "#2b7fd8", red: "#e84a5f", yellow: "#f4d758", paper: "#f7efd1", line: "#e5dfd1", soft: "#f2eee3", blueSoft: "#e9f1f9", redSoft: "#fbeaed" };
 var FONT = "'PingFang SC', 'Noto Sans SC', sans-serif";
@@ -459,6 +465,7 @@ var SERIF = "'Songti SC', 'Noto Serif SC', serif";
 function createGameApp(platform, options) {
   const wx2 = platform;
   const opt = options || {};
+  const storage = storageModule.createStorage(opt.storage || (typeof wx2.getStorageSync === "function" ? wx2 : void 0));
   const requestFrame = typeof wx2.requestAnimationFrame === "function" ? wx2.requestAnimationFrame.bind(wx2) : typeof requestAnimationFrame === "function" ? requestAnimationFrame : null;
   const cancelFrame = typeof wx2.cancelAnimationFrame === "function" ? wx2.cancelAnimationFrame.bind(wx2) : typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : null;
   const canvas = wx2.createCanvas();
@@ -815,7 +822,12 @@ function createGameApp(platform, options) {
     header("\u9690\u79C1\u4E0E\u6570\u636E", "YOUR DEVICE, YOUR LITTLE MOMENTS");
     text("\u597D\u73A9\uFF0C\u8F7B\u4E00\u70B9\u3002", 24, 116, 30, C.ink, 800, "left", true);
     const cloudBackup = wx2.cloudBackupSupported === true;
-    const sections = [
+    const sections = opt.accountSyncSupported ? [
+      ["01", "\u5148\u4FDD\u5B58\u5728\u672C\u673A", ["\u8D5B\u5236\u3001\u58F0\u97F3\u3001\u89E6\u611F\u4E0E\u6700\u8FD1 20 \u573A\u6218\u7EE9\uFF0C", "\u64CD\u4F5C\u65F6\u5148\u4FDD\u5B58\uFF0C\u65AD\u7F51\u4E5F\u80FD\u7EE7\u7EED\u73A9\u3002"]],
+      ["02", "\u767B\u5F55\u540E\u81EA\u52A8\u540C\u6B65", ["\u4F7F\u7528\u5C0F\u7A0B\u5E8F\u8D26\u53F7\u540C\u6B65\u8BBE\u7F6E\u548C\u8BA1\u5206\u8BB0\u5F55\uFF0C", "\u8BBF\u5BA2\u4E5F\u80FD\u6E38\u73A9\uFF1B\u9000\u51FA\u540E\u5207\u56DE\u8BBF\u5BA2\u5B58\u6863\u3002"]],
+      ["03", "\u6BCF\u4E2A\u8D26\u53F7\u5206\u522B\u4FDD\u5B58", ["\u8BB0\u5F55\u53EA\u8FDB\u5165\u5F53\u524D\u767B\u5F55\u8D26\u53F7\uFF0C", "\u8054\u7F51\u540E\u81EA\u52A8\u91CD\u8BD5\u672A\u5B8C\u6210\u7684\u540C\u6B65\u3002"]],
+      ["04", "\u6E05\u7406\u5F53\u524D\u6218\u7EE9", ["\u6E05\u7A7A\u8BB0\u5F55\u540E\u4F1A\u540C\u6B65\u8FD9\u4E00\u4FEE\u6539\u3002", "\u8D5B\u5236\u3001\u58F0\u97F3\u548C\u89E6\u611F\u8BBE\u7F6E\u7EE7\u7EED\u4FDD\u7559\u3002"]]
+    ] : [
       ["01", "\u53EA\u5728\u672C\u673A\u8BB0\u4F4F", ["\u8D5B\u5236\u3001\u58F0\u97F3\u3001\u89E6\u611F\u4E0E\u6700\u8FD1 20 \u573A\u6218\u7EE9\uFF0C", "\u4FDD\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u7684\u672C\u5730\u7F13\u5B58\u4E2D\u3002"]],
       ["02", "\u4E0D\u9700\u8981\u4E2A\u4EBA\u4FE1\u606F", ["\u5F53\u524D\u7248\u672C\u4E0D\u8BF7\u6C42\u767B\u5F55\u3001\u6444\u50CF\u5934\u3001\u9EA6\u514B\u98CE\u3001", "\u5B9A\u4F4D\u6216\u901A\u8BAF\u5F55\uFF0C\u4E5F\u4E0D\u63A5\u5165\u5E7F\u544A\u4E0E\u7EDF\u8BA1 SDK\u3002"]],
       cloudBackup ? ["03", "\u4E91\u7AEF\u5907\u4EFD\u7531\u4F60\u51B3\u5B9A", ["\u9ED8\u8BA4\u5173\u95ED\uFF1B\u5F00\u542F\u540E\u7ECF Cloudflare \u5C06\u533F\u540D", "\u5BF9\u5C40\u8BB0\u5F55\u4FDD\u5B58\u5230 GitHub \u79C1\u6709\u4ED3\u5E93\u3002"]] : ["03", "\u6CA1\u6709\u670D\u52A1\u5668\u4E0A\u4F20", ["\u5F53\u524D\u7248\u672C\u4E0D\u4E3B\u52A8\u53D1\u9001\u7F51\u7EDC\u8BF7\u6C42\u3002", "\u624B\u52A8\u5206\u4EAB\u65F6\uFF0C\u5C06\u4F7F\u7528\u5FAE\u4FE1\u63D0\u4F9B\u7684\u5206\u4EAB\u529F\u80FD\u3002"]],
@@ -832,7 +844,7 @@ function createGameApp(platform, options) {
     footer();
   }
   function clearRecords() {
-    wx2.showModal({ title: "\u6E05\u9664\u672C\u673A\u6218\u7EE9\uFF1F", content: "\u5C06\u5220\u9664\u672C\u673A\u4FDD\u5B58\u7684\u5BF9\u51B3\u8BB0\u5F55\u3002\u8D5B\u5236\u3001\u58F0\u97F3\u548C\u89E6\u611F\u8BBE\u7F6E\u4F1A\u4FDD\u7559\u3002", confirmText: "\u6E05\u9664", confirmColor: C.red, success: function(response) {
+    wx2.showModal({ title: opt.accountSyncSupported ? "\u6E05\u9664\u5F53\u524D\u6218\u7EE9\uFF1F" : "\u6E05\u9664\u672C\u673A\u6218\u7EE9\uFF1F", content: opt.accountSyncSupported ? "\u5C06\u6E05\u7A7A\u5F53\u524D\u8BB0\u5F55\uFF0C\u767B\u5F55\u540E\u4F1A\u540C\u6B65\u8FD9\u4E00\u4FEE\u6539\u3002\u8D5B\u5236\u3001\u58F0\u97F3\u548C\u89E6\u611F\u8BBE\u7F6E\u4F1A\u4FDD\u7559\u3002" : "\u5C06\u5220\u9664\u672C\u673A\u4FDD\u5B58\u7684\u5BF9\u51B3\u8BB0\u5F55\u3002\u8D5B\u5236\u3001\u58F0\u97F3\u548C\u89E6\u611F\u8BBE\u7F6E\u4F1A\u4FDD\u7559\u3002", confirmText: "\u6E05\u9664", confirmColor: C.red, success: function(response) {
       if (disposed || !response.confirm) return;
       if (persist({ matches: [] })) notify("\u672C\u673A\u6218\u7EE9\u5DF2\u6E05\u9664");
       draw();

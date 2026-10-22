@@ -1,32 +1,55 @@
 <view class="page-shell account-shell">
-  <view class="eyebrow">ONE ACCOUNT / BRCLIO</view>
-  <view class="document-title serif">让记录，跟着你。</view>
-  <view class="document-intro">同一个账号，在 Brclio 和悦创之间使用。挑战数据按需手动备份。</view>
-  <view wx:if="{{message}}" class="account-message" role="status">{{message}}</view>
-  <view wx:if="{{!user}}">
-    <view class="account-tabs"><button class="account-tab {{tab === 'login' ? 'selected' : ''}}" data-tab="login" bindtap="switchTab" disabled="{{busy}}">登录</button><button class="account-tab {{tab === 'register' ? 'selected' : ''}}" data-tab="register" bindtap="switchTab" disabled="{{busy}}">注册新账号</button></view>
-    <view wx:if="{{tab === 'login'}}" class="account-form">
-      <label for="identifier">账号或邮箱</label><input id="identifier" class="account-input" data-field="identifier" bindinput="input" value="{{identifier}}" maxlength="254" placeholder="输入账号或邮箱" disabled="{{busy}}" />
-      <label for="login-password">密码</label><input id="login-password" class="account-input" data-field="password" bindinput="input" value="{{password}}" password maxlength="128" placeholder="输入密码" disabled="{{busy}}" />
-      <button class="primary-button" bindtap="login" disabled="{{busy}}" loading="{{busy}}" hover-class="button-pressed">登录共享账号</button>
-    </view>
-    <view wx:else class="account-form">
-      <label for="username">账号</label><input id="username" class="account-input" data-field="username" bindinput="input" value="{{username}}" maxlength="32" placeholder="3–32 位，可含中文、字母、数字、_ . -" disabled="{{busy}}" />
-      <label for="email">邮箱</label><input id="email" class="account-input" data-field="email" bindinput="input" value="{{email}}" maxlength="254" placeholder="用于接收注册验证码" disabled="{{busy}}" />
-      <label for="code">邮箱验证码</label><view class="code-row"><input id="code" class="account-input" data-field="code" bindinput="input" value="{{code}}" type="number" maxlength="6" placeholder="6 位验证码" disabled="{{busy}}" /><button class="secondary-button" bindtap="sendCode" disabled="{{busy || cooldown > 0}}">{{cooldown > 0 ? cooldown + ' 秒后重发' : '获取验证码'}}</button></view>
-      <label for="new-account-password">设置密码</label><input id="new-account-password" class="account-input" data-field="password" bindinput="input" value="{{password}}" password maxlength="128" placeholder="8–128 位，请勿复用其他网站密码" disabled="{{busy}}" />
-      <button class="primary-button" bindtap="register" disabled="{{busy}}" loading="{{busy}}" hover-class="button-pressed">注册并登录</button>
-    </view>
-    <view class="account-note">账号资料与手动备份保存在私有 GitHub 仓库，包含明文密码，仓库授权管理者可读取。登录不自动上传或覆盖挑战记录。摄影和挑战可继续离线使用。</view>
+  <view class="account-header">
+    <view class="account-brand"><image class="account-brand-avatar" src="/assets/avatar.png" mode="aspectFill" /><view><view class="account-brand-name">Brclio / 悦创</view><view class="account-kicker">YOUR LITTLE CORNER</view></view></view>
+    <button class="browse-button" bindtap="continueBrowsing" hover-class="button-pressed" aria-label="返回首页继续浏览">继续逛逛 ↗</button>
   </view>
-  <view wx:else>
-    <view class="account-identity"><view><view class="identity-name serif">{{user.nickname || user.username}}</view><view class="muted">{{user.email}}</view></view><button class="text-button" bindtap="logout" disabled="{{busy}}">退出登录</button></view>
-    <view class="sync-section"><view class="section-label">我的挑战备份</view><view class="sync-count"><text class="serif">{{localCount}}</text> 场在本机<text class="cloud-count">云端 {{cloudCount === null ? '尚无概况' : cloudCount + ' 场'}}</text></view><view class="account-note">{{cloudLabel}}。同步赛制、振动、玩家名及最近 20 场完整对局；每次备份或恢复前都会显示覆盖预览。</view>
-      <button class="primary-button" bindtap="backup" disabled="{{busy}}" hover-class="button-pressed">预览并备份本机数据</button><button class="secondary-button" bindtap="restore" disabled="{{busy}}" hover-class="button-pressed">预览并恢复云端数据</button><button class="text-button" bindtap="readCloud" disabled="{{busy}}">只读取云端概况 ↻</button>
+
+  <view wx:if="{{user && !showBind}}" class="signed-in">
+    <view class="profile-intro"><view class="eyebrow">NICE TO SEE YOU</view><view class="account-heading serif">你好，{{userLabel}}。</view><view class="account-subtitle">摄影、放松、悦学，随时回来看看。</view></view>
+    <view class="profile-summary">
+      <image wx:if="{{user.avatarUrl}}" class="profile-avatar" src="{{user.avatarUrl}}" mode="aspectFill" />
+      <view wx:else class="profile-initial serif" aria-hidden="true">{{userInitial}}</view>
+      <view class="profile-name"><view class="profile-label">{{userLabel}}</view><view class="profile-badge">已登录</view></view>
     </view>
-    <view class="account-form settings-section"><view class="section-label">共享个人资料</view><label for="nickname">昵称</label><input id="nickname" class="account-input" data-field="nickname" bindinput="input" value="{{nickname}}" maxlength="40" disabled="{{busy}}" /><label for="edit-username">账号</label><input id="edit-username" class="account-input" data-field="username" bindinput="input" value="{{username}}" maxlength="32" disabled="{{busy}}" /><button class="secondary-button" bindtap="saveProfile" disabled="{{busy}}">保存资料</button></view>
-    <view class="account-form settings-section"><view class="section-label">{{passwordEnabled ? '修改密码' : '设置密码'}}</view><view wx:if="{{passwordEnabled}}"><label for="current-password">当前密码</label><input id="current-password" class="account-input" data-field="currentPassword" bindinput="input" value="{{currentPassword}}" password maxlength="128" disabled="{{busy}}" /></view><label for="new-password">新密码</label><input id="new-password" class="account-input" data-field="newPassword" bindinput="input" value="{{newPassword}}" password maxlength="128" placeholder="8–128 位" disabled="{{busy}}" /><label for="confirm-password">确认新密码</label><input id="confirm-password" class="account-input" data-field="confirmPassword" bindinput="input" value="{{confirmPassword}}" password maxlength="128" disabled="{{busy}}" /><button class="secondary-button" bindtap="savePassword" disabled="{{busy}}">保存密码</button></view>
-    <view class="account-note">退出登录只移除本机账号会话。原有挑战记录和偏好仍留在本机；共享设备时，请在备份预览中确认目标账号。</view>
+    <view class="profile-fields">
+      <view class="profile-field"><text>账号</text><text selectable="true">{{user.username || '绑定邮箱后设置'}}</text></view>
+      <view class="profile-field"><text>邮箱</text><text selectable="true">{{user.email || '尚未绑定'}}</text></view>
+      <view class="profile-field"><text>微信</text><text>{{wechatLinked ? '已关联' : '未关联'}}</text></view>
+    </view>
+    <button wx:if="{{!user.email}}" class="primary-button bind-email-button" style="width: 100%; display: flex;" bindtap="startBind" hover-class="button-pressed">绑定邮箱与账号 <text aria-hidden="true">→</text></button>
+    <view class="local-note"><text class="local-note-mark" aria-hidden="true">✳</text><text>保持登录，直到你主动退出。</text></view>
+    <view class="sync-summary" role="status"><view class="sync-heading"><text>记录自动同步</text><text class="sync-badge">{{syncState === 'syncing' ? '同步中' : syncPending ? '待同步' : syncState === 'error' ? '稍后重试' : '已开启'}}</text></view><view class="sync-copy">{{syncMessage}}</view><view class="sync-copy">学习进度、收藏与最近 200 条通关足迹，以及计分挑战记录和使用偏好。断网时先存本机，联网后继续同步。</view><button class="text-button sync-retry" bindtap="retrySync" disabled="{{syncState === 'syncing'}}" hover-class="button-pressed">{{syncState === 'syncing' ? '正在同步…' : '立即同步'}}</button></view>
+    <button class="text-button retry-session" bindtap="retrySession" disabled="{{busy || refreshing}}" hover-class="button-pressed">{{refreshing ? '正在更新账号状态…' : '刷新账号状态'}}</button>
+    <button class="logout-button" style="width: 100%; display: block;" bindtap="logout" loading="{{busy}}" disabled="{{busy || refreshing}}" hover-class="button-pressed">退出登录</button>
   </view>
-  <button class="text-button privacy-link" bindtap="openPrivacy" hover-class="button-pressed">隐私与数据说明 →</button>
+
+  <view wx:else class="auth-content">
+    <view class="auth-intro"><view class="eyebrow">{{mode === 'bind' ? 'ONE MORE WAY TO RETURN' : 'WELCOME TO BRCLIO'}}</view><view class="account-heading serif">{{mode === 'bind' ? '为相遇，留个账号。' : mode === 'register' ? '初次见面，欢迎。' : '好久不见，欢迎回来。'}}</view><view class="account-subtitle">{{mode === 'bind' ? '绑定后，也能用邮箱或账号登录。' : '用熟悉的方式，走进自己的小角落。'}}</view></view>
+    <view wx:if="{{mode !== 'bind'}}" class="auth-tabs" aria-label="登录或注册">
+      <button class="auth-tab {{mode === 'login' ? 'auth-tab-active' : ''}}" data-mode="login" bindtap="switchMode" disabled="{{busy}}" hover-class="button-pressed">登录</button>
+      <button class="auth-tab {{mode === 'register' ? 'auth-tab-active' : ''}}" data-mode="register" bindtap="switchMode" disabled="{{busy}}" hover-class="button-pressed">注册账号</button>
+    </view>
+    <view wx:if="{{mode === 'login'}}" class="login-methods" aria-label="登录方式">
+      <button class="login-method {{loginMethod === 'code' ? 'login-method-active' : ''}}" data-method="code" bindtap="switchLoginMethod" disabled="{{busy}}" hover-class="button-pressed">邮箱验证码</button>
+      <button class="login-method {{loginMethod === 'password' ? 'login-method-active' : ''}}" data-method="password" bindtap="switchLoginMethod" disabled="{{busy}}" hover-class="button-pressed">邮箱 / 账号密码</button>
+    </view>
+    <form bindsubmit="submitForm">
+      <view wx:if="{{mode !== 'login' || loginMethod === 'code'}}" class="field-group"><label class="field-label" for="account-email">邮箱</label><input id="account-email" class="account-input" type="text" value="{{email}}" data-field="email" bindinput="inputField" placeholder="你的邮箱地址" maxlength="254" disabled="{{busy}}" aria-label="邮箱地址" /></view>
+      <view wx:if="{{mode !== 'login'}}" class="field-group"><label class="field-label" for="account-username">账号</label><input id="account-username" class="account-input" type="text" value="{{username}}" data-field="username" bindinput="inputField" placeholder="字母开头，4–24 位字母、数字或下划线" maxlength="24" disabled="{{busy}}" aria-label="注册账号" /></view>
+      <view wx:if="{{mode === 'login' && loginMethod === 'password'}}" class="field-group"><label class="field-label" for="account-identifier">邮箱 / 账号</label><input id="account-identifier" class="account-input" type="text" value="{{identifier}}" data-field="identifier" bindinput="inputField" placeholder="邮箱地址或账号" maxlength="254" disabled="{{busy}}" aria-label="邮箱地址或账号" /></view>
+      <view wx:if="{{mode !== 'login' || loginMethod === 'password'}}" class="field-group"><label class="field-label" for="account-password">密码</label><input id="account-password" class="account-input" type="text" password value="{{password}}" data-field="password" bindinput="inputField" placeholder="{{mode === 'login' ? '请输入密码' : '设置 8–128 位密码'}}" maxlength="128" disabled="{{busy}}" aria-label="密码" /></view>
+      <view wx:if="{{mode !== 'login'}}" class="field-group"><label class="field-label" for="account-password-confirm">确认密码</label><input id="account-password-confirm" class="account-input" type="text" password value="{{confirmPassword}}" data-field="confirmPassword" bindinput="inputField" placeholder="再次输入密码" maxlength="128" disabled="{{busy}}" aria-label="确认密码" /></view>
+      <view wx:if="{{mode !== 'login' || loginMethod === 'code'}}" class="field-group"><label class="field-label" for="account-code">邮箱验证码</label><view class="code-row"><input id="account-code" class="account-input code-input" type="number" value="{{code}}" data-field="code" bindinput="inputField" placeholder="6 位验证码" maxlength="6" disabled="{{busy}}" aria-label="6 位邮箱验证码" /><button class="code-button" bindtap="sendCode" loading="{{sendingCode}}" disabled="{{busy || sendingCode || codeSeconds > 0}}" hover-class="button-pressed">{{codeSeconds > 0 ? codeSeconds + ' 秒后重发' : sendingCode ? '正在发送' : '获取验证码'}}</button></view></view>
+      <view wx:if="{{error}}" class="account-message account-error" role="alert">{{error}}</view>
+      <view wx:if="{{notice}}" class="account-message account-notice" role="status">{{notice}}</view>
+      <checkbox-group class="consent-group" bindchange="changeConsent"><label class="consent-label"><checkbox value="agree" checked="{{agreed}}" color="#2b7fd8" disabled="{{busy}}" aria-label="同意隐私与数据说明" /><text>我已阅读并同意</text></label><button class="privacy-link" catchtap="openPrivacy" hover-class="button-pressed">《隐私与数据说明》</button></checkbox-group>
+      <button class="primary-button submit-button" style="width: 100%; display: flex;" form-type="submit" loading="{{busy}}" disabled="{{busy || sendingCode || refreshing}}" hover-class="button-pressed">{{mode === 'register' ? '注册并登录' : mode === 'bind' ? '完成绑定' : '登录'}} <text aria-hidden="true">→</text></button>
+    </form>
+    <view wx:if="{{mode !== 'bind'}}" class="wechat-section"><view class="auth-divider"><text>也可以</text></view><button class="wechat-button" style="width: 100%; display: flex;" bindtap="wechatLogin" disabled="{{busy || sendingCode || refreshing}}" hover-class="button-pressed"><view class="wechat-mark" aria-hidden="true">微</view><text>微信一键登录 / 注册</text><text class="wechat-arrow" aria-hidden="true">↗</text></button><view class="wechat-caption">首次微信登录将自动创建账号。</view></view>
+    <button wx:else class="text-button cancel-bind" bindtap="cancelBind" disabled="{{busy}}" hover-class="button-pressed">稍后绑定，返回我的账号</button>
+  </view>
+
+  <view wx:if="{{user && !showBind && error}}" class="account-message account-error" role="alert">{{error}}</view>
+  <view wx:if="{{user && !showBind && notice}}" class="account-message account-notice" role="status">{{notice}}</view>
+  <view class="account-footer"><text>Brclio / 悦创</text><button bindtap="openPrivacy" hover-class="button-pressed">隐私与数据</button></view>
 </view>

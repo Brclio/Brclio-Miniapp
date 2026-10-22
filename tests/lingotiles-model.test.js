@@ -9,7 +9,8 @@ const Module = require('node:module');
 const esbuild = require('esbuild');
 const root = path.resolve(__dirname, '..');
 const nativeFile = path.join(root, 'miniprogram/lib/lingotiles.js');
-const source = fs.readFileSync(nativeFile, 'utf8');
+// Exercise the current adapter without changing the generated upload directory.
+const source = require('../scripts/build-lingotiles-native').buildLingotilesNative({ write: false });
 const upstream = path.join(root, 'web/projects/lingotiles/upstream/src/game');
 
 // Exercise the pinned upstream's complete game/progress/preferences suite against
@@ -35,7 +36,7 @@ function fixture() {
   const directories = new Set(['/data']);
   const storage = new Map();
   const requests = [];
-  const state = { failWrite: false, failStorage: false, failStorageRead: false, failRequest: false, fileReads: 0 };
+  const state = { failWrite: false, failStorage: false, failStorageRead: false, failRequest: false, fileReads: 0, scope: 'guest', guestOwner: null };
   const fileSystem = {
     accessSync(name) { if (!files.has(name) && !directories.has(name)) throw new Error('ENOENT'); },
     mkdirSync(name) { directories.add(name); },
@@ -60,8 +61,33 @@ function fixture() {
     }
   };
   const native = { exports: {} };
-  vm.runInNewContext(source, { module: native, exports: native.exports, wx: api, require: id => { assert.equal(id, '../config'); return { webOrigin: 'https://example.com' }; }, setTimeout, clearTimeout, console });
-  return { model: native.exports, api, files, storage, requests, state };
+  const scopedKey = key => state.scope === 'guest' ? key : 'scoped:' + state.scope + ':' + key;
+  const syncListeners = new Set();
+  const accountSync = {
+    getScope: () => state.scope,
+    getGuestOwner: () => state.guestOwner,
+    getScopedKey: scopedKey,
+    subscribe(listener) { syncListeners.add(listener); return () => syncListeners.delete(listener); },
+    storage: {
+      getStorageSync(key) { return api.getStorageSync(scopedKey(key)); },
+      setStorageSync(key, value) { api.setStorageSync(scopedKey(key), value); },
+      getItem(key) { const value = this.getStorageSync(key); return value === undefined || value === '' || value === null ? null : typeof value === 'string' ? value : JSON.stringify(value); },
+      setItem(key, value) { this.setStorageSync(key, String(value)); }
+    }
+  };
+  vm.runInNewContext(source, { module: native, exports: native.exports, wx: api, require: id => {
+    if (id === './account-sync') return accountSync;
+    assert.equal(id, '../config'); return { webOrigin: 'https://example.com' };
+  }, setTimeout, clearTimeout, console });
+  function claim(owner) {
+    if (state.guestOwner === null) {
+      state.guestOwner = owner;
+      for (const [key, value] of [...storage]) if (key.startsWith('lingotiles.')) storage.set('scoped:' + owner + ':' + key, normalize(value));
+    }
+    state.scope = owner;
+    for (const listener of syncListeners) listener();
+  }
+  return { model: native.exports, api, files, storage, requests, state, accountSync, scopedKey, claim };
 }
 
 function completion(index, changes = {}) {
@@ -233,4 +259,228 @@ test('native illustration indexes load only the current senses and recover from 
   const image = f.model.getWordIllustration(word);
   assert.equal(image.src, 'https://example.com/projects/lingotiles/' + word.src.replace(/^\.\//, ''));
   assert.equal(f.requests.filter(url => /index\/[a-f0-9]{2}\.json/.test(url)).length, 1);
+});
+
+const USER_A = 'a'.repeat(32);
+const USER_B = 'b'.repeat(32);
+const HISTORY_KEY = 'lingotiles.history.v1';
+
+test('progress fallbacks and unreadable-save guards remain in their original account scope', () => {
+  const f = fixture();
+  f.state.scope = USER_A;
+  const a = f.model.toggleSaved(f.model.loadProgress(), 'apple');
+  assert.equal(f.model.saveProgress(a), true);
+  const aKey = f.scopedKey(f.model.PROGRESS_STORAGE_KEY), original = f.storage.get(aKey);
+  f.state.failStorageRead = true;
+  const denied = f.model.loadProgress();
+  assert.equal(denied.saved.length, 0);
+  f.state.failStorageRead = false;
+  f.state.scope = USER_B;
+  assert.equal(f.model.saveProgress(f.model.toggleSaved(f.model.loadProgress(), 'leaf')), true);
+  assert.deepEqual(normalize(f.model.loadProgress().saved), ['leaf']);
+  f.state.scope = USER_A;
+  assert.equal(f.model.saveProgress(f.model.markSeen(denied, ['dict:melodious'])), false);
+  assert.equal(f.storage.get(aKey), original);
+  assert.ok(f.model.loadProgress().seen.includes('dict:melodious'));
+  f.state.scope = USER_B;
+  assert.deepEqual(normalize(f.model.loadProgress().saved), ['leaf']);
+  assert.equal(f.model.loadProgress().seen.includes('dict:melodious'), false);
+  f.state.failStorage = true;
+  assert.equal(f.model.saveMatchAnimation(true), false);
+  assert.equal(f.model.loadMatchAnimation(), true);
+  f.state.scope = USER_A;
+  f.state.failStorage = false;
+  assert.equal(f.model.loadMatchAnimation(), false);
+  assert.equal(f.model.saveMatchAnimation(false), true);
+  f.state.scope = USER_B;
+  assert.equal(f.model.loadMatchAnimation(), true);
+});
+
+test('late history queues write only their captured account and cannot publish into the next account', async () => {
+  const f = fixture();
+  f.state.scope = USER_A;
+  const a = f.model.appendCompletion(completion(1));
+  f.state.scope = USER_B;
+  const b = f.model.appendCompletion(completion(2));
+  assert.equal((await a).persisted, true);
+  assert.equal((await b).persisted, true);
+  assert.deepEqual(normalize((await f.model.getCompletionPage()).records.map(record => record.id)), ['run-2']);
+  assert.deepEqual(normalize(f.storage.get(f.scopedKey(HISTORY_KEY)).map(record => record.id)), ['run-2']);
+  assert.equal(f.storage.has('scoped:' + USER_A + ':' + HISTORY_KEY), false);
+  f.state.scope = USER_A;
+  assert.deepEqual(normalize((await f.model.getCompletionPage()).records.map(record => record.id)), ['run-1']);
+  assert.deepEqual(normalize(f.storage.get(f.scopedKey(HISTORY_KEY)).map(record => record.id)), ['run-1']);
+  assert.ok([...f.files.keys()].some(name => name.includes('/users/' + USER_A + '/round-')));
+  assert.ok([...f.files.keys()].some(name => name.includes('/users/' + USER_B + '/round-')));
+  assert.match((await f.model.exportCompletionsCsv()).csv, /run-1/);
+  assert.doesNotMatch((await f.model.exportCompletionsCsv()).csv, /run-2/);
+});
+
+test('temporary history and missing-illustration queues are isolated when accounts change', async () => {
+  const f = fixture();
+  f.state.scope = USER_A;
+  f.state.failWrite = true;
+  const pending = f.model.appendCompletion(completion(1));
+  f.state.scope = USER_B;
+  assert.equal((await pending).persisted, false);
+  assert.equal((await f.model.getCompletionSummary()).total, 0);
+  f.state.scope = USER_A;
+  assert.equal((await f.model.getCompletionSummary()).total, 1);
+  f.state.failWrite = false;
+  assert.equal((await f.model.appendCompletion(completion(1))).persisted, true);
+  f.state.failStorage = true;
+  const aWord = { word: 'account-a-missing', pos: 'n.', meaning: '甲账号缺图' };
+  assert.equal(f.model.recordIllustrationPractice(aWord), false);
+  assert.equal(f.model.getMissingIllustrations().length, 1);
+  f.state.scope = USER_B;
+  f.state.failStorage = false;
+  assert.equal(f.model.getMissingIllustrations().length, 0);
+  assert.equal(f.model.recordIllustrationPractice({ word: 'account-b-missing', pos: 'n.', meaning: '乙账号缺图' }), true);
+  f.state.scope = USER_A;
+  assert.deepEqual(normalize(f.model.getMissingIllustrations().map(word => word.word)), [aWord.word]);
+  f.state.scope = USER_B;
+  assert.deepEqual(normalize(f.model.getMissingIllustrations().map(word => word.word)), ['account-b-missing']);
+});
+
+test('cloud history restores missing files while full local history and CSV remain uncapped', async () => {
+  const f = fixture();
+  f.state.scope = USER_A;
+  await Promise.all(Array.from({ length: 260 }, (_, index) => f.model.appendCompletion(completion(index))));
+  const key = f.scopedKey(HISTORY_KEY);
+  assert.equal(f.storage.get(key).length, 200);
+  assert.equal(f.storage.get(key)[0].id, 'run-259');
+  assert.equal(f.storage.get(key).at(-1).id, 'run-60');
+  f.storage.set(key, [completion(270), ...f.storage.get(key).slice(0, 199)]);
+  const summary = await f.model.getCompletionSummary();
+  assert.equal(summary.total, 261);
+  assert.equal(summary.latest.id, 'run-270');
+  const csv = (await f.model.exportCompletionsCsv()).csv;
+  assert.equal(csv.split('\r\n').length, 263);
+  assert.match(csv, /"run-0"/);
+  assert.match(csv, /"run-270"/);
+  assert.equal([...f.files.keys()].filter(name => name.includes('/users/' + USER_A + '/round-') && name.endsWith('.json')).length, 261);
+  assert.equal(f.storage.get(key).length, 200);
+  f.state.scope = USER_B;
+  assert.equal((await f.model.getCompletionSummary()).total, 0);
+  assert.doesNotMatch((await f.model.exportCompletionsCsv()).csv, /run-270/);
+});
+
+test('prepareHistorySync aggregates old guest files before activation and copies them to only the first owner once', async () => {
+  const f = fixture();
+  for (let index = 0; index < 260; index++) f.files.set('/data/lingotiles-history-v1/round-' + index.toString(16) + '-0.json', JSON.stringify(completion(index)));
+  assert.equal(f.storage.has(HISTORY_KEY), false);
+  assert.equal(f.model.prepareHistorySync().records.length, 260);
+  assert.equal(f.storage.get(HISTORY_KEY).length, 200);
+  f.claim(USER_A);
+  assert.equal((await f.model.getCompletionSummary()).total, 260);
+  const marker = '/data/lingotiles-history-v1/users/' + USER_A + '/guest-imported-v1.json';
+  assert.equal(JSON.parse(f.files.get(marker)).owner, USER_A);
+  assert.equal([...f.files.keys()].filter(name => path.dirname(name) === '/data/lingotiles-history-v1').length, 260);
+  f.state.scope = 'guest';
+  await f.model.appendCompletion(completion(270));
+  f.state.scope = USER_A;
+  assert.equal((await f.model.getCompletionSummary()).total, 260);
+  assert.equal((await new f.model.CompletionHistoryStore(f.api).summary()).total, 260);
+  f.claim(USER_B);
+  assert.equal((await f.model.getCompletionSummary()).total, 0);
+  assert.equal(f.state.guestOwner, USER_A);
+  assert.equal([...f.files.keys()].filter(name => path.dirname(name) === '/data/lingotiles-history-v1').length, 261);
+});
+
+test('an interrupted first-owner history copy retries safely without deleting guest originals or duplicating records', async () => {
+  const f = fixture();
+  await f.model.appendCompletion(completion(1));
+  await f.model.appendCompletion(completion(2));
+  f.claim(USER_A);
+  f.state.failWrite = true;
+  const partial = await f.model.getCompletionSummary();
+  assert.equal(partial.total, 2);
+  assert.equal(partial.persisted, false);
+  const marker = '/data/lingotiles-history-v1/users/' + USER_A + '/guest-imported-v1.json';
+  assert.equal(f.files.has(marker), false);
+  f.state.failWrite = false;
+  const retried = await f.model.getCompletionSummary();
+  assert.equal(retried.total, 2);
+  assert.equal(retried.persisted, true);
+  assert.equal(f.files.has(marker), true);
+  assert.equal([...f.files.keys()].filter(name => name.includes('/users/' + USER_A + '/round-')).length, 2);
+  assert.equal([...f.files.keys()].filter(name => path.dirname(name) === '/data/lingotiles-history-v1').length, 2);
+});
+
+test('cloud restoration remains exportable after file quota failure and retries without replacing damaged aggregates', async () => {
+  const f = fixture();
+  f.state.scope = USER_A;
+  const key = f.scopedKey(HISTORY_KEY);
+  f.storage.set(key, [completion(9)]);
+  f.state.failWrite = true;
+  assert.equal((await f.model.getCompletionSummary()).persisted, false);
+  assert.match((await f.model.exportCompletionsCsv()).csv, /run-9/);
+  f.state.failWrite = false;
+  assert.equal((await f.model.getCompletionSummary()).persisted, true);
+  assert.equal((await f.model.getCompletionSummary()).total, 1);
+  f.storage.set(key, '{unreadable');
+  await f.model.appendCompletion(completion(10));
+  assert.equal(f.storage.get(key), '{unreadable');
+  assert.equal((await f.model.getCompletionSummary()).total, 2);
+});
+
+test('history aggregation respects the cloud byte budget without deleting full local records', async () => {
+  const f = fixture();
+  f.state.scope = USER_A;
+  await Promise.all(Array.from({ length: 200 }, (_, index) => f.model.appendCompletion(completion(index, { levelTitle: '词'.repeat(200), stageTitle: '阶'.repeat(200), stageId: 'stage'.repeat(40), levelId: 'level'.repeat(40) }))));
+  const aggregate = f.storage.get(f.scopedKey(HISTORY_KEY));
+  assert.ok(aggregate.length > 0 && aggregate.length < 200);
+  assert.ok(Buffer.byteLength(JSON.stringify(aggregate)) <= 200 * 1024 - 1024);
+  assert.equal(aggregate[0].id, 'run-199');
+  assert.equal((await f.model.getCompletionSummary()).total, 200);
+  assert.equal((await f.model.exportCompletionsCsv()).csv.split('\r\n').length, 202);
+});
+
+test('an unreadable completed migration marker cannot claim later guest records again', async () => {
+  const f = fixture();
+  await f.model.appendCompletion(completion(1));
+  f.claim(USER_A);
+  assert.equal((await f.model.getCompletionSummary()).total, 1);
+  f.state.scope = 'guest';
+  await f.model.appendCompletion(completion(2));
+  const marker = '/data/lingotiles-history-v1/users/' + USER_A + '/guest-imported-v1.json';
+  f.files.set(marker, '{unreadable');
+  f.state.scope = USER_A;
+  const view = await new f.model.CompletionHistoryStore(f.api).page();
+  assert.equal(view.total, 1);
+  assert.equal(view.persisted, false);
+  assert.equal(view.records[0].id, 'run-1');
+});
+
+test('first ownership freezes guest files even when the owner opens history only after a later guest session', async () => {
+  const f = fixture();
+  await f.model.appendCompletion(completion(1));
+  f.claim(USER_A);
+  // No history method runs while the first owner is active.
+  f.state.scope = 'guest';
+  await f.model.appendCompletion(completion(2));
+  f.state.scope = USER_A;
+  const first = await f.model.getCompletionPage();
+  assert.equal(first.total, 1);
+  assert.equal(first.records[0].id, 'run-1');
+  f.claim(USER_B);
+  assert.equal((await f.model.getCompletionSummary()).total, 0);
+  f.state.scope = 'guest';
+  assert.equal((await f.model.getCompletionSummary()).total, 2);
+});
+
+test('a quota-failed first-owner copy retries only its frozen files after later guest play', async () => {
+  const f = fixture();
+  await f.model.appendCompletion(completion(1));
+  f.claim(USER_A);
+  f.state.failWrite = true;
+  assert.equal((await f.model.getCompletionSummary()).persisted, false);
+  f.state.scope = 'guest';
+  f.state.failWrite = false;
+  await f.model.appendCompletion(completion(2));
+  f.state.scope = USER_A;
+  const restored = await f.model.getCompletionPage();
+  assert.equal(restored.persisted, true);
+  assert.equal(restored.total, 1);
+  assert.equal(restored.records[0].id, 'run-1');
 });

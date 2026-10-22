@@ -125,7 +125,7 @@ test('the native bundle exposes the reviewed API and every mapped native handler
   let page;
   vm.runInNewContext(fs.readFileSync(path.join(root, 'miniprogram/pages/lingotiles/index.js'), 'utf8'), {
     Page(value) { page = value; },
-    require(id) { if (id === '../../lib/lingotiles') return runtime; if (id === '../../config') return { webOrigin: 'https://example.test' }; throw new Error(id); }
+    require(id) { if (id === '../../lib/lingotiles') return runtime; if (id === '../../lib/account-sync') return {}; if (id === '../../config') return { webOrigin: 'https://example.test' }; throw new Error(id); }
   });
   for (const handler of contract.requiredPageHandlers) assert.equal(typeof page[handler], 'function', handler);
   for (const feature of contract.features) {

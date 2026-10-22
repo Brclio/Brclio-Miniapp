@@ -50,3 +50,24 @@ test('a first local game write still initializes an absent cache', () => {
   assert.deepEqual(f.stored.names, ['红方', '蓝方']);
   assert.deepEqual(f.stored.matches, []);
 });
+
+test('local settings preserve previously restored long names, history and unknown fields', () => {
+  const original = { targetScore: 5, haptics: false, names: ['ABCDEFGHIJKLMNOP', '蓝方'], matches: [match], futureLocal: { keep: true } };
+  const f = fixture(original);
+  assert.equal(f.storage.save({ soundEnabled: false }), true);
+  assert.deepEqual(f.stored.names, original.names);
+  assert.deepEqual(f.stored.matches, original.matches);
+  assert.deepEqual(f.stored.futureLocal, original.futureLocal);
+  assert.equal(f.stored.soundEnabled, false);
+});
+
+test('native game storage uses its injected account cache without touching another account or guest', () => {
+  const f = fixture({ names: ['访客', '记录'], matches: [match] });
+  const values = new Map();
+  const member = f.storage.createStorage({ getStorageSync: key => values.get(key), setStorageSync: (key, value) => values.set(key, structuredClone(value)) });
+  assert.equal(member.save({ soundEnabled: false }), true);
+  assert.equal(member.recordMatch({ ...match, id: 'member:match' }), true);
+  assert.equal(member.read().matches[0].id, 'member:match');
+  assert.equal(f.storage.read().matches[0].id, match.id);
+  assert.equal(f.writes.length, 0);
+});

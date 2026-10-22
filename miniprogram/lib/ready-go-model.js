@@ -31,6 +31,8 @@ function createReadyGo(options) {
   }
   const maxWait = Number(read(KEYS.maxWait));
   if (maxWait >= 3) state.maxWaitTime = Math.max(3, Math.min(10, maxWait));
+  const soundEnabled = read('RGD_SOUND_ENABLED');
+  if (typeof soundEnabled === 'boolean') state.soundEnabled = soundEnabled;
   const customStamp = Number(read(KEYS.customAt));
   if (customStamp && now() - customStamp < TTL) {
     try { const items = read(KEYS.custom); const list = typeof items === 'string' ? JSON.parse(items) : items; if (Array.isArray(list)) state.customRewards = list.filter((item) => typeof item === 'string' && item.trim()); } catch (_) {}
@@ -107,7 +109,7 @@ function createReadyGo(options) {
   function cancel() { if (state.gameState === 'WAITING' || state.gameState === 'GO') { state.gameState = 'IDLE'; state.gameHistory = []; } return snapshot(); }
   return { snapshot, switchMode, settings, importRewards, updateReward, randomReward, lock, clear, setPassword, checkPassword, toggleInput, category, launch, signal, touch, cancel,
     randomTitle: () => pick(RANDOM_TITLES), randomName: () => pick(RANDOM_PLAYER_NAMES),
-    setSound(value) { state.soundEnabled = !!value; return snapshot(); }, reveal() { state.isRewardRevealed = true; return snapshot(); } };
+    setSound(value) { state.soundEnabled = !!value; write('RGD_SOUND_ENABLED', state.soundEnabled); return snapshot(); }, reveal() { state.isRewardRevealed = true; return snapshot(); } };
 }
 
 module.exports = { createReadyGo, KEYS, TTL };
