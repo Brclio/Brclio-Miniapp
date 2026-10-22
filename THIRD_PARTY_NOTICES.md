@@ -58,4 +58,4 @@
 - lucide-react：根依赖 `0.460.0`，ReadyGoDuel 独立网页按原作固定 `0.556.0`；ISC License；部分图标源自 Cole Bemis 的 Feather（MIT），其余版权归 Lucide Contributors。
 - 构建保留依赖许可证注释；分发时应保留各依赖的版权和许可声明。
 
-esbuild 与 Wrangler 是构建、部署开发依赖。ReadyGoDuel 独立网页保留原项目的访问统计脚本；原生小程序没有接入该脚本。已恢复的可用摄影图片随同一 Cloudflare 项目分发，页面不依赖上游图片站点实时加载；第三方图片的原始地址仅作为来源记录保留。
+esbuild 与 Wrangler 是构建、部署开发依赖。jsdom `26.1.0`（MIT）仅用于离线 React 组件回归，不进入网页或小程序产物。ReadyGoDuel 独立网页保留原项目的访问统计脚本；原生小程序没有接入该脚本。已恢复的可用摄影图片随同一 Cloudflare 项目分发，页面不依赖上游图片站点实时加载；第三方图片的原始地址仅作为来源记录保留。

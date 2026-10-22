@@ -1,7 +1,8 @@
 'use strict';
 
 // The user explicitly allowed removing inaccurate voice control on 2026-10-21.
-// All other original behavior stays in the fixed, independently hashed snapshot.
+// The independently hashed original snapshot remains intact; adaptations are
+// documented in SOURCE.md, including the scheduled GO sound-state correction.
 function adaptOriginal(original) {
   let source = original;
   function replace(before, after) {
@@ -91,6 +92,12 @@ function adaptOriginal(original) {
   removeBetween('                                            ) : (\n                                                gameHistory.length', '                                        </div>\n                                    </>', '                                            ) : null}\n');
   removeBetween('                                {isReplaying ? (', '                            </div>\n                        )}');
   removeBetween("                {gameState === 'ENDED' && gameHistory.length", '            </div>');
+
+  // A delayed GO callback must use the latest sound switch rather than the
+  // value captured when the round was launched.
+  replace("    const stateRef = useRef<GameState>('IDLE');", "    const stateRef = useRef<GameState>('IDLE');\n    const soundEnabledRef = useRef(soundEnabled);");
+  replace('    useEffect(() => { stateRef.current = gameState; }, [gameState]);', '    useEffect(() => { stateRef.current = gameState; }, [gameState]);\n    useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);');
+  replace("        if (soundEnabled) safePlaySound('go', gameMode);", "        if (soundEnabledRef.current) safePlaySound('go', gameMode);");
 
   if (/VOICE|isReplaying|isSavingAudio|gameHistory|MediaRecorder|getUserMedia|micStream|AudioVisualizer|detectPitch|recording|replay/i.test(source)) {
     throw new Error('A removed voice or recording capability remains in adapted source');

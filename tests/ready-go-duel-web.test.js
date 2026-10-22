@@ -13,7 +13,7 @@ const root = path.resolve(__dirname, '..');
 const moduleRoot = path.join(root, 'web/projects/ready-go-duel');
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 
-test('the fixed upstream snapshot is intact and only the approved adaptations produce the app', () => {
+test('the fixed upstream snapshot is intact and documented adaptations produce the app', () => {
   const source = fs.readFileSync(path.join(moduleRoot, 'App.tsx'), 'utf8');
   const upstreamSource = fs.readFileSync(path.join(moduleRoot, 'upstream/App.tsx'), 'utf8');
   assert.equal(sha256(upstreamSource.trimEnd()), '12a816d6451e45be34d4a9c9cd9b583a2ee088ed40a74b69a08e1d8578777363');

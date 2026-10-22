@@ -421,6 +421,7 @@ export default function App() {
     const timerRef = useRef<number | null>(null);
     const signalTimeRef = useRef<number>(0);
     const stateRef = useRef<GameState>('IDLE');
+    const soundEnabledRef = useRef(soundEnabled);
     // 初始化：读取本地存储
     useEffect(() => {
         const savedTitle = localStorage.getItem(STORAGE_KEY_TITLE);
@@ -604,6 +605,7 @@ export default function App() {
 
     // 同步状态到 Refs
     useEffect(() => { stateRef.current = gameState; }, [gameState]);
+    useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
 
 
     // iOS 音频解锁监听
@@ -1039,7 +1041,7 @@ export default function App() {
         const now = Date.now();
         signalTimeRef.current = now;
         setGameState('GO');
-        if (soundEnabled) safePlaySound('go', gameMode);
+        if (soundEnabledRef.current) safePlaySound('go', gameMode);
     };
 
     const handleTouchAction = (player: 'p1' | 'p2') => {
