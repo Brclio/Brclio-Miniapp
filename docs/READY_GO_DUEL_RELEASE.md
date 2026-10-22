@@ -2,7 +2,24 @@
 
 日期：2026-10-22，Asia/Shanghai。本记录只描述独立网页及现有整站资源，不代表微信小程序上传、审核或正式发布。
 
-## 当前线上状态（10:10 续核查）
+## 当前线上状态（等待期间的音效开关修复）
+
+当前 Pages Production 为 [d977c756](https://d977c756.brclio-miniapp-wechat.pages.dev)，完整 ID `d977c756-0b36-4fc5-9963-b21cfa9e4d39`，源码为 [37aa43d6e82207e35c2f2e1d58b1b5295259ad37](https://github.com/Brclio/Brclio-Miniapp/commit/37aa43d6e82207e35c2f2e1d58b1b5295259ad37)，站点版本仍为 `0.1.2`。
+
+补充的实际 React 组件回归复现了一个定时回调缺陷：开局进入 WAITING 后静音，GO 仍播放；静音开局后在 WAITING 中开启声音，GO 仍无声。两个分支分别保留了失败前日志。修复让定时 GO 回调读取最新声音开关引用；原始快照、音效合成函数及参数、游戏画面与报告代码不变，继续由适配脚本确定性生成组件。
+
+- 新增 9 组实际 App.tsx / React DOM 19.2.1 离线组件场景，含 2 个等待中切换声音子分支（Node 共计 11 项）。覆盖设置保存／取消／重置及重挂载、独立彩头密码、隐藏与清空、开局音与抢跑、GO 后超过 5 秒响应、静音、重复按键不重复记局、两轮无限模式及汇总、报告生成接口、TXT 导入和独立 7 天有效期。
+- 两个音效失败分支修复后通过；组件加网页专项 16／16，全量 **282／282** 测试、完整构建、发布检查及差异格式检查通过。
+- 对比上一轮 1,621 个冻结构建文件，仅 ReadyGo `index.html` 和 `main.js` 字节变化；指纹脚本由 `main-b5032b192e353388.js` 更新为 `main-3ab4b01721b76c67.js`。CSS 仍为 `main-1cc1ef2387a3f342.css`，其余旧文件字节保持一致。生产 bundle 元图的 1,673 个输入中没有 jsdom 或测试文件，内存重建与发布脚本逐字节相同；jsdom 仅为开发依赖。
+- 发布后对主域、备用域名分别校验 29 个核心静态文件和 10 项只读接口／路由，合计 **58 项字节校验、20 项接口检查全部通过**。覆盖 ReadyGo 全模块、门户、摄影入口、悦学入口及索引、校验文件、健康版本、账号未授权边界、停用路径和发音接口。本轮没有重复下载全部摄影和学习图片，不将 58 项记录写成又一次全量资源核验。
+
+以上是 Node + JSDOM 的离线组件回归：运行真实 React 组件与事件处理，但不启动浏览器、不连接正式网页或网络。Web Audio、Image、Canvas 和 FileReader 采用明确替身；报告导出使用 `READYGO_TEST_CANVAS_NOT_A_PNG` 测试标记，不能作为真实 PNG、设备可听音效、布局、下载或二维码识读证明。随机数固定，礼花动画帧不循环；同一进程的 helper 实例须串行运行。
+
+用户重开标签后，新的应用内标签仍读取超时；随后 Chrome 复测也超时，原生 Chrome 读取被 Computer Use 明确禁止并终止。未再访问受限页面或改用其他工具自动控制浏览器。本轮新增的上述离线测试没有消除浏览器限制，正式域名的全新点击交互与真机听感仍待验收。没有重新上传小程序或操作微信审核，也未写账号或云备份数据。
+
+本机证据目录为 `artifacts/ready-go-duel/component-regression-2026-10-22/`：`sound-before-fix.log`、`component-tests.log`、`all-tests.log`、`build.log`、`release-check.log`、`build-comparison.json`、`production-bundle-boundary.json`、`deployment-input.json`、`deploy.log`、两域 `production-*.json`、`pages-deployments.json` 与 `release-status.json`。以下均为此前各阶段记录。
+
+## 10:10 续核查（历史部署 c3cad9af）
 
 整站后续发布 `0.1.2`，当前 Pages Production 已为 [c3cad9af](https://c3cad9af.brclio-miniapp-wechat.pages.dev)，完整 ID `c3cad9af-5371-486e-afc5-b7f95563d590`，Source 为 `7d30954e4a0a34099b2cdce47e2bd9328b2e7c38`。本次只读确认了最新部署列表，两域健康接口均为 `0.1.2`，没有为补做交互而重复部署。
 

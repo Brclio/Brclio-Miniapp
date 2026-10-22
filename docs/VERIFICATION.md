@@ -1,4 +1,10 @@
-# 2026-10-22 当前部署与 ReadyGoDuel 续核查
+# 2026-10-22 ReadyGoDuel 音效修复上线
+
+当前 Pages Production 已更新为 [d977c756](https://d977c756.brclio-miniapp-wechat.pages.dev)，源码 `37aa43d6e82207e35c2f2e1d58b1b5295259ad37`，站点版本 `0.1.2`。新增实际 React 组件的离线回归，复现并修复 WAITING 中切换声音不影响 GO 的旧状态问题；原音色、时长、布局与报告代码保持不变。全量 282 项测试、完整构建与发布检查通过；两正式域名合计 58 项核心资源字节校验和 20 项只读接口检查全部通过。指纹脚本更新为 `main-3ab4b01721b76c67.js`，CSS 保持原字节。
+
+组件测试使用真实 App.tsx 与 React DOM，但媒体、Canvas、图片和文件 I/O 为离线替身，不能代替浏览器布局、真实 PNG 或可听音效验收。用户重开后浏览器自动控制仍超时，后续工具又明确禁止当前页面访问；本轮没有取得新的线上点击验收，也没有再次上传小程序或提交审核。具体失败前／通过后证据、部署来源和边界见 [READY_GO_DUEL_RELEASE.md](READY_GO_DUEL_RELEASE.md)。以下为历史阶段。
+
+# 2026-10-22 当前部署与 ReadyGoDuel 续核查（历史 c3cad9af）
 
 10:10（Asia/Shanghai）核对：当前 Pages Production 为 [c3cad9af](https://c3cad9af.brclio-miniapp-wechat.pages.dev)，源码 `7d30954e4a0a34099b2cdce47e2bd9328b2e7c38`，两正式域健康接口均为 `0.1.2`。ReadyGo 的全部 15 个冻结文件与前次上线字节一致；两域重新执行这 15 个文件及健康接口检查，32／32 通过。无需为本轮续核查重新构建或部署。
 
