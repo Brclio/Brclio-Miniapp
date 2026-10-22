@@ -20,9 +20,11 @@
 
 静态包体检查主包 1,382.6 KiB、总计 7,561.3 KiB，主包和各分包低于 2 MiB，总包低于 20 MiB 项目预算。工具上传成功后另显示代码质量建议中的「主包小于 1.5 M」与「图片／音频不超过 200 K」未通过，已记录为后续体积与真机性能检查；没有据此声称全部平台质量建议通过。体验版、审核与正式发布尚未执行。
 
-## 0.1.2 网页部署
+## 0.1.2 悦学网页部署记录（历史 c3cad9af）
 
-最终 Pages 部署为 [`c3cad9af`](https://c3cad9af.brclio-miniapp-wechat.pages.dev)，源码标记 `7d30954`。它包含同工作区已提交的 ReadyGoDuel 资源指纹修复。中间部署 `b2a589bc` 的构建快照未包含该缓存修复，已由最终部署覆盖，不作为交付版本。
+悦学这一阶段的最终 Pages 部署为 [`c3cad9af`](https://c3cad9af.brclio-miniapp-wechat.pages.dev)，源码标记 `7d30954`。它包含同工作区已提交的 ReadyGoDuel 资源指纹修复。中间部署 `b2a589bc` 的构建快照未包含该缓存修复，已由该阶段最终部署覆盖，不作为交付版本。
+
+整站当前 Production 已更新为 `d977c756-0b36-4fc5-9963-b21cfa9e4d39`，源码 `37aa43d6e82207e35c2f2e1d58b1b5295259ad37`、版本仍为 `0.1.2`。后续仅 ReadyGoDuel 的 HTML／JS 因等待中切换声音修复而更新；悦学文件保持原字节，本页以下悦学核验继续作为该模块的历史证据。当前部署和后续 282 项测试、两域 58 项资源及 20 项接口核验见 [ReadyGoDuel 网页上线核查](READY_GO_DUEL_RELEASE.md)；本次小程序操作应使用 [当前 0.1.2 验收与审核操作](RELEASE.md#当前-012-验收与审核操作)。
 
 - 最终冻结 1,621 文件；词了个词的网页代码与全部学习资源均与首次已验收字节一致。版本变更涉及门户首页、目录版本和 Worker；ReadyGoDuel 首页继续引用内容指纹 JS／CSS。
 - 主域和别名各 10 项公开文件 GET 核验，共 **20/20** 长度与 SHA-256 通过，覆盖门户、悦学 HTML／JS／CSS、两个资源清单、ReadyGo 首页及两个指纹资源。
@@ -39,7 +41,7 @@
 
 ## 首次接入网页部署（历史）
 
-首次接入最终 Pages 部署：[ae91a338](https://ae91a338.brclio-miniapp-wechat.pages.dev)。初次资源上传的 `939f0e19` 为前一阶段部署；该阶段最终部署修复了音频代理在 Workers 中不支持 `redirect: 'error'` 的问题，改为手动拒绝跳转。两个构建仅 `_worker.js` 字节不同。当前交付部署见上方 0.1.2 记录。
+首次接入最终 Pages 部署：[ae91a338](https://ae91a338.brclio-miniapp-wechat.pages.dev)。初次资源上传的 `939f0e19` 为前一阶段部署；该阶段最终部署修复了音频代理在 Workers 中不支持 `redirect: 'error'` 的问题，改为手动拒绝跳转。两个构建仅 `_worker.js` 字节不同。当前交付部署见 [ReadyGoDuel 网页上线核查](READY_GO_DUEL_RELEASE.md)。
 
 - 正式入口：[悦学](https://pocket.bornforthis.cn/?category=learn)、[词了个词](https://pocket.bornforthis.cn/projects/lingotiles/)。现有别名 `pocket.brclio.com` 的词库清单也返回有效 JSON。
 - 对主域 **1,425/1,425** 个学习模块及门户文件逐一执行在线 GET，SHA-256 和长度均与冻结构建一致。目录首页按 Cloudflare 的规范目录 URL 核验；全部现有图片、图片索引、词库分片和查词索引均在其中。
