@@ -192,3 +192,23 @@ test('mobile LingoTiles account chip is positioned above the fixed learning navi
   assert.match(css, /@media\(max-width:760px\)\{\.brclio-account-widget\.brclio-account-widget--learning\{bottom:calc\(70px \+ env\(safe-area-inset-bottom,0px\)\)\}/);
   learning.close(); game.close();
 });
+
+
+test('pending logout cannot clear a new email-code login form or cancel its fresh consent', async () => {
+  const h = await host({ user: profile }); let finishLogout;
+  h.client.logout = () => { h.emitUser(null, 'logout'); return new Promise(resolve => { finishLogout = resolve; }); };
+  h.click('[data-account-action="logout"]'); await flush();
+  assert.equal(h.get('[data-account-member]').hidden, true);
+  assert.equal(h.get('[data-account-submit]').disabled, false, 'remote revocation does not block the next login');
+  h.input('email', 'next@example.com'); h.consent();
+  h.field('consent').dispatchEvent(new h.window.Event('change', { bubbles: true }));
+  h.click('[data-account-action="code"]'); await flush(); h.input('code', '654321');
+  const notice = h.get('[data-account-notice]').textContent;
+  finishLogout(); await flush();
+  assert.equal(h.field('email').value, 'next@example.com');
+  assert.equal(h.field('code').value, '654321');
+  assert.equal(h.field('consent').checked, true);
+  assert.equal(h.get('[data-account-notice]').textContent, notice, 'an old logout must not replace newer verification feedback');
+  await h.submit(); assert.deepEqual(h.calls.find(call => call[0] === 'loginEmail'), ['loginEmail', 'next@example.com', '654321']);
+  h.close();
+});

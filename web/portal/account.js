@@ -9,7 +9,7 @@
   const deadlines = new Map();
   let runtime = null, currentUser = null, mode = 'login', method = 'code';
   let busy = false, sending = false, syncing = false, stopped = false, visible = false;
-  let timer = null, operation = 0, logoutSerial = 0, initialized = false;
+  let timer = null, operation = 0, logoutSerial = 0, formActivity = 0, initialized = false;
   let unsubscribeClient = () => {}, unsubscribeSync = () => {};
   let widget = null;
   if (!root && document.body) {
@@ -119,7 +119,7 @@
   async function sendCode() {
     if (busy || sending || !available() || !consent() || (deadlines.get(codeKey()) || 0) > Date.now()) return;
     const email = field('email').value, action = purpose(), key = action + ':' + normalizeEmail(email);
-    clearFeedback(); sending = true; controls();
+    formActivity += 1; clearFeedback(); sending = true; controls();
     try {
       const result = await runtime.client.sendEmailCode(email, action);
       const seconds = Number(result && (result.retryAfter || result.cooldown)) || 60;
@@ -149,15 +149,19 @@
   }
   async function logout() {
     if (busy || !available()) return;
-    ++operation; ++logoutSerial; clearFeedback(); clearCredentials(); busy = true; controls();
-    let notice = '已退出登录。', expected = operation;
-    try { const result = runtime.client.logout(); expected = operation; await result; } catch (_) { notice = '已退出本机登录，联网后会继续完成退出。'; }
-    if (stopped || expected !== operation) return;
-    const latest = runtime.client.getCachedUser();
-    if (latest) { renderUser(latest); busy = false; controls(); return; }
+    ++operation; ++logoutSerial; clearFeedback(); clearCredentials();
+    // The client ends the local session synchronously and queues server
+    // revocation. Reset this UI now, so a delayed reply cannot clear a new form.
+    let result;
+    try { result = Promise.resolve(runtime.client.logout()); } catch (error) { result = Promise.reject(error); }
     renderUser(null); ['email', 'username', 'identifier'].forEach(name => { if (field(name)) field(name).value = ''; });
     if (field('consent')) field('consent').checked = false;
-    busy = false; controls(); feedback(notice, false);
+    busy = false; controls();
+    const expected = operation, activity = formActivity;
+    let notice = '已退出登录。';
+    try { await result; } catch (_) { notice = '已退出本机登录，联网后会继续完成退出。'; }
+    if (stopped || expected !== operation || activity !== formActivity || runtime.client.getCachedUser()) return;
+    feedback(notice, false);
   }
   async function synchronize() {
     if (busy || syncing || !available() || !currentUser) return;
@@ -194,11 +198,12 @@
   }
   if (root) {
     renderMode();
-    all('[data-account-mode]').forEach(button => button.addEventListener('click', () => { if (busy || sending) return; mode = button.dataset.accountMode; clearFeedback(); clearCredentials(); renderMode(); }));
-    all('[data-account-method]').forEach(button => button.addEventListener('click', () => { if (busy || sending) return; method = button.dataset.accountMethod; clearFeedback(); clearCredentials(); renderMode(); }));
+    all('[data-account-mode]').forEach(button => button.addEventListener('click', () => { if (busy || sending) return; formActivity += 1; mode = button.dataset.accountMode; clearFeedback(); clearCredentials(); renderMode(); }));
+    all('[data-account-method]').forEach(button => button.addEventListener('click', () => { if (busy || sending) return; formActivity += 1; method = button.dataset.accountMethod; clearFeedback(); clearCredentials(); renderMode(); }));
     all('[data-account-mode]').forEach(button => button.addEventListener('keydown', event => { if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return; event.preventDefault(); const next = one('[data-account-mode="' + (mode === 'login' ? 'register' : 'login') + '"]'); next.click(); next.focus(); }));
     form.addEventListener('submit', submit);
-    form.addEventListener('input', event => { clearFeedback(); if (event.target === field('email')) updateCooldown(); });
+    form.addEventListener('input', event => { formActivity += 1; clearFeedback(); if (event.target === field('email')) updateCooldown(); });
+    form.addEventListener('change', () => { formActivity += 1; });
     one('[data-account-action="code"]').addEventListener('click', sendCode);
     one('[data-account-action="logout"]').addEventListener('click', logout);
     one('[data-account-action="sync"]').addEventListener('click', synchronize);
