@@ -1,3 +1,4 @@
+import { moduleStorage } from '../../../../account-module.js';
 import seed from '../data/illustrations.seed.json' with { type: 'json' };
 import { illustrationBucket, illustrationSenseKey, type IllustrationEntry, type IllustrationManifest, type IllustratedSense } from '../data/illustrationSchema.ts';
 export type { IllustratedSense } from '../data/illustrationSchema.ts';
@@ -75,8 +76,7 @@ export type PendingIllustration = IllustratedSense & { firstPlayedAt: string };
 const QUEUE_KEY = 'lingotiles.illustrations.pending.v1';
 type QueueStorage = Pick<Storage, 'getItem' | 'setItem'>;
 function browserStorage(): QueueStorage | null {
-  if (typeof window === 'undefined') return null;
-  try { return globalThis.localStorage ?? null; } catch { return null; }
+  return moduleStorage;
 }
 function isPending(value: unknown): value is PendingIllustration {
   if (!value || typeof value !== 'object') return false;

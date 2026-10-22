@@ -1,3 +1,4 @@
+import { moduleStorage } from '../../../../account-module.js';
 import { LEVELS } from '../data/vocabulary.ts';
 
 export type Progress = {
@@ -102,7 +103,7 @@ function cleanProgress(value: unknown): Progress {
 
 function browserStorage(): StorageLike | null {
   try {
-    return typeof globalThis.localStorage === 'undefined' ? null : globalThis.localStorage;
+    return moduleStorage;
   } catch {
     return null;
   }

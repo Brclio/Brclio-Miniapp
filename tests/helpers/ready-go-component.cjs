@@ -33,7 +33,7 @@ function appCode() {
   return compiledApp;
 }
 
-async function createReadyGoHarness(t, { storage = {} } = {}) {
+async function createReadyGoHarness(t, { storage = {}, accountRuntime } = {}) {
   const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
     url: 'https://readygo.test/'
     // Deliberately no resources or runScripts option: external counter scripts,
@@ -205,6 +205,8 @@ async function createReadyGoHarness(t, { storage = {} } = {}) {
   }
   Object.defineProperty(window.navigator, 'sendBeacon', { configurable: true, value: networkDisabled });
   for (const [key, value] of Object.entries(storage)) window.localStorage.setItem(key, String(value));
+  if (accountRuntime) window.BrclioAccount = typeof accountRuntime === 'function' ? accountRuntime(window) : accountRuntime;
+  if (window.BrclioAccount?.ready) await window.BrclioAccount.ready;
 
   const React = runtime('react');
   ({ act } = React);
@@ -327,6 +329,7 @@ async function createReadyGoHarness(t, { storage = {} } = {}) {
         closed = true;
         pending.clear();
         frames.clear();
+        try { window.BrclioAccount?.destroy?.(); } catch (_) {}
         dom.window.close();
         for (const [name, descriptor] of globalDescriptors) {
           if (descriptor) Object.defineProperty(globalThis, name, descriptor);

@@ -64,6 +64,11 @@ try {
   const scan = scripts.concat(walk(path.join(root, 'dist/web'))).filter(function (file) { return /\.(?:js|mjs|json|html|css|txt)$/.test(file); });
   const outputRoot = path.join(root, 'dist/web');
   check(['index.html', 'main.js', 'catalog.js', 'projects.json', '_worker.js', 'projects/firstsight/index.html', 'projects/firstsight/main.js'].every(function (file) { return fs.existsSync(path.join(outputRoot, file)); }), '综合门户与摄影项目已在同一产物构建');
+  check(['account-runtime.js', 'account.js', 'account-widget.css'].every(function (file) { return fs.existsSync(path.join(outputRoot, file)); }) && /data-account-form/.test(fs.readFileSync(path.join(outputRoot, 'index.html'), 'utf8')), '网页注册、登录与共享账号运行时已构建');
+  check(walk(path.join(outputRoot, 'projects')).filter(file => file.endsWith('.html')).every(function (file) {
+    const html = fs.readFileSync(file, 'utf8');
+    return /<script src="\/account-runtime\.js"><\/script>/.test(html) && html.indexOf('/account-runtime.js') < html.lastIndexOf('<script') && /href="\/account-widget\.css"/.test(html);
+  }), '所有网页模块在游戏启动前接入账号隔离与同步');
   check(['bundle.js', 'runtime.js', 'sync.js', 'config.js'].every(function (file) { return fs.readFileSync(path.join(outputRoot, file), 'utf8') === '/* Retired. Use the content portal and registered projects. */\n'; }), '历史脚本仅返回退役占位');
   const registry = require(path.join(root, 'web/portal/catalog.js')).validateCatalog(JSON.parse(fs.readFileSync(path.join(outputRoot, 'projects.json'), 'utf8')));
   const version = require(path.join(root, 'package.json')).version;

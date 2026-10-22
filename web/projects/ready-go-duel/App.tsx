@@ -1,3 +1,10 @@
+import { moduleStorage } from '../../account-module.js';
+const unreadableSettings = new Set<string>();
+const settingsStorage = {
+    getItem(key: string) { try { const value = moduleStorage.getItem(key); unreadableSettings.delete(key); return value; } catch (_) { unreadableSettings.add(key); return null; } },
+    setItem(key: string, value: string) { if (unreadableSettings.has(key)) return; try { moduleStorage.setItem(key, value); } catch (_) {} },
+    removeItem(key: string) { if (unreadableSettings.has(key)) return; try { moduleStorage.removeItem(key); } catch (_) {} }
+};
 import { useState, useEffect, useRef } from 'react';
 import { Hand, RotateCcw, Play, AlertTriangle, Trophy, Volume2, VolumeX, RefreshCw, Loader2, Music, Zap, Gift, Lock, Sparkles, Dices, Eye, EyeOff, KeyRound, Infinity, XCircle, LogOut, FileImage, Download, Trash2, Save, Settings, Clock, Upload } from 'lucide-react';
 
@@ -365,7 +372,7 @@ export default function App() {
     const [winner, setWinner] = useState<Player>(null);
     const [winReason, setWinReason] = useState<WinReason>(null);
     const [reactionTime, setReactionTime] = useState<number>(0);
-    const [soundEnabled, setSoundEnabled] = useState(true);
+    const [soundEnabled, setSoundEnabled] = useState(() => settingsStorage.getItem('RGD_SOUND_ENABLED') !== 'false');
     
     // 访问量统计状态
     const [visitCount, setVisitCount] = useState<number>(0);
@@ -424,13 +431,13 @@ export default function App() {
     const soundEnabledRef = useRef(soundEnabled);
     // 初始化：读取本地存储
     useEffect(() => {
-        const savedTitle = localStorage.getItem(STORAGE_KEY_TITLE);
-        const savedP1Name = localStorage.getItem(STORAGE_KEY_P1_NAME);
-        const savedP2Name = localStorage.getItem(STORAGE_KEY_P2_NAME);
-        const savedMaxWait = localStorage.getItem(STORAGE_KEY_MAX_WAIT);
-        const savedCustomRewards = localStorage.getItem(STORAGE_KEY_CUSTOM_REWARDS);
-        const savedTs = localStorage.getItem(STORAGE_KEY_TS);
-        const savedCustomTs = localStorage.getItem(STORAGE_KEY_CUSTOM_TS);
+        const savedTitle = settingsStorage.getItem(STORAGE_KEY_TITLE);
+        const savedP1Name = settingsStorage.getItem(STORAGE_KEY_P1_NAME);
+        const savedP2Name = settingsStorage.getItem(STORAGE_KEY_P2_NAME);
+        const savedMaxWait = settingsStorage.getItem(STORAGE_KEY_MAX_WAIT);
+        const savedCustomRewards = settingsStorage.getItem(STORAGE_KEY_CUSTOM_REWARDS);
+        const savedTs = settingsStorage.getItem(STORAGE_KEY_TS);
+        const savedCustomTs = settingsStorage.getItem(STORAGE_KEY_CUSTOM_TS);
         
         const now = Date.now();
 
@@ -442,10 +449,10 @@ export default function App() {
                 if (savedP1Name) setP1Name(savedP1Name);
                 if (savedP2Name) setP2Name(savedP2Name);
             } else {
-                localStorage.removeItem(STORAGE_KEY_TITLE);
-                localStorage.removeItem(STORAGE_KEY_P1_NAME);
-                localStorage.removeItem(STORAGE_KEY_P2_NAME);
-                localStorage.removeItem(STORAGE_KEY_TS);
+                settingsStorage.removeItem(STORAGE_KEY_TITLE);
+                settingsStorage.removeItem(STORAGE_KEY_P1_NAME);
+                settingsStorage.removeItem(STORAGE_KEY_P2_NAME);
+                settingsStorage.removeItem(STORAGE_KEY_TS);
             }
         }
         
@@ -459,8 +466,8 @@ export default function App() {
                      console.error("Failed to parse custom rewards");
                  }
             } else {
-                localStorage.removeItem(STORAGE_KEY_CUSTOM_REWARDS);
-                localStorage.removeItem(STORAGE_KEY_CUSTOM_TS);
+                settingsStorage.removeItem(STORAGE_KEY_CUSTOM_REWARDS);
+                settingsStorage.removeItem(STORAGE_KEY_CUSTOM_TS);
             }
         }
         
@@ -525,8 +532,8 @@ export default function App() {
                 
                 if (lines.length > 0) {
                     setCustomRewards(lines);
-                    localStorage.setItem(STORAGE_KEY_CUSTOM_REWARDS, JSON.stringify(lines));
-                    localStorage.setItem(STORAGE_KEY_CUSTOM_TS, Date.now().toString());
+                    settingsStorage.setItem(STORAGE_KEY_CUSTOM_REWARDS, JSON.stringify(lines));
+                    settingsStorage.setItem(STORAGE_KEY_CUSTOM_TS, Date.now().toString());
                     alert(`成功导入 ${lines.length} 个自定义彩头！`);
                 } else {
                     alert('文件内容为空或格式不正确');
@@ -565,36 +572,36 @@ export default function App() {
         // Title
         if (!title.trim()) {
             setCustomTitle('');
-            localStorage.removeItem(STORAGE_KEY_TITLE);
+            settingsStorage.removeItem(STORAGE_KEY_TITLE);
         } else {
             setCustomTitle(title.trim());
-            localStorage.setItem(STORAGE_KEY_TITLE, title.trim());
+            settingsStorage.setItem(STORAGE_KEY_TITLE, title.trim());
         }
 
         // P1
         if (!p1.trim()) {
             setP1Name('');
-            localStorage.removeItem(STORAGE_KEY_P1_NAME);
+            settingsStorage.removeItem(STORAGE_KEY_P1_NAME);
         } else {
             setP1Name(p1.trim());
-            localStorage.setItem(STORAGE_KEY_P1_NAME, p1.trim());
+            settingsStorage.setItem(STORAGE_KEY_P1_NAME, p1.trim());
         }
 
         // P2
         if (!p2.trim()) {
             setP2Name('');
-            localStorage.removeItem(STORAGE_KEY_P2_NAME);
+            settingsStorage.removeItem(STORAGE_KEY_P2_NAME);
         } else {
             setP2Name(p2.trim());
-            localStorage.setItem(STORAGE_KEY_P2_NAME, p2.trim());
+            settingsStorage.setItem(STORAGE_KEY_P2_NAME, p2.trim());
         }
         
         // Max Wait
         setMaxWaitTime(maxWait);
-        localStorage.setItem(STORAGE_KEY_MAX_WAIT, maxWait.toString());
+        settingsStorage.setItem(STORAGE_KEY_MAX_WAIT, maxWait.toString());
 
         // 更新时间戳
-        localStorage.setItem(STORAGE_KEY_TS, now);
+        settingsStorage.setItem(STORAGE_KEY_TS, now);
         setShowSettingsModal(false);
     };
 
@@ -1195,7 +1202,7 @@ export default function App() {
                     </button>
 
                     <button 
-                        onClick={() => setSoundEnabled(!soundEnabled)} 
+                        onClick={() => { settingsStorage.setItem('RGD_SOUND_ENABLED', String(!soundEnabled)); setSoundEnabled(!soundEnabled); }} 
                         className={`p-2 rounded-full transition-colors ${soundEnabled ? 'text-gray-600 hover:bg-gray-100' : 'text-gray-400 bg-gray-50'}`}
                     >
                         {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}

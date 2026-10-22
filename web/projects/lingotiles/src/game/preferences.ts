@@ -1,3 +1,4 @@
+import { moduleStorage } from '../../../../account-module.js';
 const PREFERENCES_KEY = 'lingotiles.preferences.v1'
 
 type ReadStorage = Pick<Storage, 'getItem'>
@@ -18,7 +19,7 @@ function parsePreferences(raw: string | null): Record<string, unknown> {
 /** The optional teaching animation is off until the player explicitly enables it. */
 export function loadMatchAnimation(storage?: ReadStorage): boolean {
   try {
-    const availableStorage = storage ?? globalThis.localStorage
+    const availableStorage = storage ?? moduleStorage
     return availableStorage
       ? parsePreferences(availableStorage.getItem(PREFERENCES_KEY)).matchAnimation === true
       : false
@@ -31,7 +32,7 @@ export function loadMatchAnimation(storage?: ReadStorage): boolean {
 /** Keep other preferences intact; unavailable storage must not interrupt a game. */
 export function saveMatchAnimation(enabled: boolean, storage?: WriteStorage): boolean {
   try {
-    const availableStorage = storage ?? globalThis.localStorage
+    const availableStorage = storage ?? moduleStorage
     if (!availableStorage) return false
     const preferences = parsePreferences(availableStorage.getItem(PREFERENCES_KEY))
     availableStorage.setItem(PREFERENCES_KEY, JSON.stringify({ ...preferences, matchAnimation: enabled }))

@@ -1,3 +1,4 @@
+import { createModuleHistory } from '../../../../account-module.js';
 /** Per-round completions are append-only; the older best-score summary is separate. */
 export type CompletionRecord = {
   id: string;
@@ -247,7 +248,8 @@ export function completionsToCsv(records: CompletionRecord[]): string {
   return '\uFEFF' + [header, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }
 
-const defaultStore = new CompletionHistoryStore();
+const defaultStore = createModuleHistory(CompletionHistoryStore, validateCompletion);
+export const prepareCompletionSync = (): Promise<void> => defaultStore.prepare();
 export const appendCompletion = (record: CompletionRecord): Promise<CompletionWrite> => defaultStore.append(record);
 export const getCompletionPage = (options?: { page?: number; pageSize?: number }): Promise<CompletionPage> => defaultStore.page(options);
 export const getCompletionSummary = (): Promise<CompletionSummary> => defaultStore.summary();

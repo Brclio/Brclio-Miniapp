@@ -9,6 +9,8 @@
   <link rel="icon" href="/projects/ready-go-duel/assets/avatar.png" type="image/png">
   <link rel="stylesheet" href="/style.css">
   <script src="/catalog.js" defer></script>
+  <script src="/account-runtime.js" defer></script>
+  <script src="/account.js" defer></script>
   <script src="/main.js" defer></script>
 </head>
 <body>
@@ -25,7 +27,7 @@
     <div class="sidebar-bottom"><span class="small-spark">✳</span><p>生活很大，<br>从一点好奇开始。</p><a class="creator" href="/?category=mine" data-view="mine"><img src="/projects/ready-go-duel/assets/avatar.png" alt="Brclio 头像" width="34" height="34"><span>Made by Brclio<small>Stay curious. Keep building.</small></span></a></div>
   </aside>
   <div class="workspace">
-    <header class="app-header"><a class="mobile-brand" href="/"><span>b.</span> Brclio <small>悦创</small></a><span class="desktop-breadcrumb">YUECHUANG COLLECTION <span>/</span> <b id="breadcrumb">摄影</b></span><span class="edition"><i></i> 慢一点，也很好 <span class="edition-number">VOL. 001</span></span></header>
+    <header class="app-header"><a class="mobile-brand" href="/"><span>b.</span> Brclio <small>悦创</small></a><span class="desktop-breadcrumb">YUECHUANG COLLECTION <span>/</span> <b id="breadcrumb">摄影</b></span><div class="header-right"><span class="edition"><i></i> 慢一点，也很好 <span class="edition-number">VOL. 001</span></span><a class="header-account" href="/?category=mine" data-view="mine" data-account-entry>登录 / 注册 <span aria-hidden="true">↗</span></a></div></header>
     <main class="app-content" id="main-content" tabindex="-1">
       <section id="collections" aria-labelledby="collection-title" aria-busy="true">
         <div class="page-heading"><div><p class="eyebrow" id="category-eyebrow">THROUGH THE LENS / 摄影</p><h1 id="collection-title">把日常，<span>看成风景。</span></h1><p class="intro-description" id="category-description">有些瞬间，值得多看一眼。</p></div><span class="heading-note" id="heading-note">A little pause.<br><i>A different view.</i><span>↙</span></span></div>
@@ -44,14 +46,46 @@
         <p class="visually-hidden" id="category-status" role="status" aria-live="polite"></p>
       </section>
       <section id="mine-panel" hidden aria-labelledby="mine-title">
-        <div class="page-heading"><div><p class="eyebrow">YOUR LITTLE CORNER / 我的</p><h1 id="mine-title">给喜欢的事，<span>留个位置。</span></h1><p class="intro-description">一个属于自己的小角落，正在慢慢长大。</p></div><span class="heading-note">Make room<br><i>for little joys.</i></span></div>
-        <div class="profile-card"><div class="guest-avatar" aria-hidden="true">☺</div><div><span class="eyebrow">NICE TO MEET YOU</span><h2>你好，生活的收藏家。</h2><p>当前以访客身份浏览，自在看看就好。</p></div><span class="soon-label">访客模式</span></div>
-        <div class="account-links"><a href="/projects/ready-go-duel/"><span class="row-number">01</span><span><b>我的放松时光</b><small>进入反应挑战，查看或清除本机战绩</small></span><span aria-hidden="true">↗</span></a><a href="/projects/lingotiles/"><span class="row-number">02</span><span><b>我的悦学时光</b><small>进入词了个词，翻单词本与通关足迹</small></span><span aria-hidden="true">↗</span></a><a href="#about"><span class="row-number">03</span><span><b>关于 Brclio 悦创</b><small>Brclio 的摄影、创意与学习体验合集</small></span><span aria-hidden="true">↙</span></a><a href="#privacy"><span class="row-number">04</span><span><b>隐私与服务说明</b><small>看看数据如何保存在你的设备上</small></span><span aria-hidden="true">↙</span></a></div>
+        <div class="page-heading"><div><p class="eyebrow">YOUR LITTLE CORNER / 我的</p><h1 id="mine-title">给喜欢的事，<span>留个位置。</span></h1><p class="intro-description">登录后，把进度带到下一次好奇。</p></div><span class="heading-note">Make room<br><i>for little joys.</i></span></div>
+        <section class="web-account" data-account-root aria-label="我的账号">
+          <div class="account-session" data-account-member hidden>
+            <div class="account-member-heading"><span class="account-letter" data-account-initial aria-hidden="true"></span><div><p class="eyebrow">NICE TO SEE YOU</p><h2 data-account-name></h2><p data-account-email></p></div><span class="account-member-badge">已登录</span></div>
+            <dl class="account-profile"><div><dt>账号</dt><dd data-account-username></dd></div><div><dt>登录状态</dt><dd>保持登录，随时回来。</dd></div></dl>
+            <div class="account-sync-row"><div><p class="account-sync-label">我的进度</p><p data-account-sync-status role="status" aria-live="polite">正在读取同步状态…</p></div><button class="account-secondary" type="button" data-account-action="sync">立即同步 <span aria-hidden="true">↗</span></button></div>
+            <div class="account-member-bottom"><p>进度、收藏与使用偏好，跟随你的账号。</p><button class="account-text-button" type="button" data-account-action="logout">退出登录</button></div>
+          </div>
+          <div class="account-guest" data-account-guest>
+            <div class="account-form-panel">
+              <div class="account-tabs" role="tablist" aria-label="登录或注册"><button id="account-tab-login" role="tab" type="button" data-account-mode="login" aria-selected="true" aria-controls="account-form-region">登录</button><button id="account-tab-register" role="tab" type="button" data-account-mode="register" aria-selected="false" aria-controls="account-form-region">注册账号</button></div>
+              <div id="account-form-region" role="tabpanel" aria-labelledby="account-tab-login">
+                <div class="account-methods" data-account-login-methods aria-label="登录方式"><button class="active" type="button" data-account-method="code" aria-pressed="true">邮箱验证码</button><button type="button" data-account-method="password" aria-pressed="false">邮箱 / 账号密码</button></div>
+                <form data-account-form novalidate>
+                  <div class="account-field" data-account-email-field><label for="web-account-email">邮箱</label><input id="web-account-email" name="email" type="email" autocomplete="email" maxlength="254" placeholder="你的邮箱地址" required></div>
+                  <div class="account-field" data-account-register-field hidden><label for="web-account-username">账号</label><input id="web-account-username" name="username" type="text" autocomplete="username" maxlength="24" placeholder="字母开头，4–24 位字母、数字或下划线"></div>
+                  <div class="account-field" data-account-identifier-field hidden><label for="web-account-identifier">邮箱 / 账号</label><input id="web-account-identifier" name="identifier" type="text" autocomplete="username" maxlength="254" placeholder="邮箱地址或账号"></div>
+                  <div class="account-field" data-account-password-field hidden><label for="web-account-password">密码</label><input id="web-account-password" name="password" type="password" autocomplete="current-password" maxlength="128" placeholder="请输入密码"></div>
+                  <div class="account-field" data-account-register-field hidden><label for="web-account-confirm">确认密码</label><input id="web-account-confirm" name="confirmPassword" type="password" autocomplete="new-password" maxlength="128" placeholder="再次输入密码"></div>
+                  <div class="account-field" data-account-code-field><label for="web-account-code">邮箱验证码</label><div class="account-code-row"><input id="web-account-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6 位验证码"><button class="account-code-button" type="button" data-account-action="code">获取验证码</button></div></div>
+                  <label class="account-consent"><input name="consent" type="checkbox"><span>我已阅读并同意<a href="#privacy">《隐私与服务说明》</a></span></label>
+                  <p class="account-feedback account-error" data-account-error role="alert" hidden></p>
+                  <p class="account-feedback account-notice" data-account-notice role="status" aria-live="polite" hidden></p>
+                  <button class="account-primary" type="submit" data-account-submit><span data-account-submit-label>登录</span><span aria-hidden="true">→</span></button>
+                </form>
+                <p class="account-wechat-note">在小程序绑定邮箱后，可以用同一邮箱或账号登录网页版。</p>
+              </div>
+            </div>
+            <aside class="account-side-note"><span class="account-note-spark" aria-hidden="true">✳</span><p class="eyebrow">PICK UP WHERE YOU LEFT OFF</p><h2>换一块屏幕，<br>好奇继续。</h2><p>登录后，学习进度、收藏和挑战记录会自动同步。先保存在眼前这台设备，联网后再带到下一次。</p><p>首次登录会接续这台设备的访客记录，之后按账号分别保存。</p><a href="/projects/lingotiles/">也可以继续以访客身份浏览 <span aria-hidden="true">↗</span></a></aside>
+          </div>
+          <p class="account-feedback account-error" data-account-session-error role="alert" hidden></p>
+          <p class="account-feedback account-notice" data-account-session-notice role="status" aria-live="polite" hidden></p>
+          <div class="account-service-state" data-account-service-state hidden><p>账号服务暂时无法连接，可继续浏览内容。</p><button class="account-text-button" type="button" data-account-action="retry">重新连接账号服务 ↗</button></div>
+        </section>
+        <div class="account-links"><a href="/projects/ready-go-duel/"><span class="row-number">01</span><span><b>我的放松时光</b><small>继续反应挑战，接续账号内的偏好与记录</small></span><span aria-hidden="true">↗</span></a><a href="/projects/lingotiles/"><span class="row-number">02</span><span><b>我的悦学时光</b><small>进入词了个词，翻单词本与通关足迹</small></span><span aria-hidden="true">↗</span></a><a href="#about"><span class="row-number">03</span><span><b>关于 Brclio 悦创</b><small>Brclio 的摄影、创意与学习体验合集</small></span><span aria-hidden="true">↙</span></a><a href="#privacy"><span class="row-number">04</span><span><b>隐私与服务说明</b><small>了解本机记录、账号与自动同步</small></span><span aria-hidden="true">↙</span></a></div>
         <section class="about-note" id="about"><span class="eyebrow">A NOTE FROM BRCLIO</span><h2>有趣的事，值得放在一起。</h2><p>看一张摄影作品，和身边的人玩一局，再学会几个新单词。给忙碌的日常一个小小的停顿，给好奇心一点生长的空间。</p><span class="signature">Stay curious. Keep building. — Brclio</span></section>
       </section>
       <noscript><p class="status-panel">请开启 JavaScript 后重新加载。也可以直接<a href="/projects/firstsight/">浏览 FirstSight 摄影</a>。</p></noscript>
       <footer class="app-footer"><span>Brclio 悦创 <small id="app-version">0.1.3</small></span><span>把生活的切片，轻轻收藏。</span><a href="#privacy">隐私与服务</a></footer>
-      <details class="privacy-note" id="privacy"><summary>隐私与服务说明 <span>＋</span></summary><div><p>摄影图册、双人反应挑战与词了个词无需登录。网页与原生小程序均以访客模式使用，挑战和学习记录保存在本机，不提供账号登录或云端备份。当前不提供预约、交易、评论或用户图片上传。FirstSight 沿用原相册图片，内容来自 FirstSight_Online 的 8 组婚纱与 1 组孕期实际摄影。</p><p>词了个词根据你选择的学习阶段、页面与单词，按需读取本站的词库和现有插图，不会在使用中调用图片生成服务。收藏、学习进度与通关足迹保存在当前设备，支持导出通关 CSV；没有跨设备同步。朗读使用浏览器提供的语音能力，可用性取决于设备与浏览器。</p><p>本站不接入广告。ReadyGoDuel 保留原作 PV 计数脚本，会向 counter.bornforthis.cn 发起请求。反应挑战的设置与最近 20 场战绩保存在本机，可在挑战中清除；清理微信缓存或浏览器存储可能一并删除学习记录和使用偏好。学习记录不上传云端。网页、词库和图片由 Cloudflare 分发，服务方可能处理完成网络服务所需的 IP 地址、请求时间与浏览器等信息。</p><p>服务提供者：莆田市荔城区黄家蓉宝电脑店。联系邮箱：<a href="mailto:aiyuechuang@gmail.com">aiyuechuang@gmail.com</a>。</p></div></details>
+      <details class="privacy-note" id="privacy"><summary>隐私与服务说明 <span>＋</span></summary><div><p>摄影图册、双人反应挑战与词了个词无需登录。网页与原生小程序均可作为访客使用，也可注册或登录同一个账号。支持邮箱验证码、邮箱密码与账号密码登录；微信用户可先在小程序绑定邮箱，再使用同一邮箱或账号登录网页。当前不提供预约、交易、评论或用户图片上传。FirstSight 沿用原相册图片，内容来自 FirstSight_Online 的 8 组婚纱与 1 组孕期实际摄影。</p><p>词了个词根据你选择的学习阶段、页面与单词，按需读取本站的词库和现有插图，不会在使用中调用图片生成服务。收藏、学习进度与通关足迹先保存在当前设备，支持导出通关 CSV。登录后自动同步学习进度、收藏、使用偏好和最近 200 条通关记录；设备上的完整通关历史继续保留。首次登录会一次接续本机访客记录，此后不同账号分别保存，退出登录回到访客记录。朗读使用浏览器提供的语音能力，可用性取决于设备与浏览器。</p><p>本站不接入广告。ReadyGoDuel 保留原作 PV 计数脚本，会向 counter.bornforthis.cn 发起请求。反应挑战的设置与最近 20 场战绩保存在本机，可在挑战中清除；清理微信缓存或浏览器存储可能一并删除学习记录和使用偏好。登录用户的可同步业务记录保存在独立的业务数据仓库，账号资料与会话保存在独立的账号数据仓库，每个用户分别保存。自定义彩头、彩头密码、导出文件与下载资源不会进入自动同步。账号会保持登录，主动退出会立即结束本机登录；离线时会在联网后继续撤销对应会话。网页、词库和图片由 Cloudflare 分发，服务方可能处理完成网络服务所需的 IP 地址、请求时间与浏览器等信息。</p><p>服务提供者：莆田市荔城区黄家蓉宝电脑店。联系邮箱：<a href="mailto:aiyuechuang@gmail.com">aiyuechuang@gmail.com</a>。</p></div></details>
     </main>
   </div>
   <template id="duel-art"><div class="duel-poster" aria-hidden="true"><span class="poster-top">A LITTLE FRIENDLY COMPETITION</span><span class="poster-word">Ready<span>GO!</span></span><span class="player player-red">A<span>↓</span></span><span class="player player-blue">B<span>↑</span></span><span class="poster-bottom">TWO PLAYERS. ONE SCREEN. <i>↗</i></span></div></template>

@@ -77,7 +77,34 @@ test('every available illustration resolves to an imported image and keeps exact
 });
 
 test('web rules and persistence retain upstream behavior while resources stay under the learning module', () => {
-  for (const file of ['game/engine.ts', 'game/progress.ts', 'game/preferences.ts', 'game/history.ts', 'game/wordIllustrations.ts', 'data/vocabulary.ts']) assert.equal(fs.readFileSync(path.join(root, 'src', file), 'utf8'), fs.readFileSync(path.join(root, 'upstream/src', file), 'utf8'));
+  for (const file of ['game/engine.ts', 'data/vocabulary.ts']) assert.equal(fs.readFileSync(path.join(root, 'src', file), 'utf8'), fs.readFileSync(path.join(root, 'upstream/src', file), 'utf8'));
+  const storageImport = "import { moduleStorage } from '../../../../account-module.js';\n";
+  for (const file of ['game/progress.ts', 'game/preferences.ts', 'game/wordIllustrations.ts', 'game/history.ts']) {
+    const original = fs.readFileSync(path.join(root, 'upstream/src', file), 'utf8');
+    let adapted = fs.readFileSync(path.join(root, 'src', file), 'utf8');
+    if (file === 'game/history.ts') {
+      assert.ok(adapted.startsWith("import { createModuleHistory } from '../../../../account-module.js';\n"));
+      assert.match(adapted, /const defaultStore = createModuleHistory\(CompletionHistoryStore, validateCompletion\);/);
+      adapted = adapted.replace("import { createModuleHistory } from '../../../../account-module.js';\n", '');
+      // Only default-store wiring is replaced; IDB validation, transactions,
+      // pagination, immutable history and complete CSV stay byte-identical.
+      adapted = adapted.slice(0, adapted.indexOf('const defaultStore =')) + original.slice(original.indexOf('const defaultStore ='));
+    } else {
+      assert.ok(adapted.startsWith(storageImport));
+      adapted = adapted.slice(storageImport.length);
+      if (file === 'game/progress.ts') adapted = adapted.replace('    return moduleStorage;', "    return typeof globalThis.localStorage === 'undefined' ? null : globalThis.localStorage;");
+      if (file === 'game/preferences.ts') { assert.equal((adapted.match(/storage \?\? moduleStorage/g) || []).length, 2); adapted = adapted.replaceAll('storage ?? moduleStorage', 'storage ?? globalThis.localStorage'); }
+      if (file === 'game/wordIllustrations.ts') adapted = adapted.replace('  return moduleStorage;', "  if (typeof window === 'undefined') return null;\n  try { return globalThis.localStorage ?? null; } catch { return null; }");
+    }
+    assert.equal(adapted, original, file + ' changes only its explicit account adapter');
+  }
+  for (const [component, variable] of [['MatchFusion', 'preference'], ['VictoryCelebration', 'motionPreference']]) {
+    const original = fs.readFileSync(path.join(root, 'upstream/src/components', component + '.tsx'), 'utf8');
+    const adapted = fs.readFileSync(path.join(root, 'src/components', component + '.tsx'), 'utf8')
+      .replace("import { moduleMotionPreference } from '../../../../account-module.js';\n", '')
+      .replace(`const ${variable} = moduleMotionPreference();`, `const ${variable} = window.matchMedia('(prefers-reduced-motion: reduce)');`);
+    assert.equal(adapted, original, component + ' changes only its explicit motion preference adapter');
+  }
   assert.match(fs.readFileSync(path.join(root, 'src/data/library.ts'), 'utf8'), /\/projects\/lingotiles\//);
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.match(html, /viewport-fit=cover/);

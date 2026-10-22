@@ -1,3 +1,4 @@
+import { moduleMotionPreference } from '../../../../account-module.js';
 import { useEffect, useRef } from 'react';
 import './victory.css';
 
@@ -36,7 +37,7 @@ export default function VictoryCelebration({ runId, stars, enabled = true }: Vic
     const canvas = canvasRef.current;
     const context = canvas?.getContext('2d');
     if (!canvas || !context) return;
-    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const motionPreference = moduleMotionPreference();
     if (motionPreference.matches) return;
 
     let frame = 0;

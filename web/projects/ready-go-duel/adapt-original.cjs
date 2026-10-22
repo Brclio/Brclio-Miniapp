@@ -99,6 +99,13 @@ function adaptOriginal(original) {
   replace('    useEffect(() => { stateRef.current = gameState; }, [gameState]);', '    useEffect(() => { stateRef.current = gameState; }, [gameState]);\n    useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);');
   replace("        if (soundEnabled) safePlaySound('go', gameMode);", "        if (soundEnabledRef.current) safePlaySound('go', gameMode);");
 
+  // All persisted settings use the settled account scope. Rewards remain local
+  // because the shared sync schema excludes their keys.
+  if ((source.match(/\blocalStorage\./g) || []).length !== 23) throw new Error('Original storage adaptation count changed');
+  source = "import { moduleStorage } from '../../account-module.js';\nconst unreadableSettings = new Set<string>();\nconst settingsStorage = {\n    getItem(key: string) { try { const value = moduleStorage.getItem(key); unreadableSettings.delete(key); return value; } catch (_) { unreadableSettings.add(key); return null; } },\n    setItem(key: string, value: string) { if (unreadableSettings.has(key)) return; try { moduleStorage.setItem(key, value); } catch (_) {} },\n    removeItem(key: string) { if (unreadableSettings.has(key)) return; try { moduleStorage.removeItem(key); } catch (_) {} }\n};\n" + source.replaceAll('localStorage.', 'settingsStorage.');
+  replace('    const [soundEnabled, setSoundEnabled] = useState(true);', "    const [soundEnabled, setSoundEnabled] = useState(() => settingsStorage.getItem('RGD_SOUND_ENABLED') !== 'false');");
+  replace('onClick={() => setSoundEnabled(!soundEnabled)}', "onClick={() => { settingsStorage.setItem('RGD_SOUND_ENABLED', String(!soundEnabled)); setSoundEnabled(!soundEnabled); }}");
+
   if (/VOICE|isReplaying|isSavingAudio|gameHistory|MediaRecorder|getUserMedia|micStream|AudioVisualizer|detectPitch|recording|replay/i.test(source)) {
     throw new Error('A removed voice or recording capability remains in adapted source');
   }

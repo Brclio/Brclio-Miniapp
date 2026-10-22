@@ -1,3 +1,4 @@
+import { moduleMotionPreference } from '../../../../account-module.js';
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { getWordIllustration } from '../game/wordIllustrations';
 import WordIllustration from './WordIllustration';
@@ -49,7 +50,7 @@ export default function MatchFusion({ event, targetRef, paused, onComplete }: Ma
     const card = cardRef.current;
     if (!overlay || !card || completedId.current === event.id) return;
 
-    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const preference = moduleMotionPreference();
     let active = true;
     let animations: Animation[] = [];
     let clock: Animation | null = null;

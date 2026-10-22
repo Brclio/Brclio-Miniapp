@@ -40,6 +40,101 @@
           "after": "      } catch (failure) {\n        if (!controller.signal.aborted) { setError(failure instanceof Error && !/fetch|network|load failed/i.test(failure.message) ? failure.message : '词库暂时无法连接，请检查网络后重试。'); setLoading(false); }\n      }\n"
         }
       ]
+    },
+    {
+      "file": "game/progress.ts",
+      "edits": [
+        {
+          "before": "import { LEVELS } from '../data/vocabulary.ts';",
+          "after": "import { moduleStorage } from '../../../../account-module.js';\nimport { LEVELS } from '../data/vocabulary.ts';"
+        },
+        {
+          "before": "    return typeof globalThis.localStorage === 'undefined' ? null : globalThis.localStorage;",
+          "after": "    return moduleStorage;"
+        }
+      ]
+    },
+    {
+      "file": "game/preferences.ts",
+      "edits": [
+        {
+          "before": "const PREFERENCES_KEY = 'lingotiles.preferences.v1'",
+          "after": "import { moduleStorage } from '../../../../account-module.js';\nconst PREFERENCES_KEY = 'lingotiles.preferences.v1'"
+        },
+        {
+          "before": "export function loadMatchAnimation(storage?: ReadStorage): boolean {\n  try {\n    const availableStorage = storage ?? globalThis.localStorage",
+          "after": "export function loadMatchAnimation(storage?: ReadStorage): boolean {\n  try {\n    const availableStorage = storage ?? moduleStorage"
+        },
+        {
+          "before": "export function saveMatchAnimation(enabled: boolean, storage?: WriteStorage): boolean {\n  try {\n    const availableStorage = storage ?? globalThis.localStorage",
+          "after": "export function saveMatchAnimation(enabled: boolean, storage?: WriteStorage): boolean {\n  try {\n    const availableStorage = storage ?? moduleStorage"
+        }
+      ]
+    },
+    {
+      "file": "game/wordIllustrations.ts",
+      "edits": [
+        {
+          "before": "import seed from '../data/illustrations.seed.json' with { type: 'json' };",
+          "after": "import { moduleStorage } from '../../../../account-module.js';\nimport seed from '../data/illustrations.seed.json' with { type: 'json' };"
+        },
+        {
+          "before": "  if (typeof window === 'undefined') return null;\n  try { return globalThis.localStorage ?? null; } catch { return null; }",
+          "after": "  return moduleStorage;"
+        }
+      ]
+    },
+    {
+      "file": "game/history.ts",
+      "edits": [
+        {
+          "before": "/** Per-round completions are append-only; the older best-score summary is separate. */",
+          "after": "import { createModuleHistory } from '../../../../account-module.js';\n/** Per-round completions are append-only; the older best-score summary is separate. */"
+        },
+        {
+          "before": "const defaultStore = new CompletionHistoryStore();\nexport const appendCompletion = (record: CompletionRecord): Promise<CompletionWrite> => defaultStore.append(record);\nexport const getCompletionPage = (options?: { page?: number; pageSize?: number }): Promise<CompletionPage> => defaultStore.page(options);\nexport const getCompletionSummary = (): Promise<CompletionSummary> => defaultStore.summary();\nexport const exportCompletionsCsv = (): Promise<{ csv: string } & Persistence> => defaultStore.exportCsv();\n",
+          "after": "const defaultStore = createModuleHistory(CompletionHistoryStore, validateCompletion);\nexport const prepareCompletionSync = (): Promise<void> => defaultStore.prepare();\nexport const appendCompletion = (record: CompletionRecord): Promise<CompletionWrite> => defaultStore.append(record);\nexport const getCompletionPage = (options?: { page?: number; pageSize?: number }): Promise<CompletionPage> => defaultStore.page(options);\nexport const getCompletionSummary = (): Promise<CompletionSummary> => defaultStore.summary();\nexport const exportCompletionsCsv = (): Promise<{ csv: string } & Persistence> => defaultStore.exportCsv();\n"
+        }
+      ]
+    },
+    {
+      "file": "main.tsx",
+      "edits": [
+        {
+          "before": "import App from './App';",
+          "after": "import App from './App';\nimport { moduleReady } from '../../../account-module.js';\nimport { prepareCompletionSync } from './game/history';"
+        },
+        {
+          "before": "ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);",
+          "after": "moduleReady().then(() => {\n  void prepareCompletionSync().catch(() => {});\n  ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);\n});"
+        }
+      ]
+    },
+    {
+      "file": "components/MatchFusion.tsx",
+      "edits": [
+        {
+          "before": "import { useLayoutEffect, useRef, type RefObject } from 'react';",
+          "after": "import { moduleMotionPreference } from '../../../../account-module.js';\nimport { useLayoutEffect, useRef, type RefObject } from 'react';"
+        },
+        {
+          "before": "const preference = window.matchMedia('(prefers-reduced-motion: reduce)');",
+          "after": "const preference = moduleMotionPreference();"
+        }
+      ]
+    },
+    {
+      "file": "components/VictoryCelebration.tsx",
+      "edits": [
+        {
+          "before": "import { useEffect, useRef } from 'react';",
+          "after": "import { moduleMotionPreference } from '../../../../account-module.js';\nimport { useEffect, useRef } from 'react';"
+        },
+        {
+          "before": "const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');",
+          "after": "const motionPreference = moduleMotionPreference();"
+        }
+      ]
     }
   ]
 }

@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createReadyGoHarness } = require('./helpers/ready-go-component.cjs');
+const { createBrowserAccount } = require('../web/account-browser');
 
 // Real App.tsx events run through React DOM. Canvas, image loading and sound
 // output are offline stubs: these checks do not establish pixels or audibility.
@@ -39,6 +40,47 @@ const exportedReport = (h, width, height) => {
   assert.equal(link.getAttribute('href'), report.dataUrl);
   return report;
 };
+
+test('the real React module uses account storage and the shared sound value across remounts', async t => {
+  const h = await createReadyGoHarness(t, {
+    storage: { RGD_CUSTOM_TITLE: '账户中的对决', RGD_TITLE_TS: '1800000000000', RGD_SOUND_ENABLED: 'false' },
+    accountRuntime: window => createBrowserAccount(window, { portal: false, fetchImpl: async () => { throw new Error('Unexpected test network'); } })
+  });
+  assert.equal(h.document.querySelector('h1').textContent.trim(), '账户中的对决');
+  assert.ok(muteButton(h).querySelector('svg[class*="volume-x"]'));
+  await h.click(muteButton(h));
+  assert.equal(h.window.BrclioAccount.storage.getStorageSync('RGD_SOUND_ENABLED'), true);
+  await h.remount();
+  assert.equal(muteButton(h).querySelector('svg[class*="volume-x"]'), null);
+  await h.click(h.queryTitle('游戏设置'));
+  await h.input(placeholder(h, '例如：谁是今晚洗碗王'), '来自账户存储');
+  await h.click(h.queryButton('保存'));
+  assert.equal(h.window.BrclioAccount.storage.getStorageSync('RGD_CUSTOM_TITLE'), '来自账户存储');
+});
+
+for (const failure of ['denied', 'corrupt']) test('React stays playable and preserves unknown ' + failure + ' settings', async t => {
+  const original = { RGD_CUSTOM_TITLE: '不可覆盖的已有标题', RGD_TITLE_TS: '1800000000000', RGD_SOUND_ENABLED: failure === 'corrupt' ? 'invalid boolean' : 'false' };
+  const h = await createReadyGoHarness(t, {
+    storage: original,
+    accountRuntime(window) {
+      const raw = window.localStorage;
+      return createBrowserAccount(window, { portal: false, localStorage: {
+        getItem(key) { if (failure === 'denied' && key.startsWith('RGD_')) throw new Error('Storage denied'); return raw.getItem(key); },
+        setItem: (key, value) => raw.setItem(key, value), removeItem: key => raw.removeItem(key)
+      }, fetchImpl: async () => { throw new Error('Unexpected test network'); } });
+    }
+  });
+  assert.ok(h.queryButton('立即开始'), 'the module renders playable defaults');
+  await h.click(muteButton(h));
+  assert.ok(muteButton(h).querySelector('svg[class*="volume-x"]'), 'sound still changes in memory');
+  await h.click(h.queryTitle('游戏设置'));
+  await h.input(placeholder(h, '例如：谁是今晚洗碗王'), '新的临时标题');
+  await h.click(h.queryButton('保存'));
+  if (failure === 'denied') assert.equal(h.window.localStorage.getItem('RGD_CUSTOM_TITLE'), original.RGD_CUSTOM_TITLE);
+  assert.equal(h.window.localStorage.getItem('RGD_SOUND_ENABLED'), original.RGD_SOUND_ENABLED, 'an unreadable value is never overwritten');
+  await h.click(h.queryButton('立即开始'));
+  assert.ok(rewardInput(h, 'p1'), 'gameplay remains reachable after failed persistence');
+});
 
 test('settings trim saved names, cancel drafts, and persist a saved reset across remounts', async t => {
   const h = await createReadyGoHarness(t);

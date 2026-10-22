@@ -1,8 +1,8 @@
 # Brclio 悦创
 
-`0.1.2` 微信普通小程序，提供「摄影 / 放松 / 悦学 / 我的」四个原生入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
+`0.1.3` 微信普通小程序，提供「摄影 / 放松 / 悦学 / 我的」四个原生入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
 
-摄影、挑战与学习界面均使用小程序原生代码，不加载外部网页。摄影包含正确来源 [FirstSight_Online](https://github.com/AndersonHJB/FirstSight_Online) 的 8 组婚纱、1 组孕期影像，共 169 张实际照片；放松提供 ReadyGoDuel 同屏双人反应挑战；悦学接入 [LingoTiles「词了个词」](https://github.com/Brclio/brclio-lingotiles)，保留经典主题与 10 万词分级学习，重新设计手机界面。「我的」支持本小程序独立账号：邮箱验证注册、邮箱验证码登录、邮箱或账号密码登录、微信一键登录与注册；挑战和学习记录继续保存在本机。本次悦学为源码接入，部署与微信发布分别验收。
+摄影、挑战与学习界面均使用小程序原生代码，不加载外部网页。摄影包含正确来源 [FirstSight_Online](https://github.com/AndersonHJB/FirstSight_Online) 的 8 组婚纱、1 组孕期影像，共 169 张实际照片；放松提供 ReadyGoDuel 同屏双人反应挑战；悦学接入 [LingoTiles「词了个词」](https://github.com/Brclio/brclio-lingotiles)，保留经典主题与 10 万词分级学习，重新设计手机界面。「我的」支持邮箱验证注册、邮箱验证码登录、邮箱或账号密码登录，小程序另外提供微信一键登录与注册。网页与小程序共用账号，挑战和学习记录先存本机，登录后自动同步。部署与微信发布分别验收。
 
 ## 当前实现
 
@@ -51,6 +51,8 @@ npm run check:release
 
 - [pocket.bornforthis.cn](https://pocket.bornforthis.cn)
 - [pocket.brclio.com](https://pocket.brclio.com)
+
+网页 [我的账号](https://pocket.bornforthis.cn/?category=mine) 提供邮箱、账号、密码、邮箱验证码注册，以及邮箱验证码、邮箱密码和账号密码登录。网页与原生共用 `/api/account/*` 及永久会话协议；微信创建的账号可在小程序绑定邮箱后登录网页。登录会保持到主动退出，同一账号的挑战设置、计分战绩、学习进度、收藏和最近 200 条通关记录互通。访客记录仅由首个登录账号接续一次，不同账号的本机记录及通关数据库分别保存；离线操作在联网后重试。模块页有折叠的账号与同步入口，游戏开始后不会被迟到的云端响应覆盖。实现与本轮网页验收见 [WEB_ACCOUNT_RELEASE.md](docs/WEB_ACCOUNT_RELEASE.md)。
 
 ```sh
 npm run dev:web

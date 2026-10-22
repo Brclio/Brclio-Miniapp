@@ -16,6 +16,14 @@
   let resizeFrame = null;
   let wakeLock = null;
   let keepAwake = false;
+  let accountScope;
+  function accountStorage() {
+    const account = window.BrclioAccount;
+    if (!account) return null;
+    const scope = account.getScope ? account.getScope() : account.sync.getScope();
+    if (accountScope !== undefined && accountScope !== scope) throw new Error('账号已变化，请重新打开当前模块。');
+    return account.storage;
+  }
 
   function viewportHeight() {
     const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -113,11 +121,15 @@
   }
 
   function storageRead(key) {
+    const controlled = accountStorage();
+    if (controlled) return controlled.getStorageSync(key);
     try { const value = localStorage.getItem(storagePrefix + key); return value === null ? '' : JSON.parse(value); }
     catch (_) { return ''; }
   }
 
-  function storageWrite(key, value) {
+  function storageWrite(key, value, options) {
+    const controlled = accountStorage();
+    if (controlled) { controlled.setStorageSync(key, value, options); return; }
     const encoded = JSON.stringify(value);
     localStorage.setItem(storagePrefix + key, encoded);
     // Local event only. Optional sync code decides whether and where to send data.
@@ -145,7 +157,8 @@
   }
 
   const wx = {
-    cloudBackupSupported: true,
+    cloudBackupSupported: false,
+    accountSyncSupported: !!window.BrclioAccount,
     createCanvas: function () {
       if (!mainCanvasClaimed) { mainCanvasClaimed = true; return decorateCanvas(mainCanvas); }
       return decorateCanvas(document.createElement('canvas'));
@@ -162,8 +175,8 @@
     getEnterOptionsSync: function () { return wx.getLaunchOptionsSync(); },
     getStorageSync: storageRead,
     setStorageSync: storageWrite,
-    removeStorageSync: function (key) { localStorage.removeItem(storagePrefix + key); },
-    clearStorageSync: function () { Object.keys(localStorage).filter(function (key) { return key.startsWith(storagePrefix); }).forEach(function (key) { localStorage.removeItem(key); }); },
+    removeStorageSync: function (key) { const controlled = accountStorage(); if (controlled) controlled.removeStorageSync(key); else localStorage.removeItem(storagePrefix + key); },
+    clearStorageSync: function () { if (accountStorage()) throw new Error('请分别管理当前账号的记录。'); Object.keys(localStorage).filter(function (key) { return key.startsWith(storagePrefix); }).forEach(function (key) { localStorage.removeItem(key); }); },
     getStorageInfoSync: function () { return { keys: Object.keys(localStorage).filter(function (key) { return key.startsWith(storagePrefix); }).map(function (key) { return key.slice(storagePrefix.length); }), currentSize: 0, limitSize: 10240 }; },
     onTouchStart: function (listener) { on('touchStart', listener); },
     offTouchStart: function (listener) { off('touchStart', listener); },
@@ -285,10 +298,13 @@
 
   window.wx = wx;
   window.GameGlobal = window;
+  if (window.BrclioAccount) window.__brclioBootstrap = Promise.resolve(window.BrclioAccount.startModule ? window.BrclioAccount.startModule({ timeoutMs: 1800 }) : window.BrclioAccount.ready).then(function () {
+    accountScope = window.BrclioAccount.getScope ? window.BrclioAccount.getScope() : window.BrclioAccount.sync.getScope();
+  });
   window.BrclioStorage = {
     read: storageRead,
     // Bootstrap hydration does not emit storage-write, avoiding upload loops.
-    hydrate: function (key, value) { localStorage.setItem(storagePrefix + key, JSON.stringify(value)); },
+    hydrate: function (key, value) { if (window.BrclioAccount) return; localStorage.setItem(storagePrefix + key, JSON.stringify(value)); },
     refresh: function () { if (!document.hidden) emit('show', wx.getEnterOptionsSync()); }
   };
   window.BrclioRuntime = {

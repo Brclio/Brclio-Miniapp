@@ -8,6 +8,7 @@ const { execFileSync } = require('node:child_process');
 const { createRequire } = require('node:module');
 const { bundleGame } = require('./bundle-game');
 const { fingerprintAssets } = require('./fingerprint-assets');
+const { withBrowserAccount } = require('./browser-account-assets');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist/web');
 const portal = path.join(root, 'web/portal');
@@ -51,7 +52,8 @@ if (published.some(project => project.id === 'lingotiles')) require('./build-lin
 // Only generated output is cleared; credentials and source remain outside it.
 fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });
-for (const file of ['index.html', 'style.css', 'catalog.js', 'main.js', 'projects.json']) fs.copyFileSync(path.join(portal, file), path.join(output, file));
+for (const file of ['index.html', 'style.css', 'catalog.js', 'main.js', 'projects.json', 'account.js', 'account-widget.css']) fs.copyFileSync(path.join(portal, file), path.join(output, file));
+esbuild.buildSync({ entryPoints: [path.join(root, 'web/account-browser.js')], outfile: path.join(output, 'account-runtime.js'), bundle: true, format: 'iife', platform: 'browser', target: ['es2020'], legalComments: 'eof' });
 for (const project of published) {
   const folder = path.join(output, 'projects', project.id);
   const source = sourcePath(project.source);
@@ -66,23 +68,29 @@ for (const project of published) {
     }
     if (project.fingerprintAssets) {
       const html = fs.readFileSync(outputPath(source, project.html), 'utf8');
-      fs.writeFileSync(path.join(folder, 'index.html'), fingerprintAssets(folder, html));
+      fs.writeFileSync(path.join(folder, 'index.html'), withBrowserAccount(fingerprintAssets(folder, html)));
     } else {
-      fs.copyFileSync(outputPath(source, project.html), path.join(folder, 'index.html'));
+      fs.writeFileSync(path.join(folder, 'index.html'), withBrowserAccount(fs.readFileSync(outputPath(source, project.html), 'utf8')));
     }
     if (project.canvasExtension) {
       const extension = project.canvasExtension;
       const extensionSource = outputPath(source, extension.source);
       const extensionOutput = outputPath(folder, extension.target);
       fs.mkdirSync(extensionOutput, { recursive: true });
-      for (const file of extension.files) fs.copyFileSync(outputPath(extensionSource, file), outputPath(extensionOutput, file));
+      for (const file of extension.files) {
+        const bytes = fs.readFileSync(outputPath(extensionSource, file));
+        fs.writeFileSync(outputPath(extensionOutput, file), file.endsWith('.html') ? withBrowserAccount(bytes.toString('utf8')) : bytes);
+      }
       fs.copyFileSync(path.join(root, 'web/runtime.js'), path.join(extensionOutput, 'runtime.js'));
       fs.copyFileSync(path.join(root, 'web/style.css'), path.join(extensionOutput, 'style.css'));
       fs.writeFileSync(path.join(extensionOutput, 'bundle.js'), bundleGame().code);
       for (const asset of extension.assets || []) fs.cpSync(sourcePath(asset.source), outputPath(extensionOutput, asset.target), { recursive: true });
     }
   } else {
-    for (const file of project.files) fs.copyFileSync(outputPath(source, file), outputPath(folder, file));
+    for (const file of project.files) {
+      const bytes = fs.readFileSync(outputPath(source, file));
+      fs.writeFileSync(outputPath(folder, file), file.endsWith('.html') ? withBrowserAccount(bytes.toString('utf8')) : bytes);
+    }
     if (project.kind === 'canvas') {
       fs.copyFileSync(path.join(root, 'web/runtime.js'), path.join(folder, 'runtime.js'));
       fs.copyFileSync(path.join(root, 'web/style.css'), path.join(folder, 'style.css'));
