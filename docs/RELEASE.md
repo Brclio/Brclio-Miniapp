@@ -1,3 +1,5 @@
+> **0.1.3 已交接审核**：代码已推送 GitHub `main`（`1868c9d`），Pages 已发布，微信开发版 `0.1.3` 上传成功。请在版本管理选择该开发版，并按最新隐私说明核对后提交审核。完整证据见 [ACCOUNT_SYNC_RELEASE.md](ACCOUNT_SYNC_RELEASE.md)。
+
 > 当前 `0.1.3` 的永久登录、自动同步、GitHub 提交、Pages 部署与微信开发版上传以 [ACCOUNT_SYNC_RELEASE.md](ACCOUNT_SYNC_RELEASE.md) 为准；下文保留此前阶段的实际记录，不作为本版发布状态。
 
 > 2026-10-22 独立账号更新：Pages 正式后端已部署为 [da68dc74](https://da68dc74.brclio-miniapp-wechat.pages.dev)，GitHub App 安装与两个私库实际读写通过，13 项 production 配置均为 Encrypted；319 项测试、84 项发布检查及生产真实邮箱联调的 22 个请求、29 项检查通过。两个专用测试用户当前文件已清理，Git 历史和 abuse 计数保留。摄影、挑战和悦学仍允许访客使用，本机记录保留。原生账号页已渲染；用户后台截图确认 pocket 的 request/uploadFile/downloadFile/业务域名及 AppID，19:20 官方 CLI 网络缓存清理与完整退出重启后，19:21 原生微信一键登录成功，`urlCheck: true` 与系统代理保持启用；退出后再次微信登录已实测复用同一用户，微信账号邮箱绑定仍待实际提交验收；本轮未上传小程序、真机验收、提交审核或正式发布，也未提交或推送源码。详见 [ACCOUNT_VERIFICATION.md](ACCOUNT_VERIFICATION.md) 和 [ACCOUNT_SETUP.md](ACCOUNT_SETUP.md)。下文上传时间、旧共享账号步骤和备注是历史包记录，不作为新账号的发布证据。

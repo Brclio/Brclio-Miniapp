@@ -65,7 +65,7 @@ npm run deploy
 
 当前准确状态见 [VERIFICATION.md](docs/VERIFICATION.md)，发布步骤见 [RELEASE.md](docs/RELEASE.md)。开发包上传、网页部署、微信审核与正式发布分别记录。内置竞技玩法仍须按实际内容核对微信类目，不能仅凭「放松」栏目名称推断可审核通过。
 
-当前账号支持永久登录至主动退出、操作后自动同步、断网重试与账号隔离。业务数据使用指定私有 Data 仓库，每位用户独立目录；账号凭据使用独立 UserData 仓库。`0.1.3` 发布与上传的实际证据见 [ACCOUNT_SYNC_RELEASE.md](docs/ACCOUNT_SYNC_RELEASE.md)，初次账号联调历史见 [ACCOUNT_VERIFICATION.md](docs/ACCOUNT_VERIFICATION.md)。微信审核由所有者提交；网页部署、开发包上传和审核发布分别记录。
+`0.1.3` 代码已提交 GitHub、Pages 已发布、微信开发版已上传，待所有者提交审核。当前账号支持永久登录至主动退出、操作后自动同步、断网重试与账号隔离。业务数据使用指定私有 Data 仓库，每位用户独立目录；账号凭据使用独立 UserData 仓库。`0.1.3` 发布与上传的实际证据见 [ACCOUNT_SYNC_RELEASE.md](docs/ACCOUNT_SYNC_RELEASE.md)，初次账号联调历史见 [ACCOUNT_VERIFICATION.md](docs/ACCOUNT_VERIFICATION.md)。微信审核由所有者提交；网页部署、开发包上传和审核发布分别记录。
 
 ```text
 miniprogram/pages/          原生首页、图库、挑战、悦学、关于、隐私与旧链接转接
