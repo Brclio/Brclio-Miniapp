@@ -1,4 +1,10 @@
-# 2026-10-22 ReadyGoDuel 网页正式上线
+# 2026-10-22 当前部署与 ReadyGoDuel 续核查
+
+10:10（Asia/Shanghai）核对：当前 Pages Production 为 [c3cad9af](https://c3cad9af.brclio-miniapp-wechat.pages.dev)，源码 `7d30954e4a0a34099b2cdce47e2bd9328b2e7c38`，两正式域健康接口均为 `0.1.2`。ReadyGo 的全部 15 个冻结文件与前次上线字节一致；两域重新执行这 15 个文件及健康接口检查，32／32 通过。无需为本轮续核查重新构建或部署。
+
+浏览器标签信息可读取，但画面与控件读取仍超时，已请求重开标签后继续；本轮没有新增线上交互通过证明。详情见 [ReadyGo 上线与续核查记录](READY_GO_DUEL_RELEASE.md)。小程序 `0.1.2` 开发包上传、最新整站构建与上线证据见 [悦学 0.1.2 验收记录](LINGOTILES_VERIFICATION.md)，开发包上传不等于提交审核或正式发布。下方 `e0d2ffbd`、`ae91a338` 等均为历史阶段。
+
+# 2026-10-22 ReadyGoDuel 网页首次上线（历史 0.1.1）
 
 原作网页与资源缓存修复已从干净提交 `525edee1942ccc2ccb1cdc81dfc58e56e0d80a85` 部署到 Pages Production [e0d2ffbd](https://e0d2ffbd.brclio-miniapp-wechat.pages.dev)。完整构建、247 项测试及发布检查通过；两个正式域名各 1,617 个公开文件、合计 3,234 项长度／SHA-256 检查，以及合计 20 项只读接口／路由探测全部通过。业务域名校验文件仍在，两域均返回 200。ReadyGo 发布 HTML 使用内容指纹 JS／CSS，避免备用域名四小时的同名旧资源缓存。
 

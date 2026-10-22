@@ -2,7 +2,17 @@
 
 日期：2026-10-22，Asia/Shanghai。本记录只描述独立网页及现有整站资源，不代表微信小程序上传、审核或正式发布。
 
-## 发布来源
+## 当前线上状态（10:10 续核查）
+
+整站后续发布 `0.1.2`，当前 Pages Production 已为 [c3cad9af](https://c3cad9af.brclio-miniapp-wechat.pages.dev)，完整 ID `c3cad9af-5371-486e-afc5-b7f95563d590`，Source 为 `7d30954e4a0a34099b2cdce47e2bd9328b2e7c38`。本次只读确认了最新部署列表，两域健康接口均为 `0.1.2`，没有为补做交互而重复部署。
+
+对比两次冻结清单，ReadyGo 的 15 个文件全部保持原字节；整站只有 Worker、门户首页及目录版本发生变化。对两个正式域名重新 GET 全部 15 个 ReadyGo 文件及各自健康接口，**32/32** 项通过，实际内容与 `0.1.2` 冻结产物一致。JS／CSS 仍为 `main-b5032b192e353388.js`、`main-1cc1ef2387a3f342.css`，原作布局、音效和报告代码没有变化。
+
+本轮仍能读取浏览器标签信息，但画面、控件及调试画面命令持续超时；新的线上交互复测尚未完成，已请求关闭两个旧标签后重新打开正式网页来重建连接。该阻塞不影响上述普通 HTTPS 核验，不据此宣称交互已验收。续核查证据为本机 `artifacts/ready-go-duel/continuation-2026-10-22/manifest-comparison.json` 与 `production-current.json`。整站 `0.1.2` 的构建、上传及部署证据另见 [悦学验收记录](LINGOTILES_VERIFICATION.md)。
+
+以下 `e0d2ffbd` 与 3,234 项全资源检查属于先前 `0.1.1` 网页上线阶段，继续保留历史原始证据，不将其部署 ID 当作当前版本。
+
+## 0.1.1 网页首次上线来源（历史）
 
 - 正式地址：[主域](https://pocket.bornforthis.cn/projects/ready-go-duel/)、[备用域名](https://pocket.brclio.com/projects/ready-go-duel/)。
 - Pages Production 部署：[e0d2ffbd](https://e0d2ffbd.brclio-miniapp-wechat.pages.dev)，完整 ID `e0d2ffbd-a0a0-4c21-a759-19432394e9c2`。
