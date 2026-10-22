@@ -1,6 +1,6 @@
-# 0.1.2 悦学开发包准备
+# 0.1.2 悦学开发包已上传
 
-更新日期：2026-10-22（Asia/Shanghai）。当前待上传版本为 `0.1.2`，小程序名称「Brclio 悦创」，AppID `wx59aa532fbf6fa540`。本段记录版本准备与下一步要求，不表示已经构建、上传、提交审核或正式发布。最新实际结果见 [VERIFICATION.md](VERIFICATION.md) 与 [LINGOTILES_VERIFICATION.md](LINGOTILES_VERIFICATION.md)。
+更新日期：2026-10-22（Asia/Shanghai）。当前开发包版本 `0.1.2` 已于 **09:43** 在开发者工具明确显示「代码上传成功」，对应源码 `7d30954e4a0a34099b2cdce47e2bd9328b2e7c38`。小程序名称「Brclio 悦创」，AppID `wx59aa532fbf6fa540`。体验版、审核与正式发布尚未执行；最新证据见 [LINGOTILES_VERIFICATION.md](LINGOTILES_VERIFICATION.md)。
 
 ## 本次增量与版本
 
@@ -12,6 +12,8 @@
 ## 构建与上传前检查
 
 串行执行 `npm run build`、`npm test`、`npm run check:release`，确认主包和各分包预算、来源资源及版本一致，再为本次最终 Git 提交生成原生源码指纹清单。已有悦学构建与测试证据不自动代表修改版本后的这一次构建通过。
+
+本次上述构建及发布检查已通过，全量测试 **271/271**；390 个原生文件上传前后指纹一致。后续从原仓库更新的命令、适配门禁、回归与回退见 [持续更新流程](LINGOTILES_UPDATES.md)。
 
 上传版本填写 `0.1.2`；CLI 版本读取 `package.json`，上传备注已补入悦学。建议说明如下：
 
