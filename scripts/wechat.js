@@ -29,7 +29,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', require('../package.json').version, '--desc', 'Brclio 悦创 0.1.3：独立账号支持邮箱验证码注册、邮箱或账号密码登录、邮箱验证码登录及微信一键注册登录；登录持续有效至主动退出；学习进度、收藏、近期通关与计分挑战记录自动同步，断网先存本机、联网重试，账号隔离。保留摄影、双人反应与分级悦学。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + require('../package.json').version + '.json')]
+    upload: ['upload', '--project', root, '--version', require('../package.json').version, '--desc', 'Brclio 悦创 0.1.4：新增育儿儿歌陪伴，47首儿歌及独立插画封面，支持睡前筛选、搜索收藏、顺序/随机/单曲循环、进度跳转和前台定时停止；音乐联网播放，收藏进度本机保存。保留摄影、双人挑战、悦学和独立账号同步。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + require('../package.json').version + '.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');

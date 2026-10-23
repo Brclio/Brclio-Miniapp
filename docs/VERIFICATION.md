@@ -1,4 +1,6 @@
-> 网页账号、注册登录与跨端同步的后续补全见 [WEB_ACCOUNT_RELEASE.md](WEB_ACCOUNT_RELEASE.md)。原生 `0.1.3` 的永久登录、自动同步、GitHub 提交、Pages 部署与微信开发版上传以 [ACCOUNT_SYNC_RELEASE.md](ACCOUNT_SYNC_RELEASE.md) 为准；下文保留此前阶段的实际记录，不作为本版发布状态。
+> 当前 `0.1.4` 育儿栏目、47 首儿歌、独立封面、455 项测试、编译与各阶段发布证据见 [NURSERY_RELEASE.md](NURSERY_RELEASE.md)。下文均为此前阶段记录。
+
+> 网页账号、注册登录与跨端同步的后续补全见 [WEB_ACCOUNT_RELEASE.md](WEB_ACCOUNT_RELEASE.md)。此前原生 `0.1.3` 的永久登录、自动同步、GitHub 提交、Pages 部署与微信开发版上传见 [ACCOUNT_SYNC_RELEASE.md](ACCOUNT_SYNC_RELEASE.md)。
 
 > 2026-10-22 独立账号更新：新指定的 Miniapp-UserData 与 Miniapp-Data 两个私有仓库已通过 App 实际读写、读回和删除；installation `174043179` 的全部仓库安装范围由用户明确授权保留，运行 token 仅申请固定单个仓库。319 项测试、构建和 84 项发布检查通过，13 项 Pages production 配置均为 Encrypted，正式部署为 [da68dc74](https://da68dc74.brclio-miniapp-wechat.pages.dev)。生产 Gmail 的 3 封验证码已实际收件，真实隔离账号联调 22 个请求、29 项检查通过；两个测试用户当前文件清理通过，Git 历史和 abuse 计数保留。原生账号页已渲染；用户后台截图已确认 pocket 的 request/uploadFile/downloadFile/业务域名及 AppID，19:20 官方 CLI 网络缓存清理与完整退出重启后，19:21 原生微信一键登录成功，页面显示「已登录」「微信登录成功，欢迎来到悦创」，`urlCheck: true` 与系统代理保持启用；退出后再次微信登录已实测复用同一用户，微信账号邮箱绑定仍待实际提交验收；本轮没有小程序上传、真机、审核或正式发布，也没有源码提交或推送。准确证据与待办见 [ACCOUNT_VERIFICATION.md](ACCOUNT_VERIFICATION.md)。下方是此前各阶段历史记录。
 

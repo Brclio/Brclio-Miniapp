@@ -1,4 +1,6 @@
-> **0.1.3 已交接审核**：代码已推送 GitHub `main`（`1868c9d`），Pages 已发布，微信开发版 `0.1.3` 上传成功。请在版本管理选择该开发版，并按最新隐私说明核对后提交审核。完整证据见 [ACCOUNT_SYNC_RELEASE.md](ACCOUNT_SYNC_RELEASE.md)。
+> **当前 0.1.4 育儿发布**：47 首儿歌、独立生成封面、最终核查和各阶段发布结果以 [NURSERY_RELEASE.md](NURSERY_RELEASE.md) 为准。下文 0.1.3 及更早记录仅用于历史追溯。
+
+> **此前 0.1.3 已交接审核**：代码已推送 GitHub `main`（`1868c9d`），Pages 已发布，微信开发版 `0.1.3` 上传成功。完整证据见 [ACCOUNT_SYNC_RELEASE.md](ACCOUNT_SYNC_RELEASE.md)。
 
 > 当前 `0.1.3` 的永久登录、自动同步、GitHub 提交、Pages 部署与微信开发版上传以 [ACCOUNT_SYNC_RELEASE.md](ACCOUNT_SYNC_RELEASE.md) 为准；下文保留此前阶段的实际记录，不作为本版发布状态。
 

@@ -18,7 +18,7 @@ Page({
     this._unsubscribeSync = sync.subscribe(status => { if (this._alive) this.setData({ syncMessage: status.message }); });
     if (typeof wx.setNavigationBarTitle === 'function') wx.setNavigationBarTitle({ title: 'Brclio 悦创' });
     const tab = options && options.tab;
-    if (['photo', 'relax', 'learn', 'mine'].indexOf(tab) !== -1) this.setData({ activeTab: tab });
+    if (['photo', 'relax', 'learn', 'parenting', 'mine'].indexOf(tab) !== -1) this.setData({ activeTab: tab });
   },
 
   async onShow() {
@@ -51,7 +51,7 @@ Page({
 
   switchTab(event) {
     const tab = event.currentTarget.dataset.tab;
-    if (['photo', 'relax', 'learn', 'mine'].indexOf(tab) === -1 || tab === this.data.activeTab) return;
+    if (['photo', 'relax', 'learn', 'parenting', 'mine'].indexOf(tab) === -1 || tab === this.data.activeTab) return;
     this.setData({ activeTab: tab });
     if (tab === 'mine' && typeof account.getCachedUser === 'function') this.applyAccountUser(account.getCachedUser());
     if (typeof wx.pageScrollTo === 'function') wx.pageScrollTo({ scrollTop: 0, duration: 0 });
@@ -61,7 +61,9 @@ Page({
     const id = event.currentTarget.dataset.id;
     if (!catalog.getFeature(id)) return;
     sync.flush();
-    wx.navigateTo({ url: catalog.getFeatureRoute(id) });
+    const scene = event.currentTarget.dataset.scene;
+    const query = id === 'nursery-music' && scene === 'sleep' ? '?scene=sleep' : '';
+    wx.navigateTo({ url: catalog.getFeatureRoute(id) + query });
   },
 
   openAbout() {
@@ -73,10 +75,12 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: 'Brclio 悦创 · 摄影、放松与悦学', path: '/pages/home/index' };
+    return { title: 'Brclio 悦创 · 摄影、放松、悦学与育儿', path: '/pages/home/index' + (this.data.activeTab === 'parenting' ? '?tab=parenting' : '') };
   },
 
   onShareTimeline() {
-    return { title: 'Brclio 悦创 · 摄影、放松与悦学' };
+    const share = { title: 'Brclio 悦创 · 摄影、放松、悦学与育儿' };
+    if (this.data.activeTab === 'parenting') share.query = 'tab=parenting';
+    return share;
   }
 });

@@ -99,6 +99,9 @@ for (const project of published) {
   }
   for (const asset of project.assets || []) fs.cpSync(sourcePath(asset.source), outputPath(folder, asset.target), { recursive: true });
 }
+// Match the small, bundled song art used by the native player and its system audio controls.
+const nurseryCovers = path.join(root, 'miniprogram/nursery/assets/covers');
+if (fs.existsSync(nurseryCovers)) fs.cpSync(nurseryCovers, path.join(output, 'assets/nursery-covers'), { recursive: true });
 const publicRoot = path.join(root, 'web/public');
 for (const item of fs.readdirSync(publicRoot, { withFileTypes: true })) {
   if (item.isFile() && /^(?:MP_verify_)?[A-Za-z0-9_-]{6,64}\.txt$/.test(item.name)) fs.copyFileSync(path.join(publicRoot, item.name), path.join(output, item.name));

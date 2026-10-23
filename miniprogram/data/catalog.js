@@ -7,7 +7,7 @@ const features = Object.freeze([
     title: '内容空间',
     subtitle: '收藏影像，也收藏生活的表达',
     category: '内容合集',
-    description: '浏览摄影、放松互动与悦学项目，给喜欢的事留一点时间。',
+    description: '浏览摄影、放松互动、悦学与育儿项目，给喜欢的事留一点时间。',
     path: '/?entry=wechat'
   }),
   Object.freeze({
@@ -51,6 +51,14 @@ const features = Object.freeze([
     path: '/projects/ready-go-duel/?entry=wechat'
   }),
   Object.freeze({
+    id: 'nursery-music',
+    title: '儿歌多多',
+    subtitle: '小小音乐盒，陪伴每一天',
+    category: 'parenting',
+    description: '在儿歌与轻音乐里，听见每天的小小快乐。支持歌单浏览、播放控制与睡前轻听。',
+    nativeOnly: true
+  }),
+  Object.freeze({
     id: 'wedding-inspiration',
     title: '孕期影像',
     subtitle: '倾听你的心跳',
@@ -67,7 +75,7 @@ function getFeature(id) {
 
 function getFeatureUrl(id) {
   const feature = getFeature(id);
-  if (!feature) return '';
+  if (!feature || feature.nativeOnly) return '';
   // An origin only: HTTPS, DNS hostname, no credentials, port, path, or query.
   // Route parameters never become part of this origin or the entry URL.
   const origin = config.webOrigin;
@@ -83,6 +91,7 @@ function getFeatureRoute(id) {
     relax: '/pages/home/index?tab=relax',
     learn: '/pages/home/index?tab=learn',
     lingotiles: '/pages/lingotiles/index',
+    'nursery-music': '/nursery/pages/player/index',
     'ready-go-duel': '/pages/duel/index',
     'wedding-inspiration': (photos.collections.find(function (album) { return album.id === 'pregnancy'; }) || {}).nativePath || '/pages/gallery/index'
   };

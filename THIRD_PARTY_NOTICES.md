@@ -59,3 +59,7 @@
 - 构建保留依赖许可证注释；分发时应保留各依赖的版权和许可声明。
 
 esbuild 与 Wrangler 是构建、部署开发依赖。jsdom `26.1.0`（MIT）仅用于离线 React 组件回归，不进入网页或小程序产物。ReadyGoDuel 独立网页保留原项目的访问统计脚本；原生小程序没有接入该脚本。已恢复的可用摄影图片随同一 Cloudflare 项目分发，页面不依赖上游图片站点实时加载；第三方图片的原始地址仅作为来源记录保留。
+
+## 儿歌陪伴 / Erge-Duoduo
+
+育儿栏目目录来自 [Brclio/Erge-Duoduo](https://github.com/Brclio/Erge-Duoduo/tree/7de01bfb01e4893bff1299701861bf124f20957c) 的歌曲清单与 47 个现有 MP3 文件名，固定提交 `7de01bfb01e4893bff1299701861bf124f20957c`。音乐由用户指定的 `https://erge-duoduo.bornforthis.cn` 联网提供，不复制进小程序包，不修改音频。保留原歌曲名与歌手「儿歌多多」；完整来源元数据见 `miniprogram/data/nursery-songs.js` 和 [育儿音乐说明](docs/NURSERY_MUSIC.md)。仓库可访问不代表授予音乐再许可，本项目未另行声明音频许可。

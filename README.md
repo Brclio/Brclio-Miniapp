@@ -1,10 +1,12 @@
 # Brclio 悦创
 
-`0.1.3` 微信普通小程序，提供「摄影 / 放松 / 悦学 / 我的」四个原生入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
+`0.1.4` 微信普通小程序，提供「摄影 / 放松 / 悦学 / 育儿 / 我的」五个原生入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
 
 摄影、挑战与学习界面均使用小程序原生代码，不加载外部网页。摄影包含正确来源 [FirstSight_Online](https://github.com/AndersonHJB/FirstSight_Online) 的 8 组婚纱、1 组孕期影像，共 169 张实际照片；放松提供 ReadyGoDuel 同屏双人反应挑战；悦学接入 [LingoTiles「词了个词」](https://github.com/Brclio/brclio-lingotiles)，保留经典主题与 10 万词分级学习，重新设计手机界面。「我的」支持邮箱验证注册、邮箱验证码登录、邮箱或账号密码登录，小程序另外提供微信一键登录与注册。网页与小程序共用账号，挑战和学习记录先存本机，登录后自动同步。部署与微信发布分别验收。
 
 ## 当前实现
+
+- 育儿（0.1.4）：原生儿歌播放器接入 [Erge-Duoduo](https://github.com/Brclio/Erge-Duoduo) 固定提交的 47 首现有 MP3，直接使用 `erge-duoduo.bornforthis.cn` 音频，不打包音乐或加载网页。每首配有独立生成的 256×256 插画封面，播放器与图片按需加载育儿分包。提供蹦跳／睡前筛选、搜索、收藏、进度拖动、顺序／随机／单曲循环和 15／30／60 分钟前台定时停止。收藏和最近进度仅存本机。域名配置建议、来源、后台播放限制与验收边界见 [育儿音乐说明](docs/NURSERY_MUSIC.md)。
 
 - 摄影：全部／婚纱／孕期筛选，9 本相册，原生详情、滑动切图、双击／按钮放大、双指缩放、拖动与关闭。
 - 展示图片为本地 JPEG 压缩版本，随四个摄影分包上传；主包包含 9 张封面缩略图。没有远程原图查看或原图网站依赖。
@@ -67,11 +69,14 @@ npm run deploy
 
 当前准确状态见 [VERIFICATION.md](docs/VERIFICATION.md)，发布步骤见 [RELEASE.md](docs/RELEASE.md)。开发包上传、网页部署、微信审核与正式发布分别记录。内置竞技玩法仍须按实际内容核对微信类目，不能仅凭「放松」栏目名称推断可审核通过。
 
-`0.1.3` 代码已提交 GitHub、Pages 已发布、微信开发版已上传，待所有者提交审核。当前账号支持永久登录至主动退出、操作后自动同步、断网重试与账号隔离。业务数据使用指定私有 Data 仓库，每位用户独立目录；账号凭据使用独立 UserData 仓库。`0.1.3` 发布与上传的实际证据见 [ACCOUNT_SYNC_RELEASE.md](docs/ACCOUNT_SYNC_RELEASE.md)，初次账号联调历史见 [ACCOUNT_VERIFICATION.md](docs/ACCOUNT_VERIFICATION.md)。微信审核由所有者提交；网页部署、开发包上传和审核发布分别记录。
+`0.1.4` 育儿栏目、47 首儿歌与独立封面的核查和发布状态见 [NURSERY_RELEASE.md](docs/NURSERY_RELEASE.md)。封面生成使用内置 `image_gen`，逐首提示词与压缩记录见 [封面清单](design/nursery-covers/manifest.json)。
+
+此前 `0.1.3` 已提交 GitHub、部署 Pages 并上传微信开发版。账号支持永久登录至主动退出、操作后自动同步、断网重试与账号隔离；业务数据使用指定私有 Data 仓库，账号凭据使用独立 UserData 仓库。此前实际证据见 [ACCOUNT_SYNC_RELEASE.md](docs/ACCOUNT_SYNC_RELEASE.md)，初次账号联调历史见 [ACCOUNT_VERIFICATION.md](docs/ACCOUNT_VERIFICATION.md)。微信审核与正式发布另行记录。
 
 ```text
-miniprogram/pages/          原生首页、图库、挑战、悦学、关于、隐私与旧链接转接
+miniprogram/pages/          原生首页、图库、挑战、悦学、育儿、关于、隐私与旧链接转接
 miniprogram/photo-*/        自动生成的摄影分包：相册页、本包数据、展示图片
+miniprogram/nursery/        育儿分包：原生音乐播放器、47 张压缩歌曲封面
 miniprogram/data/           原生目录与图片来源清单
 native/album/              原生相册页唯一维护模板
 minigame/lib/              共享挑战逻辑与本机存储

@@ -44,7 +44,7 @@ try {
   const mainSize = size - subSizes.reduce(function (sum, bytes) { return sum + bytes; }, 0);
   check(mainSize < 2 * 1024 * 1024, '主包小于 2 MiB（' + (mainSize / 1024).toFixed(1) + ' KiB）');
   check(size < 20 * 1024 * 1024, '全部本地代码与素材小于 20 MiB（' + (size / 1024).toFixed(1) + ' KiB）');
-  check(!files.filter(function (file) { return file.endsWith('.wxml'); }).some(function (file) { return /<web-view\b/.test(fs.readFileSync(file, 'utf8')); }), '摄影、相册、挑战与悦学界面全部原生内置，无 web-view');
+  check(!files.filter(function (file) { return file.endsWith('.wxml'); }).some(function (file) { return /<web-view\b/.test(fs.readFileSync(file, 'utf8')); }), '摄影、相册、挑战、悦学与育儿界面全部原生内置，无 web-view');
   const nativePhotos = require(path.join(appRoot, 'data/photos.js'));
   const crypto = require('node:crypto');
   const manifest = JSON.parse(fs.readFileSync(path.join(appRoot, 'data/photo-assets.json'), 'utf8'));
@@ -80,8 +80,10 @@ try {
     check(verifyFingerprintedAssets(folder, fs.readFileSync(path.join(folder, 'index.html'), 'utf8')), '网页引用内容指纹资源，哈希及兼容文件一致 ' + item.id);
   }
   check(registry.categories.find(function (item) { return item.id === 'learn'; }).status === 'active' && registry.projects.some(function (item) { return item.id === 'lingotiles' && item.category === 'learn' && item.status === 'active'; }) && ['index.html', 'main.js', 'main.css', 'vocabulary/manifest.json', 'images/words/index/manifest.json'].every(function (file) { return fs.existsSync(path.join(outputRoot, 'projects/lingotiles', file)); }), '悦学栏目、词了个词及按需词库与现有插图索引均已构建');
+  const covers = require('./check-nursery-covers').verifyNurseryCovers();
+  check(covers.count === 47, '47 首独立儿歌封面、256px 压缩、来源提示词及网页字节一致');
   const nativeCatalog = require(path.join(appRoot, 'data/catalog.js'));
-  check(nativeCatalog.features.map(function (feature) { return feature.id; }).sort().join(',') === 'content-hub,firstsight,learn,lingotiles,ready-go-duel,relax,wedding-inspiration' && nativeCatalog.getFeatureRoute('lingotiles') === '/pages/lingotiles/index', '原生固定入口及历史分享入口登记完整');
+  check(nativeCatalog.features.map(function (feature) { return feature.id; }).sort().join(',') === 'content-hub,firstsight,learn,lingotiles,nursery-music,ready-go-duel,relax,wedding-inspiration' && nativeCatalog.getFeatureRoute('lingotiles') === '/pages/lingotiles/index' && nativeCatalog.getFeatureRoute('nursery-music') === '/nursery/pages/player/index' && nativeCatalog.getFeatureUrl('nursery-music') === '' && config.pages.includes('pages/parenting/index'), '原生固定入口、育儿音乐及历史分享入口登记完整');
   const photoData = JSON.parse(fs.readFileSync(path.join(root, 'web/projects/firstsight/original-data.json'), 'utf8'));
   const photoAssets = photoData.assets.filter(function (asset) { return asset.available; });
   check(photoAssets.length > 2 && photoAssets.every(function (asset) {

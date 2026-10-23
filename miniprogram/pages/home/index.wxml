@@ -11,6 +11,7 @@
     <button class="category-tab {{activeTab === 'photo' ? 'category-tab-active' : ''}}" data-tab="photo" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'photo' ? '摄影，当前栏目' : '切换到摄影栏目'}}"><text>摄影</text><text class="tab-english">PHOTO</text></button>
     <button class="category-tab {{activeTab === 'relax' ? 'category-tab-active' : ''}}" data-tab="relax" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'relax' ? '放松，当前栏目' : '切换到放松栏目'}}"><text>放松</text><text class="tab-english">PLAY</text></button>
     <button class="category-tab {{activeTab === 'learn' ? 'category-tab-active' : ''}}" data-tab="learn" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'learn' ? '悦学，当前栏目' : '切换到悦学栏目'}}"><text>悦学</text><text class="tab-english">LEARN</text></button>
+    <button class="category-tab {{activeTab === 'parenting' ? 'category-tab-active' : ''}}" data-tab="parenting" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'parenting' ? '育儿，当前栏目' : '切换到育儿栏目'}}"><text>育儿</text><text class="tab-english">GROW</text></button>
     <button class="category-tab {{activeTab === 'mine' ? 'category-tab-active' : ''}}" data-tab="mine" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'mine' ? '我的，当前栏目' : '切换到我的栏目'}}"><text>我的</text><text class="tab-english">ME</text></button>
   </view>
 
@@ -63,8 +64,28 @@
     <view class="editorial-note"><text class="note-symbol" aria-hidden="true">✳</text><view>一点点积累，<text class="note-emphasis">也会长成自己的风景。</text></view></view>
   </view>
 
+  <view wx:elif="{{activeTab === 'parenting'}}" class="tab-content parenting-content">
+    <view class="section-intro"><view class="intro-topline"><text class="eyebrow">GROW WITH A LITTLE JOY</text><text class="issue-number">04 / 育儿</text></view><view class="intro-title serif">小小耳朵，<view><text class="word-highlight">大大世界。</text></view></view><view class="intro-copy">一首歌，一点快乐。陪你慢慢长大。</view></view>
+    <button class="parenting-entry" style="width: 100%; display: block;" data-id="nursery-music" bindtap="openFeature" hover-class="feature-pressed" aria-label="打开儿歌多多音乐播放器，浏览歌单和播放音乐">
+      <view class="music-poster" aria-hidden="true">
+        <view class="music-poster-top"><text>LITTLE MUSIC BOX</text><text>SIDE A / 陪伴</text></view>
+        <view class="music-drawing">
+          <text class="music-note music-note-one">♪</text><text class="music-note music-note-two">♫</text><text class="music-spark">✳</text>
+          <view class="cassette"><view class="cassette-label"><text class="cassette-caption">今日份的小快乐</text><text class="cassette-title serif">唱给你听。</text></view><view class="cassette-window"><view class="cassette-reel"><view></view></view><view class="cassette-tape"></view><view class="cassette-reel"><view></view></view></view><view class="cassette-bottom"><view></view><text>BRCLIO / VOL. 01</text><view></view></view></view>
+        </view>
+        <view class="music-poster-bottom"><text>给每一天，配一段小旋律。</text><text>PRESS PLAY →</text></view>
+      </view>
+      <view class="music-details"><view class="entry-topline"><text class="feature-title serif">儿歌多多</text><text class="small-label">儿歌 · 轻音乐</text></view><view class="game-copy">把喜欢的歌，放进每天的陪伴。</view><view class="music-open"><text>打开音乐播放器</text><text aria-hidden="true">↗</text></view></view>
+    </button>
+    <view class="music-scenes" aria-label="听歌情景">
+      <button class="music-scene" style="display: flex; flex: 1;" data-id="nursery-music" bindtap="openFeature" hover-class="button-pressed" aria-label="儿歌陪伴，打开音乐播放器"><text class="scene-symbol" aria-hidden="true">♪</text><view><view class="scene-title serif">儿歌陪伴</view><view class="scene-copy">清醒时，一起听。</view></view><text class="scene-arrow" aria-hidden="true">↗</text></button>
+      <button class="music-scene music-scene-sleep" style="display: flex; flex: 1;" data-id="nursery-music" data-scene="sleep" bindtap="openFeature" hover-class="button-pressed" aria-label="睡前轻听，打开睡前音乐歌单"><text class="scene-symbol" aria-hidden="true">☾</text><view><view class="scene-title serif">睡前轻听</view><view class="scene-copy">夜晚，轻轻陪伴。</view></view><text class="scene-arrow" aria-hidden="true">↗</text></button>
+    </view>
+    <view class="parenting-note"><text class="note-symbol" aria-hidden="true">✳</text><view><view class="parenting-note-title serif">最好的节奏，是陪伴。</view><view class="entry-copy">和孩子一起听，跟着旋律轻轻唱。</view></view></view>
+  </view>
+
   <view wx:else class="tab-content">
-    <view class="section-intro"><view class="intro-topline"><text class="eyebrow">YOUR LITTLE CORNER</text><text class="issue-number">04 / 我的</text></view><view class="intro-title serif">给喜欢的事，<view><text class="word-highlight">留个位置。</text></view></view></view>
+    <view class="section-intro"><view class="intro-topline"><text class="eyebrow">YOUR LITTLE CORNER</text><text class="issue-number">05 / 我的</text></view><view class="intro-title serif">给喜欢的事，<view><text class="word-highlight">留个位置。</text></view></view></view>
     <view wx:if="{{accountUser}}" class="visitor-section member-section">
       <view class="visitor-topline"><image wx:if="{{accountUser.avatarUrl}}" class="member-avatar" src="{{accountUser.avatarUrl}}" mode="aspectFill" /><view wx:else class="member-initial serif" aria-hidden="true">{{accountInitial}}</view><view class="member-title-block"><view class="visitor-title serif">你好，{{accountLabel}}。</view><view class="visitor-caption">{{accountUser.email || '微信账号已登录'}}</view></view><text class="visitor-badge">已登录</text></view>
       <button class="member-account-link" style="width: 100%; display: flex;" bindtap="openAccount" hover-class="button-pressed"><text>管理我的账号</text><text aria-hidden="true">→</text></button>
@@ -73,10 +94,10 @@
     <view wx:else class="visitor-section">
       <view class="visitor-topline"><view class="visitor-icon" aria-hidden="true"><view class="visitor-head"></view><view class="visitor-body"></view></view><view><view class="visitor-title serif">你好，访客。</view><view class="visitor-caption">现在，随心逛逛。</view></view><text class="visitor-badge">访客模式</text></view>
       <view class="visitor-auth-actions"><button class="visitor-login" style="display: flex; flex: 1;" bindtap="openAccount" hover-class="button-pressed">登录 / 微信登录 <text aria-hidden="true">→</text></button><button class="visitor-register" style="display: flex; width: auto;" data-mode="register" bindtap="openAccount" hover-class="button-pressed">注册账号</button></view>
-      <view class="account-note"><view class="account-title"><text class="status-dot" aria-hidden="true"></text>记录，先留在这台设备</view><view class="entry-copy">随时浏览摄影、参与挑战与学习，也可继续以访客身份使用。<view>登录后自动同步进度和记录，换设备也能继续。</view></view></view>
+      <view class="account-note"><view class="account-title"><text class="status-dot" aria-hidden="true"></text>记录，先留在这台设备</view><view class="entry-copy">摄影、挑战、学习与儿歌，都可以随心打开。<view>登录后自动同步进度和记录，换设备也能继续。</view></view></view>
     </view>
     <view class="personal-links">
-      <button class="personal-link" style="width: 100%; display: flex;" data-id="content-hub" bindtap="openFeature" hover-class="button-pressed" aria-label="浏览全部已发布的内容与项目"><view><view class="personal-link-title">全部内容</view><view class="personal-link-copy">摄影、放松与悦学，随时回来看看</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
+      <button class="personal-link" style="width: 100%; display: flex;" data-id="content-hub" bindtap="openFeature" hover-class="button-pressed" aria-label="浏览全部已发布的内容与项目"><view><view class="personal-link-title">全部内容</view><view class="personal-link-copy">摄影、放松、悦学与育儿，随时回来看看</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
       <button class="personal-link" style="width: 100%; display: flex;" bindtap="openAbout" hover-class="button-pressed" aria-label="查看关于 Brclio 悦创与服务信息"><view><view class="personal-link-title">关于悦创</view><view class="personal-link-copy">从摄影开始，慢慢生长</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
       <button class="personal-link" style="width: 100%; display: flex;" bindtap="openPrivacy" hover-class="button-pressed" aria-label="查看隐私、权限与本机数据说明"><view><view class="personal-link-title">隐私与数据</view><view class="personal-link-copy">了解权限与本机记录</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
     </view>

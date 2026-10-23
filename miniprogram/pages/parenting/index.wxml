@@ -1,0 +1,1 @@
+<view class="page-shell transfer-shell"><text class="eyebrow">LITTLE MOMENTS / 育儿</text><view class="document-title serif">儿歌陪伴</view><view class="document-intro">{{failed ? '音乐页面暂时没能打开，请检查网络后重试。' : '正在打开音乐播放器…'}}</view><button wx:if="{{failed}}" class="primary-button" bindtap="openPlayer" hover-class="button-pressed">重试</button></view>

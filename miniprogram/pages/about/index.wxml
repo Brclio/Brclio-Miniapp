@@ -2,15 +2,16 @@
   <view class="about-brand">
     <view class="about-brand-row"><image class="about-avatar" src="/assets/avatar.png" mode="aspectFill" aria-label="Brclio 品牌头像" /><view class="eyebrow">BRCLIO / YUECHUANG</view></view>
     <view class="document-title serif">收藏影像，<view>保持好奇。</view></view>
-    <view class="document-intro">从一张照片、一局小游戏、一个新单词开始，<view>给喜欢的事，留个位置。</view></view>
+    <view class="document-intro">从一张照片、一局小游戏、一个新单词和一首儿歌开始，<view>给喜欢的事，留个位置。</view></view>
   </view>
 
   <view class="document-section">
     <text class="section-number">01 / CONTENT</text>
-    <text class="document-heading serif">摄影、放松与悦学，都在这里</text>
+    <text class="document-heading serif">摄影、放松、悦学与育儿，都在这里</text>
     <text class="document-copy">「摄影」收纳 FirstSight_Online 中的实际摄影：8 组婚纱共 128 张，以及 41 张孕期影像。原生图册、照片详情和大图浏览均已内置；展示图片随摄影分包上传。照片使用原项目优化图片的本地展示版本，原 JPG 源文件保持不变。</text>
     <text class="document-copy">「放松」提供 ReadyGoDuel：两人在同一部设备上进行触摸或无限挑战，包含开始与胜负音效、彩头、个性设置和图片战报。另保留 1、3、5 分计分扩展、抢跑判定和本机历史记录，无需匹配。仅在你主动保存战报时申请相册写入权限。</text>
     <text class="document-copy">「悦学」加入 LingoTiles「词了个词」：先记忆词表，再把英文、词性和中文含义配成一组。经典六关与小学到大学的 10 万词分级学习路线均保留，词库和现有词义插图按需读取；可在本机收藏、翻单词本、回看通关足迹与导出记录。登录后自动同步学习进度、收藏及最近 200 条通关足迹，本机完整历史可导出。</text>
+    <text class="document-copy">「育儿」提供儿歌陪伴：47 首现有儿歌，每首配有独立插画封面，播放器和图片随育儿分包加载。可按蹦跳时光、睡前轻听筛选，支持搜索、收藏、顺序／随机／单曲循环、进度拖动和前台定时停止。歌曲由 erge-duoduo.bornforthis.cn 联网播放；收藏和最近播放进度仅保存在当前设备，不随账号同步。点击播放后可通过微信背景音频能力继续收听，正式版后台播放能力以微信审核及真机结果为准。</text>
     <text class="document-copy">「我的」提供本小程序独立账号，支持邮箱验证码、邮箱或账号密码登录，以及微信一键登录与注册。微信创建的账号可绑定邮箱和账号。摄影、挑战与学习仍可直接使用。登录保持有效至主动退出；记录先存本机，联网后自动同步到自己的账号。</text>
     <text class="document-copy">当前版本不提供预约、报价、交易、评论或图片上传服务。</text>
   </view>
@@ -25,7 +26,7 @@
     <text class="section-number">03 / CONTACT</text>
     <text class="document-heading serif">服务与联系</text>
     <text class="document-copy">服务提供者：莆田市荔城区黄家蓉宝电脑店</text>
-    <text class="document-copy">摄影、相册、挑战和悦学界面均由小程序原生代码提供；首次获取或更新代码分包需要网络。悦学按你选择的学习阶段、词页与单词，从 pocket.bornforthis.cn 按需读取词库和现有插图；主动朗读通过同域接口获取语音。微信生产使用需配置该域名的 request 与 downloadFile 合法域名。遇到问题可返回首页重试，也可通过微信右上角菜单中的「反馈与投诉」提交建议。</text>
+    <text class="document-copy">摄影、相册、挑战、悦学和育儿界面均由小程序原生代码提供；首次获取或更新代码分包需要网络。悦学按你选择的学习阶段、词页与单词，从 pocket.bornforthis.cn 按需读取词库和现有插图；主动朗读通过同域接口获取语音。微信生产使用需配置该域名的 request 与 downloadFile 合法域名。遇到问题可返回首页重试，也可通过微信右上角菜单中的「反馈与投诉」提交建议。</text>
     <text class="document-copy" selectable="true">联系邮箱：aiyuechuang@gmail.com</text>
     <button class="text-button about-privacy" bindtap="openPrivacy" hover-class="button-pressed" aria-label="查看隐私与数据说明">隐私与数据说明 <text aria-hidden="true">↗</text></button>
   </view>

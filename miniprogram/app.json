@@ -5,6 +5,7 @@
     "pages/gallery/index",
     "pages/duel/index",
     "pages/lingotiles/index",
+    "pages/parenting/index",
     "pages/web/index",
     "pages/about/index",
     "pages/privacy/index"
@@ -43,6 +44,13 @@
       "pages": [
         "pages/album/index"
       ]
+    },
+    {
+      "root": "nursery",
+      "name": "nursery",
+      "pages": [
+        "pages/player/index"
+      ]
     }
   ],
   "preloadRule": {
@@ -52,5 +60,8 @@
         "photo-1"
       ]
     }
-  }
+  },
+  "requiredBackgroundModes": [
+    "audio"
+  ]
 }

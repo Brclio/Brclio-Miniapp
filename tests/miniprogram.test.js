@@ -27,6 +27,7 @@ const routes = [
   ['relax', '/pages/home/index?tab=relax'],
   ['learn', '/pages/home/index?tab=learn'],
   ['lingotiles', '/pages/lingotiles/index'],
+  ['nursery-music', '/nursery/pages/player/index'],
   ['ready-go-duel', '/pages/duel/index'],
   ['wedding-inspiration', require('../miniprogram/data/photos').collections.find(item => item.id === 'pregnancy').nativePath]
 ];
@@ -55,7 +56,7 @@ test('unknown and prototype IDs cannot open a route or leak arbitrary URLs', () 
     assert.equal(page.onShareAppMessage().path, '/pages/home/index');
   }
 });
-test('homepage opens photography, games and learning locally and validates selected tabs', () => {
+test('homepage opens photography, games, learning and parenting locally and validates selected tabs', () => {
   const { page, calls } = loadPage('pages/home/index.js');
   for (const [id, route] of routes) {
     page.openFeature({ currentTarget: { dataset: { id } } });
@@ -64,7 +65,7 @@ test('homepage opens photography, games and learning locally and validates selec
   const count = calls.length;
   page.openFeature({ currentTarget: { dataset: { id: 'https://evil.example' } } });
   assert.equal(calls.length, count);
-  for (const tab of ['relax', 'learn', 'mine', 'photo']) {
+  for (const tab of ['relax', 'learn', 'parenting', 'mine', 'photo']) {
     page.switchTab({ currentTarget: { dataset: { tab } } });
     assert.equal(page.data.activeTab, tab);
   }
@@ -74,6 +75,23 @@ test('homepage opens photography, games and learning locally and validates selec
   assert.equal(page.data.activeTab, 'relax');
   page.onLoad({ tab: 'learn' });
   assert.equal(page.data.activeTab, 'learn');
+  page.onLoad({ tab: 'parenting' });
+  assert.equal(page.data.activeTab, 'parenting');
+  assert.equal(page.onShareAppMessage().path, '/pages/home/index?tab=parenting');
+  assert.equal(page.onShareTimeline().query, 'tab=parenting');
+});
+test('parenting scenes use a native player and do not expose a broken public website URL', () => {
+  const c = catalogFor('https://pocket.example.com');
+  assert.equal(c.getFeature('nursery-music').category, 'parenting');
+  assert.equal(c.getFeatureUrl('nursery-music'), '');
+  assert.equal(c.getFeatureUrl('firstsight'), 'https://pocket.example.com/projects/firstsight/?entry=wechat');
+  const { page, calls } = loadPage('pages/home/index.js');
+  page.openFeature({ currentTarget: { dataset: { id: 'nursery-music', scene: 'sleep' } } });
+  assert.equal(calls.at(-1).data.url, '/nursery/pages/player/index?scene=sleep');
+  for (const scene of ['https://evil.example', 'sleep&url=https://evil.example', 'unknown']) {
+    page.openFeature({ currentTarget: { dataset: { id: 'nursery-music', scene } } });
+    assert.equal(calls.at(-1).data.url, '/nursery/pages/player/index');
+  }
 });
 test('native compatibility route offers retry on a navigation failure without using web-view', () => {
   const { page, calls } = loadPage('pages/web/index.js');
@@ -99,4 +117,23 @@ test('each native route exists in the main or photography code package', () => {
   const pages = config.pages.concat((config.subPackages || []).flatMap(pack => pack.pages.map(page => pack.root + '/' + page)));
   for (const [, route] of routes) assert.ok(pages.includes(route.slice(1).split('?')[0]));
   for (const page of pages) for (const ext of ['.js', '.json', '.wxml', '.wxss']) assert.ok(fs.existsSync(path.join(root, page + ext)));
+});
+
+test('old parenting shares move to the package while preserving only known scenes and songs', () => {
+  const songs = require('../miniprogram/data/nursery-songs');
+  for (const query of [{ scene: 'sleep', song: songs.SONGS[0].id }, { scene: 'https://evil.test', song: '__proto__' }]) {
+    let definition;
+    const calls = [];
+    vm.runInNewContext(fs.readFileSync(path.join(root, 'pages/parenting/index.js'), 'utf8'), {
+      Page: value => { definition = value; }, require: () => songs,
+      wx: { redirectTo: value => calls.push(value) }
+    });
+    const page = { ...definition, data: {}, setData(value) { Object.assign(this.data, value); } };
+    page.onLoad(query);
+    assert.equal(calls[0].url, query.scene === 'sleep'
+      ? '/nursery/pages/player/index?scene=sleep&song=' + songs.SONGS[0].id
+      : '/nursery/pages/player/index');
+    calls[0].fail(); assert.equal(page.data.failed, true);
+    page.openPlayer(); assert.equal(page.data.failed, false);
+  }
 });
