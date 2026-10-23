@@ -10,7 +10,7 @@
 
 ## 发布前核查
 
-- `npm run build`、`npm test`、`npm run check:release` 全部通过，**455/455** 项测试通过。
+- `npm run build`、`npm test`、`npm run check:release` 全部通过，**455/455** 项测试和 **101** 项发布检查通过。
 - 47 张图片均具备独立生成来源、完整提示词、唯一 SHA256、正确歌曲映射、256px 尺寸与压缩预算；原生和网页封面字节一致，并检查全部封面总览。
 - 47/47 个 MP3 的 HEAD、Range 206 和完整 GET 的长度／SHA256 均与固定来源核对通过。完整音频校验结束时间：2026-10-23 14:13:43。报告为本地 `artifacts/nursery-covers/audio-full-sha256.json`。
 - 本地静态预算：主包 1492.2 KiB、育儿分包 584.6 KiB、全部代码素材 8255.4 KiB。
@@ -21,7 +21,9 @@
 
 ## 发布状态
 
-以上为本次发布前实测结果。GitHub 推送、Pages 部署、微信上传的最终提交和结果将在各步骤实际完成后补记；预览成功不代表正式发布。
+- GitHub：源码与 47 张封面已推送 `main`，源码提交为 [`1df0cd252fe358c0c6e3bcc538efaa3022c4d21b`](https://github.com/Brclio/Brclio-Miniapp/commit/1df0cd252fe358c0c6e3bcc538efaa3022c4d21b)。原图不在公开仓库中。
+- Pages：Production 部署 [`add1f773-aff3-4c35-a882-e597b7a00269`](https://add1f773.brclio-miniapp-wechat.pages.dev) 完成，来源为上述提交。`pocket.bornforthis.cn` 与 `pocket.brclio.com` 各 **1,668** 个公开文件全部通过长度和 SHA256 比对，共 **3,336** 项；每域包括 47 张封面，Content-Type 均为 image/jpeg。每域另有健康接口 0.1.4、匿名账号与同步拒绝访问、旧同步接口停用和退役项目 404 的 5 项只读路由检查，共 10 项均通过。报告为本地 `artifacts/nursery-covers/production-verification.json`。13 个既有生产 Secret 名称和 Encrypted 状态核对保持一致，没有修改其值。
+- 微信：**0.1.4 开发版于 16:34:04 上传成功**，官方 CLI 返回 `✔ upload`、退出码 0，AppID 与本工程一致。上传包主包 **1,407,229 字节**、育儿分包 **597,328 字节**、总计 **8,317,834 字节**，与 preview 的包大小分别记录。上传前后 450 个本地源文件长度与 SHA256 全部一致，清单摘要为 `8858c69f7a50c47d2d7738df5e4dc1497100f6527441884fff35603e71d48aad`。这是本地源文件指纹，不是上传编译二进制指纹。日志与清单位于本地 `artifacts/nursery-covers/wechat-upload-0.1.4.log`、`native-source-manifest.json`；官方包体结果为 `artifacts/wechat-upload-0.1.4.json`。
 
 后台体验版、审核与正式发布尚未执行。Computer Use 操作公众平台时返回：
 
