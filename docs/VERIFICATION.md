@@ -1,4 +1,6 @@
-> 当前 `0.1.4` 育儿栏目、47 首儿歌、独立封面、455 项测试、编译与各阶段发布证据见 [NURSERY_RELEASE.md](NURSERY_RELEASE.md)。下文均为此前阶段记录。
+> 当前 `0.1.5` 儿歌收藏同步与微信绑定：481 项测试、构建及发布检查通过，源码已推送 GitHub，正式后端已部署，微信开发版已上传；审核和正式发布因公众平台自动操作限制需所有者接续。线上验证和各阶段证据见 [SONG_SYNC_RELEASE.md](SONG_SYNC_RELEASE.md)。
+
+> 此前 `0.1.4` 育儿栏目、47 首儿歌、独立封面、455 项测试、编译与各阶段发布证据见 [NURSERY_RELEASE.md](NURSERY_RELEASE.md)。下文均为此前阶段记录。
 
 > 网页账号、注册登录与跨端同步的后续补全见 [WEB_ACCOUNT_RELEASE.md](WEB_ACCOUNT_RELEASE.md)。此前原生 `0.1.3` 的永久登录、自动同步、GitHub 提交、Pages 部署与微信开发版上传见 [ACCOUNT_SYNC_RELEASE.md](ACCOUNT_SYNC_RELEASE.md)。
 

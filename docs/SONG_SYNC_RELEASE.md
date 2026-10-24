@@ -11,13 +11,19 @@
 
 ## 发布前验证
 
-`npm run build`、`npm test`（481/481）、`npm run check:release` 和 `git diff --check` 全部通过。版本号已同步至包配置、锁文件、小程序配置与网页目录，官方微信上传说明已改为本版功能。凭据扫描无命中，`.dev.vars` 与 `artifacts/` 继续被 Git 忽略。
+`npm run build`、`npm test`（481/481）、`npm run check:release`（101 项）和 `git diff --check` 全部通过。版本号已同步至包配置、锁文件、小程序配置与网页目录，官方微信上传说明已改为本版功能。凭据扫描无命中，`.dev.vars` 与 `artifacts/` 继续被 Git 忽略。
 
 日志位于本地 `artifacts/account-song-sync/`。本地验证不代表微信真机或审核通过。
 
 ## 发布阶段
 
-GitHub 提交、正式 Pages 部署、双域资源与合成账号联调、微信开发版上传按实际结果逐项追加。微信后台审核与正式发布需另取平台成功状态，不能由开发版上传推断。
+- GitHub：功能源码提交 [`46f20e34bab2271f4db6bb4401e88d430af72bf1`](https://github.com/Brclio/Brclio-Miniapp/commit/46f20e34bab2271f4db6bb4401e88d430af72bf1) 已推送 `main`，对应 [v0.1.5 源码发布](https://github.com/Brclio/Brclio-Miniapp/releases/tag/v0.1.5)。后续发布记录提交只更新文档。
+- Pages：Production 部署 [`16323c48-f857-4985-8b1d-6e7f4c677d0a`](https://16323c48.brclio-miniapp-wechat.pages.dev)，来源为上述功能提交；生产 13 项 Encrypted 配置名称核对一致，没有修改 Secret。
+- 双域公开资源：`pocket.bornforthis.cn` 与 `pocket.brclio.com` 每域 1,668 个文件的长度与 SHA256 全部一致，各含 47 张 JPEG 歌曲封面；合计 **3,336 项文件 + 12 项路由 = 3,348/3,348** 通过。每域 106,459,374 字节，完整清单摘要同为 `ea8d6eeb5c742e898825cd851f315b280949d80462e7e20d7cb43a36cd59628c`。12 个 HTML 请求返回 Pages 正常 308，已仅针对这些条目核对同域规范网址并通过字节比对；首轮响应与复核证据保留。最终报告为本地 `artifacts/account-song-sync/production-verification.json`，逐文件清单为 `public-assets-manifest.json`。
+- 合成账号生产联调：25 次真实 API 请求、37 项检查通过，验证密码登录、收藏增删读回、账号隔离、409、旧端隐藏新字段与写入保留收藏、微信绑定拒绝与会话保留。两组合成账号的当前文件均已按所有权验证清理。报告为本地 `artifacts/account-song-sync/live-2026-10-24T10-21-26-808Z-418b35265d69/report.json`。
+- 微信：官方 CLI `preview` 成功；**0.1.5 开发版于 18:22:00 上传成功**，CLI 返回 `✔ upload`、退出码 0。上传主包 1,413,373 字节，育儿分包 597,450 字节，总计 8,324,100 字节；主包与每个分包均小于 2 MiB。Preview 主包 1,334,927 字节、总计 8,245,654 字节，与上传口径分别记录。上传前后 450 个本地源文件的长度与 SHA256 完全一致，清单摘要 `16aa75d947bcbe6f3491a2cba5acf74973fbfb74b6621e0bfe353ca3df5d5e37`；这是源码指纹，不是上传二进制指纹。证据为本地 `artifacts/account-song-sync/native-source-manifest.json`、`wechat-upload-0.1.5.log` 和 `artifacts/wechat-upload-0.1.5.json`。
+
+本轮微信公众平台已在现有 Chrome 页面尝试读取；Computer Use 明确返回 `Computer Use is not allowed on the current browser URL`，并说明用户自行打开也不能继续自动操作，因此停止该浏览器会话，没有换入口或接口绕过。微信后台审核提交及正式发布尚未完成，需所有者在「管理 → 版本管理」选择本次 **0.1.5 / 18:22 上传包**接续。请完成实际微信绑定、跨设备收藏和 iOS/Android 验收，再按平台要求提交审核；审核通过后正式发布并记录平台成功状态。
 
 建议更新说明：
 

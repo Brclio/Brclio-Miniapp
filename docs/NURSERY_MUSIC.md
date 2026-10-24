@@ -1,6 +1,6 @@
 # 育儿栏目音乐接入
 
-2026-10-24：已实现登录后的儿歌收藏同步，以及账号密码登录后的微信一键绑定。最终本地 `npm run build`、`npm test`（477/477）和 `npm run check:release` 均通过。本轮未部署 Pages、上传微信代码或进行微信真机验收，线上仍需发布对应后端与小程序版本后验证。
+2026-10-24：`0.1.5` 加入登录后的儿歌收藏同步，以及账号密码登录后的微信一键绑定；新旧客户端同步能力保持兼容。发布版 `npm run build`、`npm test`（481/481）和 `npm run check:release` 均通过。GitHub、Pages、线上联调与微信开发版上传结果见 [SONG_SYNC_RELEASE.md](SONG_SYNC_RELEASE.md)，微信审核及正式发布分别记录。
 
 ## 数据来源与远程资源
 
