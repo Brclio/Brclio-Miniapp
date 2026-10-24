@@ -38,11 +38,16 @@ Page({
     if (wx.showShareMenu) wx.showShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] });
   },
   onShow() {
-    if (this._audio) this.applyAudioState(this._audio.getState());
+    if (this._audio) {
+      this.applyAudioState(this._audio.getState());
+      this._audio.onPageShow();
+    }
   },
+  onHide() { if (this._audio) this._audio.onPageHide(); },
   onUnload() {
     this._alive = false;
     if (this._unsubscribe) this._unsubscribe();
+    if (this._audio) this._audio.onPageHide();
   },
   onPageScroll(event) {
     const compact = event.scrollTop > 450;

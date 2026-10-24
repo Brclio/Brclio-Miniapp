@@ -1,5 +1,7 @@
 # 育儿栏目音乐接入
 
+2026-10-24：已实现登录后的儿歌收藏同步，以及账号密码登录后的微信一键绑定。最终本地 `npm run build`、`npm test`（477/477）和 `npm run check:release` 均通过。本轮未部署 Pages、上传微信代码或进行微信真机验收，线上仍需发布对应后端与小程序版本后验证。
+
 ## 数据来源与远程资源
 
 - 来源仓库：[Brclio/Erge-Duoduo](https://github.com/Brclio/Erge-Duoduo)。
@@ -22,7 +24,9 @@
 
 播放服务支持指定队列、上一首/下一首、顺序/随机/单曲循环、进度跳转与睡眠定时。手动下一首可以离开单曲循环，随机上一首返回本次播放历史；自然播放结束才执行单曲重复。顺序队列播放至末尾后回到第一首。
 
-最近歌曲、进度、模式和收藏存于本机 `brclio.nursery-music.v1`；恢复后不自动播放。存储失败不会中断播放，`storageNotice` 会提示进度/收藏可能无法跨次保留。这些数据当前不参与账号同步。
+歌曲收藏独立存于 `brclio.nursery-favorites.v1`，内容为 `{favorites: [歌曲 ID]}`。访客收藏先保存在本机，首个登录账号接续一次；登录后使用现有 `/api/account/sync` 保存至指定私有 Data 仓库，操作后自动同步，断网后保留待同步增删操作。多设备合并按实际点击的歌曲收藏或取消意图处理，避免旧歌单快照恢复已取消的收藏。已有本机收藏在升级时迁移，已领取访客数据的账号仅由原账号接续。
+
+最近歌曲、进度和模式仍存于本机 `brclio.nursery-music.v1`，按账号隔离，不上传云端；恢复后不自动播放。切换账号暂停旧账号播放，读取新账号本机状态；同一账号的云端收藏更新不会跳动歌曲、进度或播放模式。播放器进入前台时拉取收藏，离页仍可继续播放并提交待同步操作。存储失败不会中断播放，`storageNotice` 会提示进度/收藏可能无法跨次保留。
 
 ## 小程序后台与域名验收
 
@@ -50,7 +54,7 @@
 完整核验报告为本地 `artifacts/nursery-covers/audio-full-sha256.json`。默认网络检查仅请求响应头与前 16 字节；显式 `--full` 才检查全部音频字节。
 
 ```sh
-node --test tests/nursery-audio.test.js
+node --test tests/nursery-audio.test.js tests/nursery-account-sync.test.js
 node scripts/check-nursery-music.js
 node scripts/check-nursery-music.js --full
 ```

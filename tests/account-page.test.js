@@ -27,6 +27,7 @@ function host(options = {}) {
     async loginPassword(identifier, password) { calls.push(['loginPassword', identifier, password]); cached = user; return result(); },
     async loginEmail(email, code) { calls.push(['loginEmail', email, code]); cached = user; return result(); },
     async loginWechat() { calls.push(['loginWechat']); cached = { ...user, email: '', username: '', displayName: '', providers: ['wechat'] }; return result(); },
+    async bindWechat() { calls.push(['bindWechat']); cached = { ...cached, providers: [...cached.providers, 'wechat'] }; return result(); },
     async bindEmail(input) { calls.push(['bindEmail', structuredClone(input)]); cached = { ...user, providers: ['email', 'wechat'] }; return result(); },
     async logout() { calls.push(['logout']); cached = null; return { ok: true }; },
     ...(options.account || {})
@@ -125,6 +126,53 @@ test('WeChat creates a usable account and can bind email without leaving the acc
   await p.submitForm(); assert.equal(h.calls.at(-1)[0], 'bindEmail'); assert.equal(p.data.showBind, false);
   assert.equal(p.data.user.email, 'hello@example.com'); assert.equal(p.data.wechatLinked, true);
   assert.equal(p.data.password, ''); assert.equal(p.data.code, ''); p.onUnload();
+});
+
+test('a restored password account binds WeChat without creating an account or asking for login consent again', async () => {
+  const h = host({ user }), p = h.page;
+  await p.onShow();
+  assert.equal(p.data.agreed, false);
+  assert.equal(p.data.wechatLinked, false);
+  await p.wechatLogin();
+  assert.deepEqual(h.calls, [['refreshSession'], ['bindWechat']]);
+  assert.equal(p.data.user.id, user.id);
+  assert.equal(p.data.user.username, user.username);
+  assert.equal(p.data.user.email, user.email);
+  assert.equal(p.data.wechatLinked, true);
+  assert.match(p.data.notice, /微信已绑定/);
+  assert.match(p.data.notice, /此账号/);
+  await p.wechatLogin();
+  assert.equal(h.calls.length, 2);
+  p.onUnload();
+});
+
+test('WeChat binding conflicts keep the password account and show a retryable error', async () => {
+  const h = host({ user, account: { async bindWechat() { throw new Error('此微信已绑定其他账号。'); } } }), p = h.page;
+  await p.onShow();
+  await p.wechatLogin();
+  assert.equal(p.data.busy, false);
+  assert.equal(p.data.user.id, user.id);
+  assert.equal(p.data.wechatLinked, false);
+  assert.match(p.data.error, /已绑定其他账号/);
+  assert.equal(p.data.notice, '');
+  p.onUnload();
+});
+
+test('pending WeChat binding blocks duplicate requests and refreshes and cannot update an unloaded page', async () => {
+  let finish, count = 0;
+  const h = host({ user, account: { bindWechat() { count++; return new Promise(resolve => { finish = resolve; }); } } }), p = h.page;
+  await p.onShow();
+  const binding = p.wechatLogin();
+  assert.equal(p.data.busy, true);
+  await p.wechatLogin();
+  await p.onShow();
+  assert.equal(count, 1);
+  assert.deepEqual(h.calls, [['refreshSession']]);
+  p.onUnload();
+  const before = structuredClone(p.data);
+  finish({ user: { ...user, providers: ['email', 'wechat'] }, expiresAt: null });
+  await binding;
+  assert.deepEqual(p.data, before);
 });
 
 test('session restore handles revocation, keeps indefinite login and retains local state offline', async () => {

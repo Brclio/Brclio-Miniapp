@@ -10,7 +10,8 @@ export const SYNC_KEYS = Object.freeze([
   'brclio.duel.v1', 'RGD_CUSTOM_TITLE', 'RGD_P1_NAME', 'RGD_P2_NAME',
   'RGD_MAX_WAIT', 'RGD_TITLE_TS', 'RGD_SOUND_ENABLED',
   'lingotiles.progress.v1', 'lingotiles.preferences.v1',
-  'lingotiles.native.reduce-motion.v1', 'lingotiles.history.v1'
+  'lingotiles.native.reduce-motion.v1', 'lingotiles.history.v1',
+  'brclio.nursery-favorites.v1'
 ]);
 const allowedKeys = new Set(SYNC_KEYS);
 const privateField = /^(?:__proto__|prototype|constructor|password|passwordPlaintext|passwd|pwd|token|access[_-]?token|refresh[_-]?token|secret|credential(?:s)?|session|session[_-]?key|openid|unionid|authorization|cookie|private[_-]?key|.*reward.*|.*password.*|彩头|密码)$/i;
@@ -91,6 +92,13 @@ function valueFor(key, value) {
   if (key === 'RGD_TITLE_TS') { ensure(stamp(value)); return; }
   if (['RGD_SOUND_ENABLED', 'lingotiles.native.reduce-motion.v1'].includes(key)) { ensure(typeof value === 'boolean'); return; }
   if (key === 'lingotiles.progress.v1') return progress(value);
+  if (key === 'brclio.nursery-favorites.v1') {
+    fields(value, ['favorites'], ['favorites']);
+    ensure(Array.isArray(value.favorites) && value.favorites.length <= 1000 &&
+      value.favorites.every(id => typeof id === 'string' && /^\d{1,20}$/.test(id)) &&
+      new Set(value.favorites).size === value.favorites.length);
+    return;
+  }
   if (key === 'lingotiles.preferences.v1') { fields(value, ['matchAnimation']); ensure(Object.values(value).every(item => typeof item === 'boolean')); return; }
   if (key === 'lingotiles.history.v1') {
     ensure(Array.isArray(value) && value.length <= 200);

@@ -38,12 +38,75 @@ test('all native login and registration methods use the dedicated account API an
   await h.client.loginEmail('Hello@Example.com', '000123');
   assert.equal(h.calls.at(-1).url.endsWith('/login/email'), true);
   assert.deepEqual(h.calls.at(-1).data, { email: 'hello@example.com', code: '000123' });
+  await h.client.logout();
   await h.client.loginWechat();
   assert.equal(h.calls.at(-2).method, 'wx.login');
   assert.equal(h.calls.at(-2).timeout, WECHAT_LOGIN_TIMEOUT);
   assert.equal(REQUEST_TIMEOUT, 45000);
   assert.deepEqual(h.calls.at(-1).data, { code: 'one-time-wechat-code' });
   assert.equal(h.calls.at(-1).url.endsWith('/login/wechat'), true);
+  assert.equal(h.calls.at(-1).header.Authorization, undefined);
+});
+
+test('WeChat login binds an active account with bearer auth and preserves its session and identity', async () => {
+  const h = host({ pending: true, storage: [[STORAGE_KEY, { token: 'password-token', user, expiresAt: NOW - 1000 }]] });
+  const events = []; h.client.subscribe(event => events.push(event));
+  const binding = h.client.loginWechat();
+  await Promise.resolve();
+  assert.equal(h.pending[0].url.endsWith('/bind/wechat'), true);
+  assert.equal(h.pending[0].header.Authorization, 'Bearer password-token');
+  assert.deepEqual(h.pending[0].data, { code: 'one-time-wechat-code' });
+  complete(h.pending[0], { user: { ...user, providers: ['email', 'wechat'] }, expiresAt: null });
+  const result = await binding;
+  assert.equal(result.user.id, user.id);
+  assert.deepEqual(result.user.providers, ['email', 'wechat']);
+  assert.equal(h.values.get(STORAGE_KEY).token, 'password-token');
+  assert.equal(h.values.get(STORAGE_KEY).expiresAt, null);
+  assert.equal(events[0].reason, 'bind');
+  assert.equal(JSON.stringify(events).includes('password-token'), false);
+});
+
+test('explicit WeChat binding requires login and failures keep the current account', async () => {
+  const guest = host();
+  await assert.rejects(guest.client.bindWechat(), error => error.code === 'session_expired');
+  assert.equal(guest.calls.length, 0);
+  const h = host({ pending: true, storage: [[STORAGE_KEY, { token: 'password-token', user, expiresAt: null }]] });
+  for (const [status, code] of [[409, 'wechat_taken'], [401, 'wechat_login_failed']]) {
+    const binding = h.client.bindWechat();
+    await Promise.resolve();
+    complete(h.pending.at(-1), { error: code, message: '微信暂未绑定。' }, status);
+    await assert.rejects(binding, error => error.code === code);
+    assert.equal(h.client.getCachedUser().id, user.id);
+    assert.equal(h.values.get(STORAGE_KEY).token, 'password-token');
+  }
+  const malformed = h.client.bindWechat();
+  await Promise.resolve();
+  complete(h.pending.at(-1), { user: { ...user, id: 'another-user' }, expiresAt: null });
+  await assert.rejects(malformed, error => error.code === 'invalid_response');
+  assert.equal(h.client.getCachedUser().id, user.id);
+});
+
+test('logout or account changes during WeChat binding never transmit or restore the old session', async () => {
+  const h = host({ pending: true, storage: [[STORAGE_KEY, { token: 'password-token', user, expiresAt: null }]] });
+  let finish;
+  h.wx.login = request => { finish = request.success; };
+  const beforeCode = h.client.bindWechat();
+  const logout = h.client.logout();
+  complete(h.pending[0], { ok: true }); await logout;
+  finish({ code: 'pending-code' });
+  await assert.rejects(beforeCode, error => error.code === 'operation_canceled');
+  assert.equal(h.pending.length, 1);
+  assert.equal(h.client.getCachedUser(), null);
+
+  const pending = host({ pending: true, storage: [[STORAGE_KEY, { token: 'password-token', user, expiresAt: null }]] });
+  const binding = pending.client.bindWechat();
+  await Promise.resolve();
+  const replacement = pending.client.loginPassword('brclio', 'password');
+  complete(pending.pending[1], { user: { ...user, id: 'other-user' }, token: 'other-token', expiresAt: null }); await replacement;
+  complete(pending.pending[0], { user: { ...user, providers: ['email', 'wechat'] }, expiresAt: null });
+  await assert.rejects(binding, error => error.code === 'operation_canceled');
+  assert.equal(pending.client.getCachedUser().id, 'other-user');
+  assert.equal(pending.values.get(STORAGE_KEY).token, 'other-token');
 });
 
 test('email code purposes stay explicit and binding is authenticated', async () => {

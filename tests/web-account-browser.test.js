@@ -154,6 +154,27 @@ test('email authentication shares permanent native sessions and only sends crede
   h.close();
 });
 
+test('browser bridge forwards sync version 2 on real GET and PUT requests while keeping other routes unchanged', async () => {
+  const h = host({ session: session(A) });
+  await h.runtime.ready;
+  await h.runtime.client.readSync();
+  const read = h.calls.at(-1);
+  assert.equal(read.method, 'GET'); assert.equal(new URL(read.url).pathname, '/api/account/sync');
+  assert.equal(read.headers['X-Brclio-Sync-Version'], '2');
+  assert.equal(read.headers.Authorization, 'Bearer ' + token(A));
+  assert.equal(read.headers['Content-Type'], 'application/json');
+  h.runtime.storage.setStorageSync('brclio.nursery-favorites.v1', { favorites: ['1451390672'] });
+  await h.runtime.sync.flush();
+  const write = h.calls.findLast(call => call.url.endsWith('/sync') && call.method === 'PUT');
+  assert.equal(write.headers['X-Brclio-Sync-Version'], '2');
+  assert.deepEqual(JSON.parse(write.body).entries['brclio.nursery-favorites.v1'].value, { favorites: ['1451390672'] });
+  await h.runtime.client.refreshSession();
+  const profile = h.calls.findLast(call => call.url.endsWith('/session'));
+  assert.equal(profile.headers['X-Brclio-Sync-Version'], undefined);
+  assert.ok(h.calls.every(call => new URL(call.url).search === ''));
+  h.close();
+});
+
 test('registered browser sessions restore without TTL and hydrate typed sync entries before a fast module boot', async () => {
   const h = host({ url: 'https://pocket.bornforthis.cn/projects/ready-go-duel/', session: { ...session(A), expiresAt: '2020-01-01T00:00:00.000Z' } });
   h.server(A).entries.RGD_SOUND_ENABLED = { value: false, updatedAt: NOW - 100 };

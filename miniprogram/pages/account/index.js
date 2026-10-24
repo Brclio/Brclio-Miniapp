@@ -28,7 +28,7 @@ Page({
     this.applyUser(user);
     sync.onShow({ pull: true });
     this.updateCooldown();
-    if (!user || this._refreshing) return;
+    if (!user || this._refreshing || this.data.busy) return;
     this._refreshing = true;
     this.setData({ refreshing: true });
     try {
@@ -160,7 +160,13 @@ Page({
   },
 
   async wechatLogin() {
-    if (this.data.busy || this.data.sendingCode || !this.requireConsent()) return;
+    if (this.data.busy || this.data.sendingCode || this.data.refreshing) return;
+    if (this.data.user) {
+      if (this.data.wechatLinked) return;
+      await this.runAuth(() => account.bindWechat(), '微信已绑定，下次可用微信一键登录此账号。');
+      return;
+    }
+    if (!this.requireConsent()) return;
     await this.runAuth(() => account.loginWechat(), '微信登录成功，欢迎来到悦创。');
   },
 

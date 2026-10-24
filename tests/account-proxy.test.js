@@ -12,7 +12,7 @@ function blockNetwork(t) {
 test('account entry requires explicit server enablement and never forwards old credentials', async t => {
   const calls = blockNetwork(t);
   const { proxyAccount } = await import('../web/account-proxy.mjs');
-  for (const [route, method] of [['session', 'GET'], ['register', 'POST'], ['login/password', 'POST'], ['login/email', 'POST'], ['login/wechat', 'POST'], ['logout', 'POST']]) {
+  for (const [route, method] of [['session', 'GET'], ['register', 'POST'], ['login/password', 'POST'], ['login/email', 'POST'], ['login/wechat', 'POST'], ['bind/wechat', 'POST'], ['logout', 'POST']]) {
     const response = await proxyAccount(new Request('https://pocket.bornforthis.cn/api/account/' + route, {
       method, headers: { Authorization: 'Bearer old-native-session', Cookie: 'old-session=private', 'Content-Type': 'application/json' },
       ...(method === 'GET' ? {} : { body: '{not-json' })

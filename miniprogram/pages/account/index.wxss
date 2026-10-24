@@ -37,6 +37,7 @@ button[disabled] { opacity: .5; }
 .wechat-mark { width: 48rpx; height: 48rpx; border-radius: 50%; color: #fefcf6; background: #43613d; font-size: 22rpx; display: flex; align-items: center; justify-content: center; }
 .wechat-arrow { margin-left: auto; font-size: 30rpx; }
 .wechat-caption { font-size: 20rpx; color: #817d76; text-align: center; margin-top: 12rpx; }
+.bind-wechat-section { margin-top: 28rpx; }
 .account-message { padding: 20rpx 23rpx; border-radius: 8rpx; font-size: 23rpx; margin-top: 25rpx; line-height: 1.75; overflow-wrap: anywhere; }
 .account-error { background: #fae9e7; color: #a13c4d; }
 .account-notice { background: #f6efcf; color: #75622c; }

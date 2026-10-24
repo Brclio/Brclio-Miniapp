@@ -6,9 +6,11 @@ const MAX_ENTRY_BYTES = 200 * 1024;
 const MAX_REQUEST_BYTES = 256 * 1024;
 const MAX_HISTORY_RECORDS = 200;
 const HISTORY_KEY = 'lingotiles.history.v1';
+const NURSERY_FAVORITES_KEY = 'brclio.nursery-favorites.v1';
+const NURSERY_LOCAL_KEY = 'brclio.nursery-music.v1';
 const JSON_KEYS = ['lingotiles.progress.v1', 'lingotiles.preferences.v1'];
-const SYNC_KEYS = ['brclio.duel.v1', 'RGD_CUSTOM_TITLE', 'RGD_P1_NAME', 'RGD_P2_NAME', 'RGD_MAX_WAIT', 'RGD_TITLE_TS', 'RGD_SOUND_ENABLED', 'lingotiles.progress.v1', 'lingotiles.preferences.v1', 'lingotiles.native.reduce-motion.v1', HISTORY_KEY];
-const LOCAL_ONLY_KEYS = ['RGD_CUSTOM_REWARDS', 'RGD_CUSTOM_TS', 'brclio.duel.before-restore.v1', 'lingotiles.illustrations.pending.v1'];
+const SYNC_KEYS = ['brclio.duel.v1', 'RGD_CUSTOM_TITLE', 'RGD_P1_NAME', 'RGD_P2_NAME', 'RGD_MAX_WAIT', 'RGD_TITLE_TS', 'RGD_SOUND_ENABLED', 'lingotiles.progress.v1', 'lingotiles.preferences.v1', 'lingotiles.native.reduce-motion.v1', HISTORY_KEY, NURSERY_FAVORITES_KEY];
+const LOCAL_ONLY_KEYS = ['RGD_CUSTOM_REWARDS', 'RGD_CUSTOM_TS', 'brclio.duel.before-restore.v1', 'lingotiles.illustrations.pending.v1', NURSERY_LOCAL_KEY];
 const clone = value => JSON.parse(JSON.stringify(value));
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
 const integer = (value, maximum = Number.MAX_SAFE_INTEGER) => Number.isSafeInteger(value) && value >= 0 && value <= maximum;
@@ -71,6 +73,7 @@ function normalizeValue(key, raw) {
   else if (key === 'lingotiles.progress.v1') value = normalizeProgress(value);
   else if (key === 'lingotiles.preferences.v1') value = record(value) && typeof value.matchAnimation === 'boolean' ? { matchAnimation: value.matchAnimation } : undefined;
   else if (key === HISTORY_KEY) value = normalizeHistory(value);
+  else if (key === NURSERY_FAVORITES_KEY) value = record(value) && Array.isArray(value.favorites) && value.favorites.length <= 1000 && value.favorites.every(id => typeof id === 'string' && /^\d{1,20}$/.test(id)) ? { favorites: [...new Set(value.favorites)] } : undefined;
   else if (['RGD_CUSTOM_TITLE', 'RGD_P1_NAME', 'RGD_P2_NAME'].includes(key)) value = text(value, 200, true) ? value : undefined;
   else if (key === 'RGD_MAX_WAIT') value = finite(Number(value), 10) && Number(value) >= 3 ? Number(value) : undefined;
   else if (key === 'RGD_TITLE_TS') value = integer(Number(value)) ? Number(value) : undefined;
@@ -111,4 +114,4 @@ function mergeEntry(key, first, second) {
   }
   return { value, updatedAt: Math.max(first.updatedAt, second.updatedAt) };
 }
-module.exports = { MAX_ENTRY_BYTES, MAX_REQUEST_BYTES, MAX_HISTORY_RECORDS, HISTORY_KEY, SYNC_KEYS, LOCAL_ONLY_KEYS, JSON_KEYS, normalizeValue, encodeLocal, scopedKey, byteLength, equal, mergeEntry };
+module.exports = { MAX_ENTRY_BYTES, MAX_REQUEST_BYTES, MAX_HISTORY_RECORDS, HISTORY_KEY, NURSERY_FAVORITES_KEY, NURSERY_LOCAL_KEY, SYNC_KEYS, LOCAL_ONLY_KEYS, JSON_KEYS, normalizeValue, encodeLocal, scopedKey, byteLength, equal, mergeEntry };

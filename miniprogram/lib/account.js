@@ -96,6 +96,7 @@ function createAccountClient(options) {
       if (!base || !api || typeof api.request !== 'function') return reject(accountError('service_unavailable', '账号服务暂时不可用，请稍后重试。'));
       const header = { 'Content-Type': 'application/json' };
       if (token) header.Authorization = 'Bearer ' + token;
+      if (path === '/sync') header['X-Brclio-Sync-Version'] = '2';
       try {
         api.request({ url: base + path, method, header, timeout: REQUEST_TIMEOUT,
           ...(data === undefined ? {} : { data }),
@@ -106,7 +107,7 @@ function createAccountClient(options) {
             const message = body && typeof body.message === 'string' && body.message.length <= 180 ? body.message : '操作未完成，请稍后重试。';
             const error = accountError(code, message, body);
             error.status = response.statusCode;
-            if (response.statusCode === 401 && token && path !== '/logout') {
+            if (response.statusCode === 401 && token && path !== '/logout' && code !== 'wechat_login_failed') {
               const current = readSession();
               if (current && current.token === token && generation === requestGeneration) clearSession('unauthorized');
             }
@@ -181,6 +182,21 @@ function createAccountClient(options) {
     if (expected !== generation || !memorySession || memorySession.token !== session.token) throw accountError('operation_canceled', '账号已变化，本次同步已取消。');
     return result;
   }
+  async function wechatAuthentication(session) {
+    const currentGeneration = generation;
+    const api = platform();
+    if (!api || typeof api.login !== 'function') throw accountError('wechat_unavailable', '微信登录暂时不可用，请选择其他方式。');
+    const code = await new Promise((resolve, reject) => {
+      api.login({ timeout: WECHAT_LOGIN_TIMEOUT, success(result) { result && result.code ? resolve(result.code) : reject(accountError('wechat_login_failed', '未能完成微信登录，请重试。')); },
+        fail() { reject(accountError('wechat_login_failed', '未能完成微信登录，请重试。')); } });
+    });
+    if (currentGeneration !== generation) throw accountError('operation_canceled', '登录状态已变化，请重试。');
+    if (!session) return authenticate('/login/wechat', { code }, currentGeneration);
+    const result = await request('/bind/wechat', 'POST', { code }, session.token);
+    if (currentGeneration !== generation) throw accountError('operation_canceled', '登录状态已变化，请重试。');
+    if (!result.user || result.user.id !== session.user.id) throw accountError('invalid_response', '绑定结果暂时无法读取，请重试。');
+    return saveSession({ ...result, token: session.token, expiresAt: result.expiresAt === undefined ? session.expiresAt : result.expiresAt }, 'bind');
+  }
   const client = {
     flushRevocations,
     getSessionSnapshot() { const session = readSession(); return session ? { user: safeUser(session.user), expiresAt: session.expiresAt } : { user: null, expiresAt: null }; },
@@ -224,15 +240,11 @@ function createAccountClient(options) {
       if (!CODE_PATTERN.test(value)) throw accountError('invalid_code', '请输入 6 位邮箱验证码。');
       return authenticate('/login/email', { email: requireEmail(email), code: value });
     },
-    async loginWechat() {
-      const currentGeneration = generation;
-      const api = platform();
-      if (!api || typeof api.login !== 'function') throw accountError('wechat_unavailable', '微信登录暂时不可用，请选择其他方式。');
-      const code = await new Promise((resolve, reject) => {
-        api.login({ timeout: WECHAT_LOGIN_TIMEOUT, success(result) { result && result.code ? resolve(result.code) : reject(accountError('wechat_login_failed', '未能完成微信登录，请重试。')); },
-          fail() { reject(accountError('wechat_login_failed', '未能完成微信登录，请重试。')); } });
-      });
-      return authenticate('/login/wechat', { code }, currentGeneration);
+    async loginWechat() { return wechatAuthentication(readSession()); },
+    async bindWechat() {
+      const session = readSession();
+      if (!session) throw accountError('session_expired', '请先登录后再绑定微信。');
+      return wechatAuthentication(session);
     },
     async bindEmail(input) {
       const data = registrationFields(input), session = readSession();

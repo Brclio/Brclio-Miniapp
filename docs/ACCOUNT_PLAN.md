@@ -10,6 +10,7 @@
 - 密码登录：邮箱或账号加密码。
 - 邮箱登录：已注册邮箱加登录用途的邮箱验证码。
 - 微信登录：原生 `wx.login` 获取临时 code，后端使用本小程序 AppID 与 AppSecret 换取身份；首次创建用户，之后进入同一用户。
+- 邮箱或账号密码登录后，可在当前账号点击「微信一键登录并绑定」；绑定保留用户 ID、账号、密码与收藏，之后微信登录进入同一账号。若微信已属于其他用户或当前账号已关联另一个微信，拒绝绑定并保留原登录状态。
 - 微信新用户可在登录后验证未被占用的邮箱，同时设置账号和密码，保留用户 ID。已经属于其他用户的邮箱或账号会被拒绝，不自动合并账号。
 
 账号为 4–24 位字母、数字或下划线，以字母开头；账号及邮箱按小写规范化。密码为 8–128 位，不接受控制字符。按仓库所有者明确要求，私有用户库的 `credentials.json` 保存 `passwordPlaintext` 明文字段；登录校验另外使用随机盐与服务端 pepper 的 PBKDF2-SHA256 记录。账号接口、公开资料、本机缓存与前端提示均不包含该明文副本。微信新用户未设置密码时两项均为空。
@@ -62,6 +63,7 @@ GitHub App 使用 RS256 JWT 换取短期 installation token，每个 token 再�
 | `POST /login/wechat` | `{code}` | 微信登录或首次注册 |
 | `GET /session` | bearer | 当前用户与有效期 |
 | `POST /logout` | `{}` + bearer | 注销当前服务端会话 |
+| `POST /bind/wechat` | `{code}` + bearer | 将当前微信绑定至已登录账号，保留凭据与会话 |
 | `POST /bind/email` | `{email,username,password,code}` + bearer | 微信用户绑定邮箱、账号和密码 |
 | `GET /sync` | bearer | 读取当前账号白名单同步数据与 revision |
 | `PUT /sync` | `{revision,entries}` + bearer | 校验白名单并原子合并，冲突返回 409 |
@@ -69,6 +71,8 @@ GitHub App 使用 RS256 JWT 换取短期 installation token，每个 token 再�
 | `PUT /data` | `{revision,preferences}` + bearer | 比较 revision 后更新自己的声音/振动偏好 |
 
 登录只返回安全用户资料、当前会话 token 和 `expiresAt: null`。`/data` 的 `preferences` 只接受 `soundEnabled` 与 `haptics` 布尔值，不上传邮箱、密码、微信身份、照片、对局或学习足迹。新增 `/sync` 通过固定白名单同步操作记录，结构、冲突与断网行为见最新发布文档。数据按已验证用户 ID 定位，拒绝客户端自选用户。偏好写入 revision 冲突返回 `409 data_conflict`，需先重读。
+
+`0.1.5` 的 `/sync` 请求添加 `X-Brclio-Sync-Version: 2` 以接收儿歌收藏。旧客户端未声明该版本时，响应隐藏新增收藏字段，保留全局 revision；旧客户端的写入只更新对应字段，不移除儿歌收藏。CORS 允许该能力头，原生与网页共用客户端均发送。
 
 ## 校验、并发与限流
 

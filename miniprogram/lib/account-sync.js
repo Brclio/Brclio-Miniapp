@@ -6,7 +6,7 @@ const DATA_PREFIX = 'brclio.miniapp-data.v1:';
 const CLAIM_KEY = 'brclio.miniapp-sync.guest-owner.v1';
 const clone = value => JSON.parse(JSON.stringify(value));
 const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
-const empty = () => ({ schemaVersion: 1, revision: 0, entries: {}, dirty: {}, materialized: {}, blocked: {}, favoriteEdits: {}, duelEdits: {}, lastSyncedAt: null });
+const empty = () => ({ schemaVersion: 1, revision: 0, entries: {}, dirty: {}, materialized: {}, blocked: {}, favoriteEdits: {}, nurseryFavoriteEdits: {}, duelEdits: {}, lastSyncedAt: null });
 
 function createAccountSync(options) {
   const opt = options || {}, account = opt.account || defaultAccount;
@@ -43,6 +43,12 @@ function createAccountSync(options) {
         for (const id of Object.keys(value.favoriteEdits)) {
           const edit = value.favoriteEdits[id];
           if (edit && typeof edit.saved === 'boolean' && Number.isSafeInteger(edit.updatedAt) && id.length <= 200 && !['__proto__', 'constructor', 'prototype'].includes(id)) meta.favoriteEdits[id] = { saved: edit.saved, updatedAt: edit.updatedAt };
+        }
+      }
+      if (value.nurseryFavoriteEdits && typeof value.nurseryFavoriteEdits === 'object' && !Array.isArray(value.nurseryFavoriteEdits)) {
+        for (const id of Object.keys(value.nurseryFavoriteEdits)) {
+          const edit = value.nurseryFavoriteEdits[id];
+          if (edit && typeof edit.saved === 'boolean' && Number.isSafeInteger(edit.updatedAt) && /^\d{1,20}$/.test(id)) meta.nurseryFavoriteEdits[id] = { saved: edit.saved, updatedAt: edit.updatedAt };
         }
       }
       if (value.duelEdits && typeof value.duelEdits === 'object' && !Array.isArray(value.duelEdits)) {
@@ -90,18 +96,20 @@ function createAccountSync(options) {
     if (timer !== null) cancel(timer);
     timer = schedule(() => { timer = null; void flush(); }, Math.max(0, delay));
   }
-  function favoriteIntent(meta, value, previous, at) {
+  function favoriteIntent(meta, value, previous, at, nursery = false) {
     if (!value || typeof value !== 'object') return;
-    const old = new Set(previous && Array.isArray(previous.saved) ? previous.saved : []);
-    const next = new Set(Array.isArray(value.saved) ? value.saved : []);
-    for (const id of next) if (!old.has(id)) meta.favoriteEdits[id] = { saved: true, updatedAt: at };
-    for (const id of old) if (!next.has(id)) meta.favoriteEdits[id] = { saved: false, updatedAt: at };
+    const field = nursery ? 'favorites' : 'saved', edits = nursery ? meta.nurseryFavoriteEdits : meta.favoriteEdits;
+    const old = new Set(previous && Array.isArray(previous[field]) ? previous[field] : []);
+    const next = new Set(Array.isArray(value[field]) ? value[field] : []);
+    for (const id of next) if (!old.has(id)) edits[id] = { saved: true, updatedAt: at };
+    for (const id of old) if (!next.has(id)) edits[id] = { saved: false, updatedAt: at };
   }
-  function outgoingProgress(meta, value, base) {
+  function outgoingProgress(meta, value, base, nursery = false) {
     if (!value || typeof value !== 'object') return value;
-    const saved = new Set(base && Array.isArray(base.saved) ? base.saved : []);
-    for (const id of Object.keys(meta.favoriteEdits)) { if (meta.favoriteEdits[id].saved) saved.add(id); else saved.delete(id); }
-    return { ...value, saved: [...saved] };
+    const field = nursery ? 'favorites' : 'saved', edits = nursery ? meta.nurseryFavoriteEdits : meta.favoriteEdits;
+    const saved = new Set(base && Array.isArray(base[field]) ? base[field] : []);
+    for (const id of Object.keys(edits)) { if (edits[id].saved) saved.add(id); else saved.delete(id); }
+    return { ...value, [field]: [...saved] };
   }
   function duelIntent(meta, value, previous, changedKeys, at) {
     if (!value || typeof value !== 'object') { meta.duelEdits = {}; return; }
@@ -142,10 +150,12 @@ function createAccountSync(options) {
     }
     delete meta.blocked[key];
     if (key === 'lingotiles.progress.v1') favoriteIntent(meta, typed, meta.materialized[key], stamp());
+    if (key === schema.NURSERY_FAVORITES_KEY) favoriteIntent(meta, typed, meta.materialized[key], stamp(), true);
     if (key === 'brclio.duel.v1') duelIntent(meta, typed, meta.materialized[key], options && options.changedKeys, stamp());
     meta.materialized[key] = clone(typed);
     const old = meta.entries[key];
     if (key === 'lingotiles.progress.v1') typed = outgoingProgress(meta, typed, old && old.value);
+    if (key === schema.NURSERY_FAVORITES_KEY) typed = outgoingProgress(meta, typed, old && old.value, true);
     if (key === 'brclio.duel.v1') typed = outgoingDuel(meta, typed, old && old.value);
     if (old && schema.equal(old.value, typed)) { try { persist(); } catch (error) { failure(error); } return; }
     meta.entries[key] = { value: typed, updatedAt: stamp() };
@@ -172,19 +182,75 @@ function createAccountSync(options) {
       if (meta.blocked[key]) { delete meta.blocked[key]; changed = true; }
       if (shadow === undefined || !schema.equal(shadow, typed)) {
         if (key === 'lingotiles.progress.v1') favoriteIntent(meta, typed, shadow, stamp());
+        if (key === schema.NURSERY_FAVORITES_KEY) favoriteIntent(meta, typed, shadow, stamp(), true);
         if (key === 'brclio.duel.v1') duelIntent(meta, typed, shadow, undefined, stamp());
         meta.materialized[key] = clone(typed);
-        const outgoing = key === 'lingotiles.progress.v1' ? outgoingProgress(meta, typed, old && old.value) : key === 'brclio.duel.v1' ? outgoingDuel(meta, typed, old && old.value) : typed;
+        const outgoing = key === 'lingotiles.progress.v1' ? outgoingProgress(meta, typed, old && old.value) : key === schema.NURSERY_FAVORITES_KEY ? outgoingProgress(meta, typed, old && old.value, true) : key === 'brclio.duel.v1' ? outgoingDuel(meta, typed, old && old.value) : typed;
         meta.entries[key] = { value: outgoing, updatedAt: stamp() }; meta.dirty[key] = true; changed = true;
       }
     }
     if (changed) persist(owner);
   }
+  function deriveNurseryFavorites(snapshot) {
+    if (own(snapshot, schema.NURSERY_FAVORITES_KEY)) return;
+    let legacy = snapshot[schema.NURSERY_LOCAL_KEY];
+    if (typeof legacy === 'string') { try { legacy = JSON.parse(legacy); } catch (_) { return; } }
+    if (!legacy || legacy.version !== 1 || !Array.isArray(legacy.favorites)) return;
+    const value = schema.normalizeValue(schema.NURSERY_FAVORITES_KEY, { favorites: legacy.favorites });
+    if (value !== undefined) snapshot[schema.NURSERY_FAVORITES_KEY] = value;
+  }
+  function nurserySnapshot() {
+    const snapshot = {};
+    for (const key of [schema.NURSERY_LOCAL_KEY, schema.NURSERY_FAVORITES_KEY]) {
+      const value = rawGet(key);
+      if (!missing(value)) snapshot[key] = clone(value);
+    }
+    deriveNurseryFavorites(snapshot);
+    return snapshot;
+  }
+  function freezeNurseryUpgrade(previousClaim) {
+    if (!previousClaim || previousClaim.copyComplete !== true || previousClaim.nurseryCopyComplete === true) return previousClaim;
+    const snapshot = previousClaim.nurserySnapshot;
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+      const frozen = { ...previousClaim, nurseryCopyComplete: false, nurserySnapshot: nurserySnapshot() };
+      rawSet(CLAIM_KEY, frozen);
+      return frozen;
+    }
+    return previousClaim;
+  }
+  function migrateGuestNursery() {
+    if (!missing(rawGet(schema.NURSERY_FAVORITES_KEY))) return;
+    const snapshot = nurserySnapshot();
+    if (own(snapshot, schema.NURSERY_FAVORITES_KEY)) rawSet(schema.NURSERY_FAVORITES_KEY, snapshot[schema.NURSERY_FAVORITES_KEY]);
+  }
+  function upgradeNurseryClaim(owner, previousClaim) {
+    if (previousClaim.nurseryCopyComplete === true) return;
+    previousClaim = freezeNurseryUpgrade(previousClaim);
+    const snapshot = previousClaim.nurserySnapshot;
+    // Earlier releases completed the guest claim before nursery data was scoped.
+    // Only that original owner may import it, from one frozen upgrade snapshot.
+    const meta = load(owner);
+    for (const key of [schema.NURSERY_LOCAL_KEY, schema.NURSERY_FAVORITES_KEY]) {
+      if (!own(snapshot, key) || !missing(rawGet(physical(key, owner)))) continue;
+      rawSet(physical(key, owner), clone(snapshot[key]));
+      if (key === schema.NURSERY_FAVORITES_KEY) {
+        const value = schema.normalizeValue(key, snapshot[key]);
+        if (value === undefined) continue;
+        favoriteIntent(meta, value, null, stamp(), true);
+        meta.materialized[key] = clone(value);
+        meta.entries[key] = { value, updatedAt: stamp() }; meta.dirty[key] = true;
+      }
+    }
+    persist(owner);
+    const complete = { ...previousClaim, nurseryCopyComplete: true };
+    delete complete.nurserySnapshot;
+    rawSet(CLAIM_KEY, complete);
+  }
   function claim(owner) {
     const existingOwner = getGuestOwner();
     if (existingOwner && existingOwner !== owner) return;
     const previousClaim = rawGet(CLAIM_KEY);
-    if (existingOwner === owner && previousClaim && previousClaim.copyComplete === true) return;
+    if (existingOwner === owner && previousClaim && previousClaim.copyComplete === true) { upgradeNurseryClaim(owner, previousClaim); return; }
     let snapshot = previousClaim && previousClaim.snapshot;
     if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
       snapshot = {};
@@ -193,6 +259,7 @@ function createAccountSync(options) {
         if (!missing(value)) snapshot[key] = clone(value);
       }
     }
+    deriveNurseryFavorites(snapshot);
     // Freeze the claimed guest snapshot before copying. A storage interruption
     // may retry this same snapshot, but can never claim later guest activity.
     const claimedAt = previousClaim && previousClaim.claimedAt || now();
@@ -207,11 +274,11 @@ function createAccountSync(options) {
       rawSet(destination, clone(raw));
       if (schema.SYNC_KEYS.includes(key)) {
         const value = schema.normalizeValue(key, raw);
-        if (value !== undefined) { if (key === 'lingotiles.progress.v1') favoriteIntent(meta, value, null, stamp()); if (key === 'brclio.duel.v1') duelIntent(meta, value, null, undefined, stamp()); meta.materialized[key] = clone(value); meta.entries[key] = { value, updatedAt: guest.entries[key] ? guest.entries[key].updatedAt : stamp() }; meta.dirty[key] = true; }
+        if (value !== undefined) { if (key === 'lingotiles.progress.v1') favoriteIntent(meta, value, null, stamp()); if (key === schema.NURSERY_FAVORITES_KEY) favoriteIntent(meta, value, null, stamp(), true); if (key === 'brclio.duel.v1') duelIntent(meta, value, null, undefined, stamp()); meta.materialized[key] = clone(value); meta.entries[key] = { value, updatedAt: guest.entries[key] ? guest.entries[key].updatedAt : stamp() }; meta.dirty[key] = true; }
       }
     }
     persist(owner);
-    rawSet(CLAIM_KEY, { userId: owner, claimedAt, copyComplete: true });
+    rawSet(CLAIM_KEY, { userId: owner, claimedAt, copyComplete: true, nurseryCopyComplete: true });
   }
   function switchScope(owner) {
     if (owner === scope && activated) {
@@ -221,7 +288,9 @@ function createAccountSync(options) {
     if (timer !== null) cancel(timer); timer = null;
     epoch += 1; scope = owner; activated = true; pending = null; currentError = null;
     try {
+      freezeNurseryUpgrade(rawGet(CLAIM_KEY));
       if (owner !== 'guest') claim(owner);
+      else migrateGuestNursery();
       load(owner); reconcile(owner);
       emit(owner === 'guest' ? 'guest' : connected ? Object.keys(load().dirty).length ? 'pending' : 'idle' : 'offline');
     } catch (error) { failure(error); }
@@ -254,6 +323,7 @@ function createAccountSync(options) {
         }
         merged.value.saved = [...saved];
       }
+      if (key === schema.NURSERY_FAVORITES_KEY && meta.dirty[key] && merged.value && incoming.value) merged.value = outgoingProgress(meta, merged.value, incoming.value, true);
       if (key === 'brclio.duel.v1' && meta.dirty[key] && merged.value && incoming.value) merged.value = outgoingDuel(meta, merged.value, incoming.value);
       if (schema.normalizeValue(key, merged.value) === undefined) throw new Error('合并记录超出同步范围，本机记录已保留。');
       if (!own(meta.materialized, key)) {
@@ -266,6 +336,7 @@ function createAccountSync(options) {
       if (schema.equal(merged, incoming)) {
         delete meta.dirty[key];
         if (key === 'lingotiles.progress.v1') meta.favoriteEdits = {};
+        if (key === schema.NURSERY_FAVORITES_KEY) meta.nurseryFavoriteEdits = {};
         if (key === 'brclio.duel.v1') meta.duelEdits = {};
       } else meta.dirty[key] = true;
     }

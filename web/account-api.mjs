@@ -10,7 +10,7 @@ const HEADERS = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosnif
 const ROUTES = new Map([
   ['/email/code', 'POST'], ['/register', 'POST'], ['/login/password', 'POST'],
   ['/login/email', 'POST'], ['/login/wechat', 'POST'], ['/session', 'GET'],
-  ['/logout', 'POST'], ['/bind/email', 'POST'], ['/data', 'GET,PUT'], ['/sync', 'GET,PUT']
+  ['/logout', 'POST'], ['/bind/email', 'POST'], ['/bind/wechat', 'POST'], ['/data', 'GET,PUT'], ['/sync', 'GET,PUT']
 ]);
 
 class AccountError extends Error {
@@ -21,6 +21,12 @@ class AccountError extends Error {
 function fail(status, code, message, retryAfter) { return new AccountError(status, code, message, retryAfter); }
 function rejected(status, error, message, retryAfter) { return { failure: { status, error, message, retryAfter } }; }
 function json(value, status = 200, headers = {}) { return Response.json(value, { status, headers: { ...HEADERS, ...headers } }); }
+function syncResponse(document, request) {
+  if (request.headers.get('X-Brclio-Sync-Version') === '2') return document;
+  // Released clients reject unknown keys. Keep the shared revision and stored
+  // document intact while returning the business keys that those clients know.
+  return { revision: document.revision, entries: Object.fromEntries(Object.entries(document.entries).filter(([key]) => key !== 'brclio.nursery-favorites.v1')) };
+}
 function hex(bytes) { return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join(''); }
 function bytesFromHex(value) { return Uint8Array.from(value.match(/.{2}/g), part => parseInt(part, 16)); }
 function randomHex(length) { return hex(crypto.getRandomValues(new Uint8Array(length))); }
@@ -189,7 +195,7 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
       const route = url.pathname.slice('/api/account'.length);
       const method = ROUTES.get(route);
       if (!method || url.search) throw fail(404, 'not_found', '接口不存在。');
-      if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...HEADERS, ...originHeaders, 'Access-Control-Allow-Methods': method, 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Max-Age': '600' } });
+      if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...HEADERS, ...originHeaders, 'Access-Control-Allow-Methods': method, 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Brclio-Sync-Version', 'Access-Control-Max-Age': '600' } });
       if (!method.split(',').includes(request.method)) return json({ error: 'method_not_allowed', message: '请求方式不受支持。' }, 405, { ...originHeaders, Allow: method });
       const enabled = env.ACCOUNT_ENABLED === 'true';
       const hmacReady = typeof env.ACCOUNT_HMAC_SECRET === 'string' && env.ACCOUNT_HMAC_SECRET.length >= 32;
@@ -293,13 +299,19 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
           if (!profile || profile.status !== 'active') return rejected(401, 'invalid_credentials', '登录失败，请确认邮箱已注册。');
           return issueSession(tx, profile, at, 'm1.' + profile.id + '.' + randomHex(32));
         });
-      } else if (route === '/login/wechat') {
+      } else if (route === '/login/wechat' || route === '/bind/wechat') {
         exactFields(body, ['code']);
         if (typeof body.code !== 'string' || !/^[A-Za-z0-9_-]{1,256}$/.test(body.code)) throw fail(400, 'invalid_wechat_code', '请重新发起微信登录。');
+        const binding = route === '/bind/wechat';
         // Rate reservation precedes the external code exchange, never inside a retried transaction.
         if (exchangeWeChat === exchangeWeChatCode && (!/^wx[a-zA-Z0-9]{16}$/.test(env.WECHAT_APP_ID || '') || !env.WECHAT_APP_SECRET)) throw fail(503, 'wechat_unavailable', '微信登录暂不可用，请稍后重试。');
         const ipRatePath = await ratePath(secret, 'wechat-ip', ip);
-        const blocked = await store.transaction(tx => takeRate(tx, ipRatePath, at, 30, 900000));
+        const blocked = await store.transaction(async tx => {
+          // Authenticate before consuming the one-use WeChat code, then again
+          // in the atomic identity update in case this session was revoked.
+          if (binding) await authenticate(tx, request, at);
+          return takeRate(tx, ipRatePath, at, 30, 900000);
+        });
         if (blocked) result = blocked;
         else {
           const openid = await exchangeWeChat(body.code, env, fetchImpl);
@@ -307,6 +319,15 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
           const newId = randomHex(16);
           result = await store.transaction(async tx => {
             const index = await tx.get(path);
+            if (binding) {
+              const { profile } = await authenticate(tx, request, at);
+              if (index && index.userId !== profile.id) return rejected(409, 'wechat_taken', '此微信已绑定其他账号，请使用对应账号登录。');
+              if (!index && profile.providers?.includes('wechat')) return rejected(409, 'wechat_already_bound', '当前账号已绑定其他微信。');
+              const bound = profile.providers?.includes('wechat') ? profile : { ...profile, providers: [...new Set([...(profile.providers || []), 'wechat'])], updatedAt: at };
+              if (bound !== profile) tx.put(userPath(profile.id, 'profile'), bound);
+              if (!index) tx.put(path, { userId: profile.id });
+              return { user: safeUser(bound), expiresAt: null };
+            }
             let profile = index ? await tx.get(userPath(index.userId, 'profile')) : null;
             if (index && (!profile || profile.status !== 'active')) return rejected(401, 'unauthorized', '账号暂不可用。');
             if (!profile) {
@@ -346,6 +367,7 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
             return { revision: document.revision, entries: document.entries };
           });
         }
+        if (!result?.failure) result = syncResponse(result, request);
       } else if (route === '/data') {
         const auth = await store.transaction(tx => authenticate(tx, request, at));
         const dataStore = storeFactory(env, { repository: 'data', fetchImpl });

@@ -1,8 +1,9 @@
 'use strict';
 
 const { SONGS } = require('../data/nursery-songs');
+const accountSync = require('./account-sync');
+const { NURSERY_LOCAL_KEY: STORAGE_KEY, NURSERY_FAVORITES_KEY: FAVORITES_KEY } = require('./account-sync-schema');
 
-const STORAGE_KEY = 'brclio.nursery-music.v1';
 const MODES = Object.freeze(['sequence', 'shuffle', 'repeat-one']);
 
 function finiteNumber(value, fallback) {
@@ -13,6 +14,8 @@ function finiteNumber(value, fallback) {
 function createNurseryAudio(options) {
   const opts = options || {};
   const platform = opts.wx || (typeof wx !== 'undefined' ? wx : {});
+  const sync = opts.sync || null;
+  const storage = sync ? sync.storage : platform;
   const songs = opts.songs || SONGS;
   const byId = new Map(songs.map(song => [String(song.id), song]));
   const now = opts.now || Date.now;
@@ -29,6 +32,9 @@ function createNurseryAudio(options) {
   let sleepTimer = null;
   let pendingSeek = null;
   let lastSavedTime = 0;
+  let scope = sync ? sync.getScope() : 'guest';
+  let favoriteWriteFailed = false;
+  let favoriteIds = [];
   const history = [];
   const state = {
     status: 'idle', error: '', currentSong: null, currentTime: 0, duration: 0,
@@ -42,22 +48,32 @@ function createNurseryAudio(options) {
     return Array.isArray(ids) ? Array.from(new Set(ids.map(String).filter(id => byId.has(id)))) : [];
   }
 
-  try {
-    let saved = platform.getStorageSync ? platform.getStorageSync(STORAGE_KEY) : null;
-    if (typeof saved === 'string' && saved) saved = JSON.parse(saved);
-    if (saved && saved.version === 1) {
-      state.favorites = knownIds(saved.favorites);
-      if (MODES.includes(saved.mode)) state.mode = saved.mode;
-      const recent = saved.recent && byId.get(String(saved.recent.id));
-      if (recent) {
-        state.currentSong = recent;
-        state.duration = finiteNumber(recent.duration, 0);
-        state.currentTime = Math.min(finiteNumber(saved.recent.time, 0), state.duration || Infinity);
+  function restore() {
+    try {
+      let saved = storage.getStorageSync ? storage.getStorageSync(STORAGE_KEY) : null;
+      if (typeof saved === 'string' && saved) saved = JSON.parse(saved);
+      if (saved && saved.version === 1) {
+        if (!sync) state.favorites = knownIds(saved.favorites);
+        if (MODES.includes(saved.mode)) state.mode = saved.mode;
+        const recent = saved.recent && byId.get(String(saved.recent.id));
+        if (recent) {
+          state.currentSong = recent;
+          state.duration = finiteNumber(recent.duration, 0);
+          state.currentTime = Math.min(finiteNumber(saved.recent.time, 0), state.duration || Infinity);
+        }
       }
+      if (sync) readFavorites();
+    } catch (_) {
+      state.storageNotice = '上次的收藏与进度暂时无法读取。';
     }
-  } catch (_) {
-    state.storageNotice = '上次的收藏与进度暂时无法读取。';
   }
+  function readFavorites() {
+    const saved = storage.getStorageSync(FAVORITES_KEY);
+    // Retain IDs from newer song catalogs when this client edits another song.
+    favoriteIds = saved && Array.isArray(saved.favorites) ? [...new Set(saved.favorites.filter(id => typeof id === 'string' && /^\d{1,20}$/.test(id)))] : [];
+    state.favorites = knownIds(favoriteIds);
+  }
+  restore();
 
   function snapshot() {
     return Object.assign({}, state, {
@@ -76,14 +92,14 @@ function createNurseryAudio(options) {
   }
 
   function persist() {
-    if (typeof platform.setStorageSync !== 'function') return;
+    if (typeof storage.setStorageSync !== 'function') return;
     lastSavedTime = now();
     try {
-      platform.setStorageSync(STORAGE_KEY, {
-        version: 1, favorites: state.favorites.slice(), mode: state.mode,
+      storage.setStorageSync(STORAGE_KEY, {
+        version: 1, ...(!sync ? { favorites: state.favorites.slice() } : {}), mode: state.mode,
         recent: state.currentSong ? { id: String(state.currentSong.id), time: state.currentTime } : null
       });
-      state.storageNotice = '';
+      state.storageNotice = favoriteWriteFailed ? '收藏暂未保存，退出后可能丢失。' : '';
     } catch (_) {
       state.storageNotice = '收藏与进度暂未保存，退出后可能丢失。';
     }
@@ -330,6 +346,15 @@ function createNurseryAudio(options) {
     const key = String(id), index = state.favorites.indexOf(key);
     if (index < 0) state.favorites.push(key);
     else state.favorites.splice(index, 1);
+    if (sync) {
+      const ids = new Set(favoriteIds);
+      if (index < 0) ids.add(key); else ids.delete(key);
+      favoriteIds = [...ids];
+      try {
+        storage.setStorageSync(FAVORITES_KEY, { favorites: favoriteIds.slice() });
+        favoriteWriteFailed = false;
+      } catch (_) { favoriteWriteFailed = true; }
+    }
     persist(); emit(); return index < 0;
   }
 
@@ -362,6 +387,26 @@ function createNurseryAudio(options) {
 
   function onAppShow() { checkSleep(); emit(); }
   if (typeof platform.onAppShow === 'function') platform.onAppShow(onAppShow);
+  const unsubscribeSync = sync && sync.subscribe(() => {
+    if (disposed) return;
+    if (scope !== sync.getScope()) {
+      scope = sync.getScope();
+      // Release the previous account's native source before any callback can
+      // persist its progress into the newly selected account.
+      shouldPlay = false; loadedSongId = ''; pendingSeek = null;
+      try { if (context && typeof context.pause === 'function') context.pause(); } catch (_) {}
+      if (sleepTimer !== null) cancel(sleepTimer);
+      sleepTimer = null; sleepDeadline = 0;
+      history.length = 0; favoriteWriteFailed = false; favoriteIds = [];
+      Object.assign(state, { status: 'idle', error: '', currentSong: null, currentTime: 0,
+        duration: 0, mode: 'sequence', favorites: [], queue: songs.map(song => String(song.id)),
+        sleepMinutes: 0, sleepRemaining: 0, storageNotice: '' });
+      restore();
+    } else if (!favoriteWriteFailed) {
+      try { readFavorites(); } catch (_) { state.storageNotice = '收藏暂时无法读取，本机记录已保留。'; }
+    }
+    emit();
+  });
 
   return {
     getState() { checkSleep(); return snapshot(); },
@@ -371,11 +416,14 @@ function createNurseryAudio(options) {
       return function () { listeners.delete(listener); };
     },
     select, play, pause, next, previous, seek, stop, setMode, toggleFavorite, setSleepTimer,
+    onPageShow() { return sync ? sync.onShow({ pull: true }) : Promise.resolve(); },
+    onPageHide() { return sync ? sync.onHide() : Promise.resolve(); },
     toggle() { return state.status === 'playing' || state.status === 'loading' ? pause() : play(); },
     cycleMode() { return setMode(MODES[(MODES.indexOf(state.mode) + 1) % MODES.length]); },
     // Page unload only unsubscribes. Dispose is for an app teardown or an isolated test.
     dispose() {
       if (disposed) return;
+      if (unsubscribeSync) unsubscribeSync();
       stop(); disposed = true;
       if (typeof platform.offAppShow === 'function') platform.offAppShow(onAppShow);
       bindings.forEach(binding => {
@@ -390,8 +438,8 @@ function createNurseryAudio(options) {
 
 let singleton = null;
 function getNurseryAudio() {
-  if (!singleton) singleton = createNurseryAudio();
+  if (!singleton) singleton = createNurseryAudio({ sync: accountSync });
   return singleton;
 }
 
-module.exports = { STORAGE_KEY, MODES, createNurseryAudio, getNurseryAudio };
+module.exports = { STORAGE_KEY, FAVORITES_KEY, MODES, createNurseryAudio, getNurseryAudio };

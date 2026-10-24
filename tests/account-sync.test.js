@@ -272,3 +272,71 @@ test('a new local match does not revive cleared cloud history from a stale physi
   assert.deepEqual(h.server().entries['brclio.duel.v1'].value.matches.map(item => item.id), ['new']);
   assert.equal(h.server().entries['brclio.duel.v1'].value.targetScore, 5); c.destroy();
 });
+
+test('nursery favorites merge only observed song edits across an offline restart and a newer cloud snapshot', async () => {
+  const key = schema.NURSERY_FAVORITES_KEY;
+  const h = host({ user: { id: 'account-a' } }), c = h.controller;
+  h.server().entries[key] = { value: { favorites: ['1451390672', '2079653665'] }, updatedAt: BASE - 100 };
+  await c.activate();
+  c.storage.setStorageSync(key, { favorites: ['2079653665', '2114146440'] });
+  h.setOffline(true); await c.flush(); c.destroy();
+  h.server().revision++;
+  h.server().entries[key] = { value: { favorites: ['1451390672', '2079653665', '1451390674'] }, updatedAt: BASE + 1000 };
+  h.setOffline(false); const restored = createAccountSync(h.configuration); await restored.activate();
+  assert.deepEqual(new Set(h.server().entries[key].value.favorites), new Set(['2079653665', '2114146440', '1451390674']));
+  assert.deepEqual(restored.storage.getStorageSync(key), h.server().entries[key].value);
+  assert.equal(restored.getStatus().pending, 0); restored.destroy();
+});
+
+test('an initial empty nursery snapshot cannot erase unseen cloud favorites and song edits stay separate from saved words', async () => {
+  const key = schema.NURSERY_FAVORITES_KEY;
+  const h = host({ user: { id: 'account-a' } }), c = h.controller;
+  h.server().entries[key] = { value: { favorites: ['1451390672'] }, updatedAt: BASE - 100 };
+  h.server().entries['lingotiles.progress.v1'] = { value: progress({ saved: ['apple'] }), updatedAt: BASE - 100 };
+  let release; h.setHook(method => method === 'GET' ? new Promise(resolve => { release = resolve; }) : undefined);
+  const initial = c.activate(); await pause();
+  c.storage.setStorageSync(key, { favorites: [] });
+  c.storage.setItem('lingotiles.progress.v1', JSON.stringify(progress({ saved: ['banana'] })));
+  h.setHook(null); release(); await initial;
+  assert.deepEqual(h.server().entries[key].value.favorites, ['1451390672']);
+  assert.deepEqual(new Set(h.server().entries['lingotiles.progress.v1'].value.saved), new Set(['apple', 'banana']));
+  c.storage.setStorageSync(key, { favorites: [] }); await c.flush();
+  assert.deepEqual(h.server().entries[key].value.favorites, []);
+  assert.deepEqual(new Set(h.server().entries['lingotiles.progress.v1'].value.saved), new Set(['apple', 'banana'])); c.destroy();
+});
+
+test('legacy nursery data upgrades only its original guest owner using a frozen snapshot', async () => {
+  const key = schema.NURSERY_FAVORITES_KEY, local = schema.NURSERY_LOCAL_KEY;
+  const legacy = { version: 1, favorites: ['1451390672'], mode: 'shuffle', recent: { id: '1451390672', time: 12 } };
+  const h = host({ user: { id: 'account-b' }, storage: [[CLAIM_KEY, { userId: 'account-a', claimedAt: BASE - 1000, copyComplete: true }], [local, legacy]] }), c = h.controller;
+  await c.activate();
+  assert.equal(c.storage.getStorageSync(local), ''); assert.equal(c.storage.getStorageSync(key), '');
+  assert.deepEqual(h.server().entries, {});
+  h.setUser(null); await c.activate();
+  assert.deepEqual(c.storage.getStorageSync(key), { favorites: ['1451390672'] });
+  c.storage.setStorageSync(key, { favorites: ['2079653665'] });
+  c.storage.setStorageSync(local, { ...legacy, favorites: [], recent: null });
+  h.setUser('account-a'); await c.activate();
+  assert.deepEqual(c.storage.getStorageSync(local), legacy);
+  assert.deepEqual(h.server().entries[key].value, { favorites: ['1451390672'] });
+  assert.equal(h.server().entries[local], undefined);
+  assert.equal(h.values.get(CLAIM_KEY).nurseryCopyComplete, true);
+  h.setUser(null); c.storage.setStorageSync(key, { favorites: [] });
+  h.setUser('account-a'); await c.activate();
+  assert.deepEqual(c.storage.getStorageSync(key), { favorites: ['1451390672'] }); c.destroy();
+});
+
+test('an interrupted legacy nursery upgrade retries its frozen data without overwriting existing scoped favorites', async () => {
+  const key = schema.NURSERY_FAVORITES_KEY, local = schema.NURSERY_LOCAL_KEY;
+  let rejectCopy = true;
+  const h = host({ user: { id: 'account-a' }, storage: [[CLAIM_KEY, { userId: 'account-a', copyComplete: true }], [local, { version: 1, favorites: ['1451390672'], mode: 'shuffle' }]],
+    failWrite: name => rejectCopy && name.includes('miniapp-data.v1:account-a:') }), c = h.controller;
+  await c.activate(); assert.equal(h.values.get(CLAIM_KEY).nurseryCopyComplete, false);
+  h.values.set(local, { version: 1, favorites: ['2079653665'], mode: 'sequence' });
+  rejectCopy = false; await c.activate();
+  assert.deepEqual(h.server().entries[key].value.favorites, ['1451390672']);
+  c.storage.setStorageSync(key, { favorites: ['2114146440'] }); await c.flush();
+  h.values.set(CLAIM_KEY, { userId: 'account-a', copyComplete: true }); c.destroy();
+  const restored = createAccountSync(h.configuration); await restored.activate();
+  assert.deepEqual(restored.storage.getStorageSync(key).favorites, ['2114146440']); restored.destroy();
+});

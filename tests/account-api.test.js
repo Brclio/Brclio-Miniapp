@@ -280,6 +280,94 @@ test('WeChat automatic registration reuses one independent account for concurren
   assert.equal(serialized.includes('test-only-wechat-secret'), false);
 });
 
+test('binding WeChat preserves password credentials, sessions and account data; later WeChat login reuses the account', async () => {
+  const h = await harness();
+  const owner = await h.register();
+  const credentialsPath = h.internals.userPath(owner.user.id, 'credentials');
+  const sessionsPath = h.internals.userPath(owner.user.id, 'sessions');
+  const credentials = copy(h.state.users.get(credentialsPath)), sessions = copy(h.state.users.get(sessionsPath));
+  const dataPath = h.internals.userPath(owner.user.id, 'sync');
+  h.state.data.set(dataPath, { schemaVersion: 1, revision: 1, entries: {} });
+  const data = copy(h.state.data);
+  for (const code of ['same-bind-one', 'same-bind-two']) {
+    const result = await h.call('/bind/wechat', { code }, { token: owner.token });
+    assert.equal(result.status, 200, JSON.stringify(result.value));
+    assert.equal(result.value.user.id, owner.user.id);
+    assert.deepEqual(result.value.user.providers, ['email', 'wechat']);
+    assert.equal(result.value.user.email, owner.user.email);
+    assert.equal(result.value.expiresAt, null);
+    assert.equal(Object.hasOwn(result.value, 'token'), false);
+    assert.equal(JSON.stringify(result.value).includes('openid'), false);
+  }
+  assert.deepEqual(h.state.users.get(credentialsPath), credentials);
+  assert.deepEqual(h.state.users.get(sessionsPath), sessions);
+  assert.deepEqual(h.state.data, data);
+  assert.equal((await h.call('/session', undefined, { token: owner.token })).value.user.id, owner.user.id);
+  const password = await h.call('/login/password', { identifier: owner.user.username, password: PASSWORD });
+  assert.equal(password.status, 200);
+  assert.equal(password.value.user.id, owner.user.id);
+  const wechat = await h.wechat('same-later-login');
+  assert.equal(wechat.user.id, owner.user.id);
+  assert.equal(profiles(h).length, 1);
+  const serialized = JSON.stringify([...h.state.users]);
+  assert.equal(serialized.includes('openid-same-user'), false);
+  assert.equal(serialized.includes('same-bind-one'), false);
+});
+
+test('WeChat binding authenticates before code exchange and rejects revoked sessions after exchange', async () => {
+  const h = await harness();
+  assertFailure(await h.call('/bind/wechat', { code: 'same-bind' }), 401, 'unauthorized');
+  assert.equal(h.exchanges.length, 0);
+  const owner = await h.register();
+  await h.call('/logout', {}, { token: owner.token });
+  assertFailure(await h.call('/bind/wechat', { code: 'same-bind' }, { token: owner.token }), 401, 'unauthorized');
+  assert.equal(h.exchanges.length, 0);
+
+  let release, started;
+  const exchanging = new Promise(resolve => { started = resolve; });
+  const racing = await harness({ exchangeWeChat: async () => { started(); await new Promise(resolve => { release = resolve; }); return 'openid-racing-bind'; } });
+  const active = await racing.register();
+  const binding = racing.call('/bind/wechat', { code: 'same-bind' }, { token: active.token });
+  await exchanging;
+  assert.equal((await racing.call('/logout', {}, { token: active.token })).status, 200);
+  release();
+  assertFailure(await binding, 401, 'unauthorized');
+  assert.deepEqual(profiles(racing)[0][1].providers, ['email']);
+  assert.equal([...racing.state.users.keys()].some(path => path.startsWith('indexes/v1/wechat/')), false);
+});
+
+test('binding cannot take over another WeChat identity or replace an existing binding', async () => {
+  const h = await harness();
+  const wechat = await h.wechat('same-original');
+  const owner = await h.register();
+  assertFailure(await h.call('/bind/wechat', { code: 'same-attempt' }, { token: owner.token }), 409, 'wechat_taken');
+  assert.deepEqual((await h.call('/session', undefined, { token: owner.token })).value.user.providers, ['email']);
+  assert.equal((await h.wechat('same-confirm')).user.id, wechat.user.id);
+  const bound = await h.call('/bind/wechat', { code: 'unused-wechat' }, { token: owner.token });
+  assert.equal(bound.status, 200);
+  assertFailure(await h.call('/bind/wechat', { code: 'different-wechat' }, { token: owner.token }), 409, 'wechat_already_bound');
+  assert.equal((await h.wechat('unused-wechat')).user.id, owner.user.id);
+  assert.equal(profiles(h).length, 2);
+});
+
+test('concurrent WeChat binds select one account atomically and duplicate binds are idempotent', async () => {
+  const h = await harness();
+  const first = await h.register('first@example.test', 'first_1');
+  const second = await h.register('second@example.test', 'second_1');
+  const results = await Promise.all([
+    h.call('/bind/wechat', { code: 'same-first' }, { token: first.token }),
+    h.call('/bind/wechat', { code: 'same-second' }, { token: second.token })
+  ]);
+  assert.deepEqual(results.map(result => result.status).sort(), [200, 409]);
+  const winner = results.find(result => result.status === 200).value.user;
+  assert.equal(results.find(result => result.status === 409).value.error, 'wechat_taken');
+  assert.equal((await h.wechat('same-followup')).user.id, winner.id);
+  const token = winner.id === first.user.id ? first.token : second.token;
+  const duplicate = await Promise.all(['same-repeat-one', 'same-repeat-two'].map(code => h.call('/bind/wechat', { code }, { token })));
+  assert.ok(duplicate.every(result => result.status === 200 && result.value.user.id === winner.id));
+  assert.equal(profiles(h).length, 2);
+});
+
 test('email-binding challenges belong to their requesting WeChat user and preserve that identity', async () => {
   const h = await harness();
   const owner = await h.wechat('owner-code');

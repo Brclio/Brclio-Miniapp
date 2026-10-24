@@ -132,6 +132,7 @@ function createBrowserAccount(host, options = {}) {
       const timer = setTimer(() => { controller.abort(); finish('fail', { errMsg: 'request:fail' }); }, timeout);
       controllers.set(controller, () => { controller.abort(); finish('fail', { errMsg: 'request:fail' }); });
       const headers = { 'Content-Type': 'application/json' };
+      if (url.pathname === '/api/account/sync' && request.header?.['X-Brclio-Sync-Version'] === '2') headers['X-Brclio-Sync-Version'] = '2';
       const authorization = request.header?.Authorization;
       if (authorization) {
         if (typeof authorization !== 'string' || authorization.length > 600 || /[\r\n]/.test(authorization)) { finish('fail', { errMsg: 'request:fail' }); return { abort() {} }; }

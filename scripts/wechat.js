@@ -7,6 +7,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 const command = process.argv[2] || 'doctor';
+const version = require('../package.json').version;
 const config = JSON.parse(fs.readFileSync(path.join(root, 'project.config.json'), 'utf8'));
 const bundleNames = ['wechatwebdevtools.app', '微信开发者工具.app', 'WeChat DevTools.app'];
 const candidates = [process.env.WECHAT_DEVTOOLS_CLI].concat(
@@ -29,7 +30,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', require('../package.json').version, '--desc', 'Brclio 悦创 0.1.4：新增育儿儿歌陪伴，47首儿歌及独立插画封面，支持睡前筛选、搜索收藏、顺序/随机/单曲循环、进度跳转和前台定时停止；音乐联网播放，收藏进度本机保存。保留摄影、双人挑战、悦学和独立账号同步。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + require('../package.json').version + '.json')]
+    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：登录后自动同步儿歌收藏，支持离线重试及账号隔离；账号密码登录后可一键绑定微信，后续微信登录进入同一账号，保留原账号密码与收藏。保留47首儿歌及独立插画封面、摄影、双人挑战与悦学。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');

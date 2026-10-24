@@ -1,4 +1,4 @@
-> **当前 0.1.4 育儿发布**：47 首儿歌、独立生成封面、最终核查和各阶段发布结果以 [NURSERY_RELEASE.md](NURSERY_RELEASE.md) 为准。下文 0.1.3 及更早记录仅用于历史追溯。
+> **当前 0.1.5 收藏同步与微信绑定**：本版验证和各阶段发布结果见 [SONG_SYNC_RELEASE.md](SONG_SYNC_RELEASE.md)。0.1.4 育儿音乐发布记录见 [NURSERY_RELEASE.md](NURSERY_RELEASE.md)，下文保留历史阶段。
 
 > **此前 0.1.3 已交接审核**：代码已推送 GitHub `main`（`1868c9d`），Pages 已发布，微信开发版 `0.1.3` 上传成功。完整证据见 [ACCOUNT_SYNC_RELEASE.md](ACCOUNT_SYNC_RELEASE.md)。
 
