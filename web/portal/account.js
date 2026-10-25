@@ -10,6 +10,7 @@
   let runtime = null, currentUser = null, mode = 'login', method = 'code';
   let busy = false, sending = false, syncing = false, stopped = false, visible = false;
   let timer = null, operation = 0, logoutSerial = 0, formActivity = 0, initialized = false;
+  let avatarPage = 0, avatarBusy = false, pendingAvatar = null;
   let unsubscribeClient = () => {}, unsubscribeSync = () => {};
   let widget = null;
   if (!root && document.body) {
@@ -52,7 +53,11 @@
     if (remaining && !stopped) timer = window.setInterval(updateCooldown, 1000);
   }
   function controls() {
-    all('[data-account-mode],[data-account-method],input,[data-account-submit],[data-account-action="logout"]').forEach(element => { element.disabled = busy || sending; });
+    all('[data-account-mode],[data-account-method],input,[data-account-submit],[data-account-action="logout"]').forEach(element => { element.disabled = busy || sending || avatarBusy; });
+    all('[data-avatar-action],.account-avatar-choice').forEach(element => { element.disabled = busy || avatarBusy || !currentUser; });
+    const previous = one('[data-avatar-action="previous"]'), next = one('[data-avatar-action="next"]');
+    if (previous) previous.disabled = busy || avatarBusy || avatarPage === 0;
+    if (next) next.disabled = busy || avatarBusy || avatarPage >= 24;
     const sync = one('[data-account-action="sync"]'); if (sync) sync.disabled = busy || syncing;
     setText(one('[data-account-submit-label]'), busy ? '正在处理…' : mode === 'register' ? '注册并登录' : '登录');
     if (form) form.setAttribute('aria-busy', String(busy));
@@ -73,22 +78,98 @@
     controls();
   }
   function renderUser(user) {
+    if ((user && user.id) !== (currentUser && currentUser.id)) { clearAvatarPreview(); avatarPage = 0; avatarBusy = false; const panel = one('#account-avatar-panel'); if (panel) panel.hidden = true; one('[data-avatar-action="toggle"]')?.setAttribute('aria-expanded', 'false'); }
     currentUser = user || null;
     const label = currentUser ? currentUser.displayName || currentUser.username || (currentUser.email ? currentUser.email.split('@')[0] : 'Brclio 用户') : '';
     document.querySelectorAll('[data-account-entry]').forEach(entry => {
       setText(entry, currentUser ? '我的账号' : '登录 / 注册');
       entry.setAttribute('aria-label', currentUser ? '打开我的账号，' + label : '登录或注册账号');
       const arrow = document.createElement('span'); arrow.textContent = '↗'; arrow.setAttribute('aria-hidden', 'true'); entry.appendChild(arrow);
+      const source = avatarSource(currentUser);
+      if (source) { const image = document.createElement('img'); image.src = source; image.alt = ''; image.width = 25; image.height = 25; entry.prepend(image); }
     });
-    if (widget) { const title = widget.querySelector('[data-account-widget-title]'); title.textContent = currentUser ? '我的账号' : '账号'; widget.querySelector('[data-account-widget-sync]').hidden = !currentUser; }
+    if (widget) {
+      const title = widget.querySelector('[data-account-widget-title]'); title.textContent = currentUser ? '我的账号' : '账号'; widget.querySelector('[data-account-widget-sync]').hidden = !currentUser;
+      const mark = widget.querySelector('.brclio-widget-mark'); mark.textContent = 'b.';
+      const source = avatarSource(currentUser);
+      if (source) { const image = document.createElement('img'); image.src = source; image.alt = ''; image.className = 'brclio-widget-user-avatar'; mark.textContent = ''; mark.appendChild(image); }
+    }
     if (!root) return;
     one('[data-account-member]').hidden = !currentUser;
     one('[data-account-guest]').hidden = !!currentUser;
     setText(one('[data-account-name]'), currentUser ? '你好，' + label + '。' : '');
     setText(one('[data-account-initial]'), label.slice(0, 1).toUpperCase());
+    const avatar = one('[data-account-avatar]'), source = avatarSource(currentUser);
+    if (avatar) { avatar.hidden = !source; if (source) avatar.src = source; else avatar.removeAttribute('src'); one('[data-account-initial]').hidden = !!source; }
     setText(one('[data-account-email]'), currentUser && currentUser.email || '可在小程序绑定邮箱后使用更多登录方式');
     setText(one('[data-account-username]'), currentUser && currentUser.username || '在小程序绑定邮箱后设置');
     controls();
+    if (one('#account-avatar-panel') && !one('#account-avatar-panel').hidden) renderAvatarGrid();
+  }
+  function avatarSource(user) {
+    try { const value = user && user.avatarUrl && new URL(user.avatarUrl, window.location.origin); return value && value.protocol === 'https:' && value.origin === window.location.origin ? value.href : ''; } catch (_) { return ''; }
+  }
+  function clearAvatarPreview() {
+    pendingAvatar = null;
+    const preview = one('[data-avatar-preview]'), image = one('[data-avatar-preview-image]');
+    if (preview) preview.hidden = true;
+    if (image) image.removeAttribute('src');
+    const input = one('[data-avatar-file]'); if (input) input.value = '';
+  }
+  function renderAvatarGrid() {
+    const grid = one('[data-avatar-grid]');
+    if (!grid || !runtime || !runtime.avatars) return;
+    grid.replaceChildren();
+    for (const item of runtime.avatars.pageItems(avatarPage, 40)) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'account-avatar-choice'; button.dataset.avatarId = String(item.id); button.setAttribute('aria-label', item.label); button.setAttribute('aria-pressed', String(currentUser && currentUser.avatarId === item.id));
+      const image = document.createElement('img'); image.src = item.url; image.alt = ''; image.width = 64; image.height = 64; image.loading = 'lazy'; button.appendChild(image); grid.appendChild(button);
+    }
+    setText(one('[data-avatar-page]'), (avatarPage + 1) + ' / 25 页 · 共 1000 个'); controls();
+  }
+  function toggleAvatar(show) {
+    if (!currentUser || avatarBusy || !runtime || !runtime.avatars) return;
+    const panel = one('#account-avatar-panel');
+    panel.hidden = !show;
+    one('[data-avatar-action="toggle"]').setAttribute('aria-expanded', String(show));
+    if (show) { if (currentUser.avatarId) avatarPage = Math.floor((currentUser.avatarId - 1) / 40); renderAvatarGrid(); }
+    else clearAvatarPreview();
+  }
+  async function saveAvatar(action) {
+    if (busy || avatarBusy || !currentUser || !available()) return;
+    const id = ++operation, principal = currentUser.id, serial = logoutSerial;
+    const focusedAvatarId = document.activeElement?.matches('.account-avatar-choice[data-avatar-id]') ? document.activeElement.dataset.avatarId : null;
+    avatarBusy = true; clearFeedback(); controls();
+    try {
+      await action();
+      if (stopped || operation !== id || serial !== logoutSerial || runtime.client.getCachedUser()?.id !== principal) return;
+      clearAvatarPreview(); renderUser(runtime.client.getCachedUser()); feedback('头像已更新。', false);
+    } catch (error) {
+      if (!stopped && operation === id && serial === logoutSerial) feedback(error && error.message || '头像保存失败，请稍后重试。', true);
+    } finally {
+      if (operation === id) avatarBusy = false;
+      if (!stopped) {
+        controls();
+        // Profile rendering replaces the grid. Keep a keyboard user's place
+        // after controls are enabled, without taking focus from another action.
+        const active = document.activeElement;
+        if (focusedAvatarId && operation === id && serial === logoutSerial && currentUser?.id === principal && runtime.client.getCachedUser()?.id === principal && !one('#account-avatar-panel').hidden &&
+            (active === document.body || active === document.documentElement || active?.dataset.avatarId === focusedAvatarId)) {
+          one('[data-avatar-id="' + focusedAvatarId + '"]')?.focus({ preventScroll: true });
+        }
+      }
+    }
+  }
+  async function chooseAvatarFile() {
+    const file = one('[data-avatar-file]').files[0];
+    if (!file || busy || avatarBusy || !currentUser) return;
+    const principal = currentUser.id, serial = logoutSerial, id = ++operation;
+    clearAvatarPreview(); avatarBusy = true; clearFeedback(); controls();
+    try {
+      const result = await runtime.avatars.prepareBrowserAvatar(file, window);
+      if (stopped || id !== operation || serial !== logoutSerial || currentUser?.id !== principal) return;
+      pendingAvatar = result.payload; one('[data-avatar-preview-image]').src = result.preview; one('[data-avatar-preview]').hidden = false;
+    } catch (error) { if (!stopped && id === operation) feedback(error.message || '图片处理失败。', true); }
+    finally { if (operation === id) avatarBusy = false; if (!stopped) controls(); }
   }
   function renderStatus(status) {
     if (widget) {
@@ -198,6 +279,19 @@
   }
   if (root) {
     renderMode();
+    all('[data-avatar-action]').forEach(button => button.addEventListener('click', () => {
+      const action = button.dataset.avatarAction;
+      if (action === 'toggle') toggleAvatar(one('#account-avatar-panel').hidden);
+      else if (action === 'close') toggleAvatar(false);
+      else if (action === 'previous' || action === 'next') { avatarPage = Math.max(0, Math.min(24, avatarPage + (action === 'next' ? 1 : -1))); renderAvatarGrid(); }
+      else if (action === 'random') { const sample = new Uint32Array(1); window.crypto.getRandomValues(sample); let id = sample[0] % 1000 + 1; if (id === currentUser.avatarId) id = id % 1000 + 1; void saveAvatar(() => runtime.client.setBuiltinAvatar(id)); }
+      else if (action === 'upload') one('[data-avatar-file]').click();
+      else if (action === 'cancel') clearAvatarPreview();
+      else if (action === 'save' && pendingAvatar) { const payload = pendingAvatar; void saveAvatar(() => runtime.client.uploadAvatar(payload)); }
+    }));
+    one('[data-avatar-file]')?.addEventListener('change', chooseAvatarFile);
+    one('[data-avatar-grid]')?.addEventListener('click', event => { const button = event.target.closest('[data-avatar-id]'); if (!button || busy || avatarBusy) return; void saveAvatar(() => runtime.client.setBuiltinAvatar(Number(button.dataset.avatarId))); });
+    one('[data-account-avatar]')?.addEventListener('error', () => { one('[data-account-avatar]').hidden = true; one('[data-account-initial]').hidden = false; });
     all('[data-account-mode]').forEach(button => button.addEventListener('click', () => { if (busy || sending) return; formActivity += 1; mode = button.dataset.accountMode; clearFeedback(); clearCredentials(); renderMode(); }));
     all('[data-account-method]').forEach(button => button.addEventListener('click', () => { if (busy || sending) return; formActivity += 1; method = button.dataset.accountMethod; clearFeedback(); clearCredentials(); renderMode(); }));
     all('[data-account-mode]').forEach(button => button.addEventListener('keydown', event => { if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return; event.preventDefault(); const next = one('[data-account-mode="' + (mode === 'login' ? 'register' : 'login') + '"]'); next.click(); next.focus(); }));
@@ -214,7 +308,7 @@
   window.addEventListener('popstate', () => { void safeSync(); });
   document.addEventListener('visibilitychange', () => { void safeSync(); });
   window.addEventListener('pagehide', () => {
-    stopped = true; clearCredentials(); if (timer !== null) window.clearInterval(timer); timer = null;
+    stopped = true; ++operation; avatarBusy = false; clearAvatarPreview(); clearCredentials(); if (timer !== null) window.clearInterval(timer); timer = null;
     unsubscribeClient(); unsubscribeSync();
     if (runtime) void Promise.resolve(runtime.sync.onHide()).catch(() => {});
   });

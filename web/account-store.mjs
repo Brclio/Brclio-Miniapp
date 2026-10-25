@@ -7,6 +7,9 @@ const MAX_DOCUMENT_BYTES = 1024 * 1024;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 const MAX_TRANSACTION_DOCUMENTS = 100;
 const MAX_TRANSACTION_BYTES = 4 * 1024 * 1024;
+const MAX_BINARY_BYTES = 10 * 1024 * 1024;
+const MAX_BINARY_TRANSACTION_BYTES = MAX_BINARY_BYTES + 128 * 1024;
+const MAX_BINARY_READ_BYTES = 128 * 1024;
 const tokenCache = new Map();
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -28,6 +31,12 @@ function validPath(path) {
       path.split('/').some(part => !/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/.test(part) || part.includes('..'))) {
     fail(400, 'store_path_invalid');
   }
+  return path;
+}
+
+function validBinaryPath(path, reading = false) {
+  const match = typeof path === 'string' && /^users\/v1\/([a-f0-9]{2})\/([a-f0-9]{32})\/avatars\/[a-f0-9]{32}\/(original\.(?:jpg|png|gif|webp)|display\.jpg)$/.exec(path);
+  if (!match || match[1] !== match[2].slice(0, 2) || (reading && match[3] !== 'display.jpg')) fail(400, 'store_path_invalid');
   return path;
 }
 
@@ -53,7 +62,9 @@ function bytesBase64(bytes) {
 }
 function base64Bytes(value) {
   const binary = atob(value);
-  return Uint8Array.from(binary, character => character.charCodeAt(0));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
 }
 function base64url(bytes) { return bytesBase64(bytes).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_'); }
 function concat(...chunks) {
@@ -132,7 +143,8 @@ function serialize(value) {
 /**
  * Callbacks may run again after concurrent writes. Keep all effects inside tx.
  * tx.get() observes the pinned HEAD and earlier tx.put()/tx.delete() operations.
- * put/delete are synchronous; awaiting them is also safe. Paths are JSON files.
+ * put/delete are synchronous; awaiting them is also safe. JSON documents use
+ * get/put; avatar bytes use putBinary. Original uploads are write-only.
  */
 export function createGitHubStore(env, { fetchImpl = fetch, repository = 'users' } = {}) {
   if (!Object.hasOwn(REPOSITORIES, repository)) fail(503, 'store_configuration_invalid');
@@ -229,17 +241,19 @@ export function createGitHubStore(env, { fetchImpl = fetch, repository = 'users'
     return validSha(result.value.object.sha);
   }
 
-  async function readAt(path, head) {
+  async function readAt(path, head, binary = false) {
+    const limit = binary ? MAX_BINARY_READ_BYTES : MAX_DOCUMENT_BYTES;
     if (!head) return MISSING;
     const result = await request(prefix + '/contents/' + encodePath(path) + '?ref=' + head, undefined, [404]);
     if (result.status === 404) return MISSING;
     const file = result.value;
     if (file?.type !== 'file' || file.encoding !== 'base64' || typeof file.content !== 'string' ||
-        !Number.isSafeInteger(file.size) || file.size < 0 || file.size > MAX_DOCUMENT_BYTES ||
-        file.content.length > Math.ceil(MAX_DOCUMENT_BYTES / 3) * 4 + 30000) fail(503, 'store_document_invalid');
+        !Number.isSafeInteger(file.size) || file.size < 0 || file.size > limit ||
+        file.content.length > Math.ceil(limit / 3) * 4 + 30000) fail(503, 'store_document_invalid');
     try {
       const bytes = base64Bytes(file.content.replace(/\s/g, ''));
-      if (bytes.length > MAX_DOCUMENT_BYTES) fail(503, 'store_document_invalid');
+      if (bytes.length > limit || bytes.length !== file.size) fail(503, 'store_document_invalid');
+      if (binary) return bytes;
       return JSON.parse(decoder.decode(bytes));
     } catch { fail(503, 'store_document_invalid'); }
   }
@@ -260,6 +274,11 @@ export function createGitHubStore(env, { fetchImpl = fetch, repository = 'users'
       const value = await readAt(path, await snapshot());
       return value === MISSING ? null : value;
     },
+    async readBinary(path) {
+      validBinaryPath(path, true);
+      const value = await readAt(path, await snapshot(), true);
+      return value === MISSING ? null : value;
+    },
     async transaction(callback) {
       if (typeof callback !== 'function') fail(400, 'store_transaction_invalid');
       let initialized = false;
@@ -278,12 +297,20 @@ export function createGitHubStore(env, { fetchImpl = fetch, repository = 'users'
             return value === MISSING ? null : structuredClone(value);
           },
           put(path, value) { checkActive(); validPath(path); staged.set(path, serialize(value)); },
-          delete(path) { checkActive(); validPath(path); staged.set(path, null); }
+          delete(path) { checkActive(); validPath(path); staged.set(path, null); },
+          putBinary(path, value) {
+            checkActive(); validBinaryPath(path);
+            if (!(value instanceof Uint8Array) || !value.length || value.length > MAX_BINARY_BYTES) fail(413, 'store_binary_too_large');
+            if (path.endsWith('/display.jpg') && value.length > MAX_BINARY_READ_BYTES) fail(413, 'store_binary_too_large');
+            staged.set(path, value.slice());
+          }
         });
         let result;
         try { result = await callback(tx); } finally { active = false; }
         if (!staged.size) return result;
-        if (staged.size > MAX_TRANSACTION_DOCUMENTS || [...staged.values()].reduce((size, value) => size + (value ? encoder.encode(value).length : 0), 0) > MAX_TRANSACTION_BYTES) {
+        const jsonBytes = [...staged.values()].reduce((size, value) => size + (typeof value === 'string' ? encoder.encode(value).length : 0), 0);
+        const binaryBytes = [...staged.values()].reduce((size, value) => size + (value instanceof Uint8Array ? value.length : 0), 0);
+        if (staged.size > MAX_TRANSACTION_DOCUMENTS || jsonBytes > MAX_TRANSACTION_BYTES || binaryBytes > MAX_BINARY_TRANSACTION_BYTES) {
           fail(413, 'store_transaction_too_large');
         }
         // Recheck at each write boundary even when the installation token is
@@ -304,6 +331,11 @@ export function createGitHubStore(env, { fetchImpl = fetch, repository = 'users'
           if (content === null) {
             if (!reads.has(path)) reads.set(path, readAt(path, head));
             if (await reads.get(path) !== MISSING) entries.push({ path, mode: '100644', type: 'blob', sha: null });
+          } else if (content instanceof Uint8Array) {
+            // Git trees' inline content is UTF-8. Binary blobs must be explicitly
+            // base64 encoded; their SHAs join the same atomic profile commit.
+            const blob = await request(prefix + '/git/blobs', { method: 'POST', body: { encoding: 'base64', content: bytesBase64(content) } });
+            entries.push({ path, mode: '100644', type: 'blob', sha: validSha(blob.value?.sha) });
           } else entries.push({ path, mode: '100644', type: 'blob', content });
         }
         if (!entries.length) return result;

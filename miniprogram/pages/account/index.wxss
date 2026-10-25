@@ -47,6 +47,26 @@ button[disabled] { opacity: .5; }
 .profile-avatar, .profile-initial { width: 104rpx; height: 104rpx; border-radius: 50%; flex-shrink: 0; }
 .profile-initial { display: flex; align-items: center; justify-content: center; background: #f4d758; color: #665421; font-size: 43rpx; }
 .profile-name { min-width: 0; }
+.change-avatar { flex-shrink: 0; margin-left: auto; padding: 18rpx 0 18rpx 12rpx; background: transparent; color: #2b7fd8; font-size: 22rpx; }
+.avatar-picker { border-top: 1rpx solid #dedbd2; padding: 26rpx 0; }
+.avatar-picker-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 18rpx; }
+.avatar-picker-title { font-size: 29rpx; color: #1a1a2e; font-weight: 700; }
+.avatar-picker-caption { font-size: 20rpx; color: #817d76; line-height: 1.7; margin-top: 7rpx; }
+.avatar-close { background: transparent; color: #75716a; font-size: 36rpx; padding: 0 8rpx 8rpx; min-width: 60rpx; }
+.avatar-actions { display: flex; gap: 14rpx; margin-top: 24rpx; }
+.avatar-actions button { flex: 1; padding: 18rpx 10rpx; border-radius: 8rpx; font-size: 22rpx; }
+.avatar-random { background: #f4d758; color: #665421; }
+.avatar-upload { background: #edf3f9; color: #2b7fd8; }
+.avatar-upload-caption { margin-top: 15rpx; }
+.avatar-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12rpx; margin-top: 22rpx; }
+.avatar-option { min-width: 0; padding: 7rpx 5rpx; background: transparent; border: 3rpx solid transparent; border-radius: 14rpx; line-height: 1.3; }
+.avatar-option-selected { border-color: #2b7fd8; background: #edf3f9; }
+.avatar-choice-image { width: 78rpx; height: 78rpx; max-width: 100%; border-radius: 50%; display: block; margin: 0 auto; }
+.avatar-choice-number { display: block; margin-top: 5rpx; font-size: 17rpx; color: #75716a; }
+.avatar-pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 20rpx; gap: 12rpx; font-size: 21rpx; color: #817d76; }
+.avatar-pagination button { background: transparent; font-size: 22rpx; color: #2b7fd8; padding: 12rpx 0; }
+.avatar-save-status { margin-top: 12rpx; font-size: 22rpx; color: #2b7fd8; }
+.avatar-upload-canvas { position: fixed; width: 256px; height: 256px; left: -2048px; top: 0; pointer-events: none; }
 .profile-label { font-size: 30rpx; font-weight: 600; overflow-wrap: anywhere; }
 .profile-badge { display: inline-block; font-size: 19rpx; color: #2b7fd8; background: #edf3f9; padding: 1rpx 12rpx; border-radius: 4rpx; margin-top: 8rpx; }
 .profile-fields { border-top: 1rpx solid #dedbd2; }

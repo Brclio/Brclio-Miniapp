@@ -2,6 +2,9 @@
 
 const account = require('../../lib/account');
 const sync = require('../../lib/account-sync');
+const avatars = require('../../lib/avatar-catalog');
+const { prepareNativeAvatar } = require('../../lib/avatar-upload');
+const config = require('../../config');
 // Keep each email and purpose independent when navigating away and back.
 const codeDeadlines = Object.create(null);
 const MODES = ['login', 'register', 'bind'];
@@ -11,11 +14,13 @@ Page({
     mode: 'login', loginMethod: 'code', email: '', username: '', identifier: '', password: '', confirmPassword: '', code: '',
     agreed: false, busy: false, sendingCode: false, refreshing: false, codeSeconds: 0,
     error: '', notice: '', user: null, userLabel: '', userInitial: '', showBind: false, wechatLinked: false,
-    syncState: 'guest', syncMessage: '', syncPending: 0
+    syncState: 'guest', syncMessage: '', syncPending: 0,
+    showAvatars: false, avatarPage: 0, avatarPages: 25, avatarItems: [], avatarCount: 1000
   },
 
   onLoad(options) {
     this._alive = true;
+    this._avatarOperation = 0;
     this.applySyncStatus(sync.getStatus());
     this._unsubscribeSync = sync.subscribe(status => this.applySyncStatus(status));
     const mode = options && options.mode;
@@ -51,6 +56,7 @@ Page({
 
   onUnload() {
     this._alive = false;
+    this._avatarOperation += 1;
     if (this._unsubscribeSync) this._unsubscribeSync();
     clearInterval(this._codeTimer);
     this._codeTimer = null;
@@ -62,6 +68,12 @@ Page({
   },
 
   applyUser(user) {
+    if ((this.data.user && this.data.user.id) !== (user && user.id)) {
+      this._avatarOperation += 1;
+      const change = { showAvatars: false };
+      if (this._avatarBusy) { this._avatarBusy = false; change.busy = false; }
+      this.setData(change);
+    }
     const label = user ? user.displayName || user.username || (user.email ? user.email.split('@')[0] : '微信用户') : '';
     this.setData({ user, userLabel: label, userInitial: label.slice(0, 1).toUpperCase(), wechatLinked: !!(user && user.providers && user.providers.indexOf('wechat') !== -1) });
     if (!user && this.data.mode === 'bind') this.setData({ mode: 'login', showBind: false });
@@ -73,6 +85,61 @@ Page({
   },
 
   retrySync() { return sync.activate({ pull: true }).then(() => sync.flush()); },
+
+  openAvatars() {
+    if (!this.data.user || this.data.busy || this.data.refreshing) return;
+    const page = this.data.user.avatarId ? Math.floor((this.data.user.avatarId - 1) / 40) : 0;
+    this.setData({ showAvatars: true, error: '', notice: '' });
+    this.showAvatarPage(page);
+  },
+
+  closeAvatars() { if (!this.data.busy) this.setData({ showAvatars: false }); },
+
+  showAvatarPage(page) {
+    if (!Number.isInteger(page) || page < 0 || page >= this.data.avatarPages) return;
+    this.setData({ avatarPage: page, avatarItems: avatars.pageItems(page, 40, config.webOrigin) });
+  },
+
+  previousAvatarPage() { if (!this.data.busy) this.showAvatarPage(this.data.avatarPage - 1); },
+  nextAvatarPage() { if (!this.data.busy) this.showAvatarPage(this.data.avatarPage + 1); },
+
+  selectAvatar(event) {
+    const id = Number(event.currentTarget.dataset.id);
+    if (!avatars.validId(id)) return;
+    return this.runAvatar(() => account.setBuiltinAvatar(id));
+  },
+
+  randomAvatar() {
+    // Choose a different entry when the current avatar is already built in.
+    const current = this.data.user && this.data.user.avatarId;
+    let id = Math.floor(Math.random() * (avatars.COUNT - (current ? 1 : 0))) + 1;
+    if (current && id >= current) id += 1;
+    return this.runAvatar(() => account.setBuiltinAvatar(id));
+  },
+
+  uploadAvatar() {
+    return this.runAvatar(async isCurrent => {
+      const payload = await prepareNativeAvatar(this, wx, isCurrent);
+      if (!isCurrent()) return null;
+      return account.uploadAvatar(payload);
+    });
+  },
+
+  async runAvatar(operation) {
+    if (!this.data.user || this.data.busy || this.data.refreshing) return;
+    const userId = this.data.user.id, serial = ++this._avatarOperation;
+    const isCurrent = () => this._alive && this._avatarOperation === serial && account.getCachedUser() && account.getCachedUser().id === userId;
+    this._avatarBusy = true;
+    this.setData({ busy: true, error: '', notice: '' });
+    try {
+      const session = await operation(isCurrent);
+      if (!isCurrent() || !session) return;
+      this.applyUser(session.user);
+      this.setData({ showAvatars: false, notice: '头像已更新。' });
+    } catch (error) {
+      if (isCurrent() && error.code !== 'avatar_canceled') this.setData({ error: error.message || '头像保存未完成，请重试。' });
+    } finally { if (this._alive && this._avatarOperation === serial) { this._avatarBusy = false; this.setData({ busy: false }); } }
+  },
 
   inputField(event) {
     const field = event.currentTarget.dataset.field;
@@ -190,7 +257,7 @@ Page({
 
   startBind() {
     if (!this.data.user || this.data.user.email || this.data.busy) return;
-    this.setData({ mode: 'bind', showBind: true, email: '', username: '', password: '', confirmPassword: '', code: '', error: '', notice: '' });
+    this.setData({ mode: 'bind', showBind: true, showAvatars: false, email: '', username: '', password: '', confirmPassword: '', code: '', error: '', notice: '' });
     this.updateCooldown();
   },
 

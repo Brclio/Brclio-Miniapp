@@ -1,4 +1,5 @@
 import { createGitHubStore, AccountStoreError } from './account-store.mjs';
+import { AvatarError, MAX_AVATAR_REQUEST_BYTES, validateAvatar, imageDimensions, hasAvatar, randomBuiltinId, avatarDirectory, publicAvatar } from './account-avatar.mjs';
 import { sendAccountEmail } from './account-mail.mjs';
 import { SyncDataError, MAX_SYNC_REQUEST_BYTES, validateSyncPatch, readSyncDocument, mergeSyncPatch } from './account-sync.mjs';
 
@@ -10,7 +11,7 @@ const HEADERS = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosnif
 const ROUTES = new Map([
   ['/email/code', 'POST'], ['/register', 'POST'], ['/login/password', 'POST'],
   ['/login/email', 'POST'], ['/login/wechat', 'POST'], ['/session', 'GET'],
-  ['/logout', 'POST'], ['/bind/email', 'POST'], ['/bind/wechat', 'POST'], ['/data', 'GET,PUT'], ['/sync', 'GET,PUT']
+  ['/logout', 'POST'], ['/bind/email', 'POST'], ['/bind/wechat', 'POST'], ['/data', 'GET,PUT'], ['/sync', 'GET,PUT'], ['/avatar', 'PUT']
 ]);
 
 class AccountError extends Error {
@@ -81,8 +82,14 @@ function userPath(id, file) {
   if (!USER_ID.test(id)) throw fail(401, 'unauthorized', '登录已失效，请重新登录。');
   return 'users/v1/' + id.slice(0, 2) + '/' + id + '/' + file + '.json';
 }
-function safeUser(profile) {
-  return { id: profile.id, username: profile.username || '', email: profile.email || '', displayName: profile.displayName || 'Brclio 用户', avatarUrl: '', providers: [...(profile.providers || [])], createdAt: profile.createdAt };
+function ensureAvatar(tx, profile, at) {
+  if (hasAvatar(profile)) return profile;
+  const updated = { ...profile, avatar: { type: 'builtin', id: randomBuiltinId() }, updatedAt: at };
+  tx.put(userPath(profile.id, 'profile'), updated);
+  return updated;
+}
+function safeUser(profile, origin = '') {
+  return { id: profile.id, username: profile.username || '', email: profile.email || '', displayName: profile.displayName || 'Brclio 用户', ...publicAvatar(profile, origin), providers: [...(profile.providers || [])], createdAt: profile.createdAt };
 }
 async function indexPath(secret, type, value) {
   const key = await hmac(secret, 'identity:v1:' + type + ':' + value);
@@ -108,7 +115,7 @@ function parseBearer(request) {
   if (!match) throw fail(401, 'unauthorized', '请先登录。');
   return { token: match[1], id: match[2] };
 }
-async function authenticate(tx, request, at) {
+async function authenticate(tx, request, at, { migrate = true } = {}) {
   const { token, id } = parseBearer(request);
   const tokenHash = await digest(token);
   let sessions = await tx.get(userPath(id, 'sessions'));
@@ -118,20 +125,21 @@ async function authenticate(tx, request, at) {
   if (!profile || profile.status !== 'active') throw fail(401, 'unauthorized', '登录已失效，请重新登录。');
   // Legacy session timestamps are metadata, never a reason to log out.
   // Migrate once without removing any other device's known session.
-  if (sessions.items.some(item => item.expiresAt !== null)) {
+  if (migrate && sessions.items.some(item => item.expiresAt !== null)) {
     sessions = { ...sessions, items: sessions.items.map(item => ({ ...item, expiresAt: null })) };
     tx.put(userPath(id, 'sessions'), sessions);
     session = sessions.items.find(item => constantEqual(item.hash, tokenHash));
   }
-  return { profile, session, sessions, tokenHash };
+  return { profile: migrate ? ensureAvatar(tx, profile, at) : profile, session, sessions, tokenHash };
 }
-async function issueSession(tx, profile, at, token) {
+async function issueSession(tx, profile, at, token, origin) {
+  profile = ensureAvatar(tx, profile, at);
   const path = userPath(profile.id, 'sessions');
   const current = await tx.get(path);
   const items = (current?.items || []).map(item => ({ ...item, expiresAt: null }));
   items.push({ hash: await digest(token), createdAt: at, expiresAt: null });
   tx.put(path, { schemaVersion: 1, items });
-  return { user: safeUser(profile), token, expiresAt: null };
+  return { user: safeUser(profile, origin), token, expiresAt: null };
 }
 async function consumeCode(tx, path, code, secret, at) {
   const challenge = await tx.get(path);
@@ -193,7 +201,8 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
         originHeaders = { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' };
       }
       const route = url.pathname.slice('/api/account'.length);
-      const method = ROUTES.get(route);
+      const avatarMatch = /^\/avatar\/([a-f0-9]{32})\/([a-f0-9]{32})$/.exec(route);
+      const method = avatarMatch ? 'GET' : ROUTES.get(route);
       if (!method || url.search) throw fail(404, 'not_found', '接口不存在。');
       if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...HEADERS, ...originHeaders, 'Access-Control-Allow-Methods': method, 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Brclio-Sync-Version', 'Access-Control-Max-Age': '600' } });
       if (!method.split(',').includes(request.method)) return json({ error: 'method_not_allowed', message: '请求方式不受支持。' }, 405, { ...originHeaders, Allow: method });
@@ -206,10 +215,55 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
       const at = now(), secret = env.ACCOUNT_HMAC_SECRET;
       const store = storeFactory(env, { repository: 'users', fetchImpl });
       const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-      const body = request.method === 'POST' || request.method === 'PUT' ? await readBody(request, route === '/sync' ? MAX_SYNC_REQUEST_BYTES : route === '/data' ? 32768 : 8192) : {};
+      if (route === '/avatar') {
+        // Large uploads must not be buffered or decoded for a bogus session or
+        // an already exhausted budget. This read-only check reserves no write
+        // and performs no legacy migrations; the commit authenticates and
+        // consumes the budget again atomically after the body is validated.
+        parseBearer(request);
+        await store.transaction(async tx => {
+          const { profile } = await authenticate(tx, request, at, { migrate: false });
+          const rate = await tx.get(await ratePath(secret, 'avatar-user', profile.id));
+          if (rate && at < rate.resetAt && rate.count >= 30) {
+            throw fail(429, 'rate_limited', '操作较频繁，请稍后再试。', Math.max(1, Math.ceil((rate.resetAt - at) / 1000)));
+          }
+        });
+      }
+      const body = request.method === 'POST' || request.method === 'PUT' ? await readBody(request, route === '/sync' ? MAX_SYNC_REQUEST_BYTES : route === '/data' ? 32768 : route === '/avatar' ? MAX_AVATAR_REQUEST_BYTES : 8192) : {};
       let result;
 
-      if (route === '/email/code') {
+      if (avatarMatch) {
+        const [, userId, assetId] = avatarMatch;
+        const profile = await store.read(userPath(userId, 'profile'));
+        if (!profile || profile.status !== 'active') throw fail(404, 'not_found', '头像不存在。');
+        const bytes = await store.readBinary(avatarDirectory(userId, assetId) + 'display.jpg');
+        if (!bytes) throw fail(404, 'not_found', '头像不存在。');
+        try {
+          const dimensions = imageDimensions(bytes, 'image/jpeg');
+          if (dimensions.width > 256 || dimensions.height > 256) throw new Error();
+        } catch { throw fail(503, 'avatar_unavailable', '头像暂不可用。'); }
+        return new Response(bytes, { headers: { ...originHeaders, 'Content-Type': 'image/jpeg', 'Content-Length': String(bytes.length), 'Cache-Control': 'public, max-age=86400, immutable', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; sandbox" } });
+      } else if (route === '/avatar') {
+        const avatar = validateAvatar(body), assetId = randomHex(16);
+        const metadata = avatar.original ? {
+          type: 'custom', assetId,
+          original: { mimeType: avatar.original.mimeType, bytes: avatar.original.bytes.length, sha256: hex(await crypto.subtle.digest('SHA-256', avatar.original.bytes)) },
+          compressed: { mimeType: 'image/jpeg', bytes: avatar.compressed.bytes.length, width: avatar.compressed.width, height: avatar.compressed.height }
+        } : { type: 'builtin', id: avatar.builtinId };
+        result = await store.transaction(async tx => {
+          const { profile } = await authenticate(tx, request, at);
+          const blocked = await takeRate(tx, await ratePath(secret, 'avatar-user', profile.id), at, 30, 3600000);
+          if (blocked) return blocked;
+          if (avatar.original) {
+            const directory = avatarDirectory(profile.id, assetId);
+            tx.putBinary(directory + 'original.' + avatar.original.extension, avatar.original.bytes);
+            tx.putBinary(directory + 'display.jpg', avatar.compressed.bytes);
+          }
+          const updated = { ...profile, avatar: metadata, updatedAt: at };
+          tx.put(userPath(profile.id, 'profile'), updated);
+          return { user: safeUser(updated, url.origin) };
+        });
+      } else if (route === '/email/code') {
         exactFields(body, ['email', 'purpose']);
         const email = normalizeEmail(body.email), purpose = body.purpose;
         if (!['register', 'login', 'bind'].includes(purpose)) throw fail(400, 'invalid_purpose', '验证码用途错误。');
@@ -264,7 +318,7 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
           // this private repository. It never enters a public profile/response.
           tx.put(userPath(id, 'credentials'), { schemaVersion: 1, password: passwordRecord, passwordPlaintext: password, updatedAt: at });
           tx.put(emailIndex, { userId: id }); tx.put(usernameIndex, { userId: id });
-          return issueSession(tx, profile, at, token);
+          return issueSession(tx, profile, at, token, url.origin);
         });
       } else if (route === '/login/password') {
         exactFields(body, ['identifier', 'password']);
@@ -284,7 +338,7 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
           const valid = await passwordMatches(password, record, secret);
           const profile = index ? await tx.get(userPath(index.userId, 'profile')) : null;
           if (!valid || !profile || profile.status !== 'active') return rejected(401, 'invalid_credentials', '账号或密码不正确。');
-          return issueSession(tx, profile, at, 'm1.' + profile.id + '.' + randomHex(32));
+          return issueSession(tx, profile, at, 'm1.' + profile.id + '.' + randomHex(32), url.origin);
         });
       } else if (route === '/login/email') {
         exactFields(body, ['email', 'code']);
@@ -297,7 +351,7 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
           const index = await tx.get(await indexPath(secret, 'email', email));
           const profile = index ? await tx.get(userPath(index.userId, 'profile')) : null;
           if (!profile || profile.status !== 'active') return rejected(401, 'invalid_credentials', '登录失败，请确认邮箱已注册。');
-          return issueSession(tx, profile, at, 'm1.' + profile.id + '.' + randomHex(32));
+          return issueSession(tx, profile, at, 'm1.' + profile.id + '.' + randomHex(32), url.origin);
         });
       } else if (route === '/login/wechat' || route === '/bind/wechat') {
         exactFields(body, ['code']);
@@ -326,7 +380,7 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
               const bound = profile.providers?.includes('wechat') ? profile : { ...profile, providers: [...new Set([...(profile.providers || []), 'wechat'])], updatedAt: at };
               if (bound !== profile) tx.put(userPath(profile.id, 'profile'), bound);
               if (!index) tx.put(path, { userId: profile.id });
-              return { user: safeUser(bound), expiresAt: null };
+              return { user: safeUser(bound, url.origin), expiresAt: null };
             }
             let profile = index ? await tx.get(userPath(index.userId, 'profile')) : null;
             if (index && (!profile || profile.status !== 'active')) return rejected(401, 'unauthorized', '账号暂不可用。');
@@ -336,13 +390,13 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
               tx.put(userPath(newId, 'credentials'), { schemaVersion: 1, password: null, passwordPlaintext: null, updatedAt: at });
               tx.put(path, { userId: newId });
             }
-            return issueSession(tx, profile, at, 'm1.' + profile.id + '.' + randomHex(32));
+            return issueSession(tx, profile, at, 'm1.' + profile.id + '.' + randomHex(32), url.origin);
           });
         }
       } else if (route === '/session') {
         result = await store.transaction(async tx => {
           const { profile } = await authenticate(tx, request, at);
-          return { user: safeUser(profile), expiresAt: null };
+          return { user: safeUser(profile, url.origin), expiresAt: null };
         });
       } else if (route === '/logout') {
         exactFields(body, []);
@@ -393,6 +447,7 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
       }
       return json(result || { ok: true }, route === '/register' ? 201 : 200, originHeaders);
     } catch (error) {
+      if (error instanceof AvatarError) return json({ error: error.code, message: error.message }, error.status, originHeaders);
       if (error instanceof SyncDataError) return json({ error: error.code, message: error.status === 503 ? '云端同步暂不可用，请稍后重试。' : error.status === 413 ? '同步数据较大，请减少单次同步内容。' : '同步数据格式错误或包含不支持的字段。' }, error.status, originHeaders);
       if (error instanceof AccountError) return json({ error: error.code, message: error.message, ...(error.retryAfter ? { retryAfter: error.retryAfter } : {}) }, error.status, originHeaders);
       console.warn(JSON.stringify({ service: 'miniapp-account', code: error instanceof AccountStoreError ? error.safeCode : 'runtime_failure' }));

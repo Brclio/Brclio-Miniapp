@@ -30,7 +30,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：登录后自动同步儿歌收藏，支持离线重试及账号隔离；账号密码登录后可一键绑定微信，后续微信登录进入同一账号，保留原账号密码与收藏。保留47首儿歌及独立插画封面、摄影、双人挑战与悦学。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
+    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：新增1000个内置头像，注册登录后分配并保留，支持切换、随机更换及自定义上传；原图与压缩头像分别保存在GitHub私有账号仓库。保留儿歌收藏同步、微信绑定、摄影、双人挑战与悦学。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');

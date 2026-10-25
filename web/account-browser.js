@@ -4,8 +4,9 @@
 const { createAccountClient, STORAGE_KEY, REVOCATIONS_KEY, REQUEST_TIMEOUT } = require('../miniprogram/lib/account');
 const { createAccountSync, DATA_PREFIX, META_PREFIX, CLAIM_KEY } = require('../miniprogram/lib/account-sync');
 const { createHistorySnapshot } = require('./account-history-snapshot');
+const avatars = require('./avatar-browser');
 const schema = require('../miniprogram/lib/account-sync-schema');
-const API_ROUTES = new Set(['/email/code', '/register', '/login/password', '/login/email', '/login/wechat', '/session', '/logout', '/bind/email', '/data', '/sync']);
+const API_ROUTES = new Set(['/email/code', '/register', '/login/password', '/login/email', '/login/wechat', '/session', '/logout', '/bind/email', '/data', '/sync', '/avatar']);
 const BOOT_WAIT = 1800;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 const logicalStringKeys = new Set(['RGD_CUSTOM_TITLE', 'RGD_P1_NAME', 'RGD_P2_NAME', 'RGD_CUSTOM_REWARDS', ...schema.JSON_KEYS]);
@@ -19,7 +20,8 @@ const safeMessages = {
   sync_conflict: '云端数据已更新，请重新读取后同步。', data_conflict: '云端数据已更新，请重新读取。',
   invalid_email: '请输入有效的邮箱地址。', invalid_username: '请输入正确的账号。',
   invalid_password: '请输入有效的密码。', invalid_code: '请输入 6 位邮箱验证码。',
-  body_too_large: '请求内容较大，请减少单次内容。', sync_data_too_large: '同步数据较大，请减少单次同步内容。'
+  body_too_large: '请求内容较大，请减少单次内容。', sync_data_too_large: '同步数据较大，请减少单次同步内容。',
+  invalid_avatar: '头像图片无效，请重新选择。', avatar_too_large: '原图须不超过 10 MB，展示图须不超过 128 KB。'
 };
 function storageError() { const error = new Error('本机记录暂不可读取或保存，原有数据已保留。'); error.code = 'storage_unavailable'; return error; }
 function logicalKey(key) {
@@ -281,7 +283,7 @@ function createBrowserAccount(host, options = {}) {
     page.removeEventListener('visibilitychange', hidden);
   }
   const runtime = {
-    client: account, sync, storage: sync.storage,
+    client: account, sync, storage: sync.storage, avatars,
     ready: null, prepare, startModule, prepareModule: startModule,
     getScope: () => sync.getScope(), getGuestOwner: () => sync.getGuestOwner(),
     subscribe: listener => sync.subscribe(listener),

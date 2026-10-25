@@ -22,6 +22,8 @@ function safeUser(value) {
   });
   user.createdAt = typeof value.createdAt === 'number' && Number.isFinite(value.createdAt) ? value.createdAt : typeof value.createdAt === 'string' ? value.createdAt.slice(0, 128) : '';
   user.avatarUrl = typeof value.avatarUrl === 'string' && /^https:\/\/[^\s]+$/.test(value.avatarUrl) ? value.avatarUrl.slice(0, 2048) : '';
+  if (Object.prototype.hasOwnProperty.call(value, 'avatarId')) user.avatarId = Number.isInteger(value.avatarId) && value.avatarId >= 1 && value.avatarId <= 1000 ? value.avatarId : null;
+  if (value.avatarType === 'builtin' || value.avatarType === 'custom') user.avatarType = value.avatarType;
   user.providers = Array.isArray(value.providers) ? ['email', 'wechat'].filter(provider => value.providers.indexOf(provider) !== -1) : [];
   return user;
 }
@@ -41,7 +43,7 @@ function createAccountClient(options) {
   const settings = options || {};
   const base = endpoint(settings.config || config);
   const now = settings.now || Date.now;
-  let memorySession, generation = 0, pendingRefresh = null;
+  let memorySession, generation = 0, pendingRefresh = null, profileVersion = 0, avatarPending = false;
   const subscribers = new Set();
   let revocations, pendingRevocations = null;
   const platform = () => settings.wx || (typeof wx !== 'undefined' ? wx : null);
@@ -182,6 +184,22 @@ function createAccountClient(options) {
     if (expected !== generation || !memorySession || memorySession.token !== session.token) throw accountError('operation_canceled', '账号已变化，本次同步已取消。');
     return result;
   }
+  async function updateAvatar(data) {
+    const session = readSession();
+    if (!session) throw accountError('session_expired', '请先登录后再设置头像。');
+    if (avatarPending) throw accountError('avatar_busy', '正在保存头像，请稍候。');
+    const expected = generation;
+    // A session refresh already in flight must not replace this newer profile.
+    profileVersion += 1;
+    avatarPending = true;
+    try {
+      const result = await request('/avatar', 'PUT', data, session.token);
+      if (expected !== generation || !memorySession || memorySession.token !== session.token) throw accountError('operation_canceled', '账号已变化，本次头像设置已取消。');
+      if (!result.user || result.user.id !== session.user.id) throw accountError('invalid_response', '头像保存结果暂时无法读取，请重试。');
+      profileVersion += 1;
+      return saveSession({ user: result.user, token: session.token, expiresAt: session.expiresAt }, 'avatar');
+    } finally { avatarPending = false; }
+  }
   async function wechatAuthentication(session) {
     const currentGeneration = generation;
     const api = platform();
@@ -203,14 +221,20 @@ function createAccountClient(options) {
     subscribe(listener) { if (typeof listener !== 'function') return () => {}; subscribers.add(listener); return () => subscribers.delete(listener); },
     readSync() { return authedRequest('/sync', 'GET'); },
     writeSync(payload) { return authedRequest('/sync', 'PUT', payload); },
+    async setBuiltinAvatar(id) {
+      if (!Number.isInteger(id) || id < 1 || id > 1000) throw accountError('invalid_avatar', '请选择有效的内置头像。');
+      return updateAvatar({ builtinId: id });
+    },
+    async uploadAvatar(payload) { return updateAvatar(payload); },
     getCachedUser() { const session = readSession(); return session ? safeUser(session.user) : null; },
     async refreshSession() {
       const session = readSession();
       if (!session) return null;
       if (pendingRefresh && pendingRefresh.token === session.token) return pendingRefresh.promise;
-      const token = session.token, currentGeneration = generation;
+      const token = session.token, currentGeneration = generation, currentProfileVersion = profileVersion;
       const promise = request('/session', 'GET', undefined, token).then(result => {
         if (currentGeneration !== generation) return null;
+        if (currentProfileVersion !== profileVersion) return { user: safeUser(memorySession.user), expiresAt: memorySession.expiresAt };
         return saveSession({ ...result, token }, 'refresh');
       }).catch(error => {
         if (error.status === 401) return null;

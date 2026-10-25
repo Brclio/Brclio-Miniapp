@@ -10,6 +10,18 @@
       <image wx:if="{{user.avatarUrl}}" class="profile-avatar" src="{{user.avatarUrl}}" mode="aspectFill" />
       <view wx:else class="profile-initial serif" aria-hidden="true">{{userInitial}}</view>
       <view class="profile-name"><view class="profile-label">{{userLabel}}</view><view class="profile-badge">已登录</view></view>
+      <button class="change-avatar" bindtap="openAvatars" disabled="{{busy || refreshing}}" hover-class="button-pressed">设置头像 ↗</button>
+    </view>
+    <view wx:if="{{showAvatars}}" class="avatar-picker" aria-label="头像设置">
+      <view class="avatar-picker-heading"><view><view class="avatar-picker-title serif">挑一个喜欢的头像</view><view class="avatar-picker-caption">{{avatarCount}} 个小伙伴，随时换个心情。</view></view><button class="avatar-close" bindtap="closeAvatars" disabled="{{busy}}" aria-label="关闭头像设置" hover-class="button-pressed">×</button></view>
+      <view class="avatar-actions"><button class="avatar-random" bindtap="randomAvatar" disabled="{{busy}}" hover-class="button-pressed">随机换一个</button><button class="avatar-upload" bindtap="uploadAvatar" disabled="{{busy}}" hover-class="button-pressed">上传我的照片 ↗</button></view>
+      <view class="avatar-picker-caption avatar-upload-caption">JPG、PNG、WebP 或 GIF，最大 10 MB。保留上传原图，头像会居中裁成方形并压缩显示。</view>
+      <view class="avatar-grid">
+        <button wx:for="{{avatarItems}}" wx:key="id" class="avatar-option {{user.avatarId === item.id ? 'avatar-option-selected' : ''}}" data-id="{{item.id}}" bindtap="selectAvatar" disabled="{{busy}}" aria-label="{{item.label}}{{user.avatarId === item.id ? '，当前头像' : ''}}" hover-class="button-pressed"><image class="avatar-choice-image" src="{{item.url}}" mode="aspectFill" lazy-load="true" /><text class="avatar-choice-number">{{item.id}}</text></button>
+      </view>
+      <view class="avatar-pagination"><button bindtap="previousAvatarPage" disabled="{{busy || avatarPage === 0}}" aria-label="上一页头像" hover-class="button-pressed">← 上一页</button><text>{{avatarPage + 1}} / {{avatarPages}}</text><button bindtap="nextAvatarPage" disabled="{{busy || avatarPage + 1 >= avatarPages}}" aria-label="下一页头像" hover-class="button-pressed">下一页 →</button></view>
+      <view wx:if="{{busy}}" class="avatar-save-status" role="status">正在准备并保存头像，请稍候…</view>
+      <view wx:if="{{error}}" class="account-message account-error" role="alert">{{error}}</view>
     </view>
     <view class="profile-fields">
       <view class="profile-field"><text>账号</text><text selectable="true">{{user.username || '绑定邮箱后设置'}}</text></view>
@@ -50,7 +62,8 @@
     <button wx:else class="text-button cancel-bind" bindtap="cancelBind" disabled="{{busy}}" hover-class="button-pressed">稍后绑定，返回我的账号</button>
   </view>
 
-  <view wx:if="{{user && !showBind && error}}" class="account-message account-error" role="alert">{{error}}</view>
+  <view wx:if="{{user && !showBind && !showAvatars && error}}" class="account-message account-error" role="alert">{{error}}</view>
   <view wx:if="{{user && !showBind && notice}}" class="account-message account-notice" role="status">{{notice}}</view>
   <view class="account-footer"><text>Brclio / 悦创</text><button bindtap="openPrivacy" hover-class="button-pressed">隐私与数据</button></view>
+  <canvas type="2d" id="avatar-upload-canvas" class="avatar-upload-canvas" aria-hidden="true"></canvas>
 </view>
