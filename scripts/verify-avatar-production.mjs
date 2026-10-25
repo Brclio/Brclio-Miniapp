@@ -3,6 +3,7 @@
 // signs into, changes or deletes an account. Invoke only after deploying dist/web.
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import https from 'node:https';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
@@ -19,6 +20,8 @@ const MAX_ERRORS_PER_ORIGIN = 40;
 const MAX_PROBE_BYTES = 256 * 1024;
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const args = process.argv.slice(2);
+const agent = new https.Agent({ keepAlive: true, maxSockets: CONCURRENCY, maxTotalSockets: CONCURRENCY });
+const archiveStamp = new Date().toISOString().replace(/[^0-9]/g, '');
 
 function fail(code) { throw Object.assign(new Error(code), { safeCode: code }); }
 function safeCode(error) { return /^[a-z][a-z0-9_]{0,79}$/.test(error?.safeCode || '') ? error.safeCode : 'verification_operation_failed'; }
@@ -64,50 +67,81 @@ async function createManifest() {
   return manifest;
 }
 
-async function readBounded(response, limit) {
-  if (Number(response.headers.get('content-length')) > limit) {
-    await response.body?.cancel(); fail('response_too_large');
-  }
-  const reader = response.body?.getReader();
-  if (!reader) return Buffer.alloc(0);
-  const chunks = [];
-  let size = 0;
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      size += value.byteLength;
-      if (size > limit) { await reader.cancel(); fail('response_too_large'); }
-      chunks.push(Buffer.from(value));
-    }
-    return Buffer.concat(chunks, size);
-  } finally { reader.releaseLock(); }
+function requestHttp1(url, { method, body, limit, deadline }) {
+  return new Promise((resolve, reject) => {
+    let done = false, response, request;
+    const finish = (error, value) => {
+      if (done) return;
+      done = true; clearTimeout(timer);
+      if (error) { response?.destroy(); request?.destroy(); reject(error); }
+      else resolve(value);
+    };
+    const timer = setTimeout(() => finish(Object.assign(new Error(), { safeCode: 'request_timed_out' })), Math.max(1, deadline - Date.now()));
+    try {
+      request = https.request(url, {
+        agent, method, headers: { 'Cache-Control': 'no-cache', 'Accept-Encoding': 'identity', ...(body === undefined ? {} : { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }) }
+      }, incoming => {
+        response = incoming;
+        const status = incoming.statusCode, location = incoming.headers.location;
+        if ([301, 302, 303, 307, 308].includes(status)) {
+          finish(null, { status, location, bytes: Buffer.alloc(0) });
+          incoming.destroy(); return;
+        }
+        if (Number(incoming.headers['content-length']) > limit) { finish(Object.assign(new Error(), { safeCode: 'response_too_large' })); return; }
+        const chunks = []; let size = 0;
+        incoming.on('data', chunk => {
+          size += chunk.length;
+          if (size > limit) finish(Object.assign(new Error(), { safeCode: 'response_too_large' }));
+          else chunks.push(chunk);
+        });
+        incoming.on('end', () => finish(null, { status, bytes: Buffer.concat(chunks, size) }));
+        incoming.on('error', () => finish(Object.assign(new Error(), { safeCode: 'response_read_failed' })));
+        incoming.on('aborted', () => finish(Object.assign(new Error(), { safeCode: 'response_read_failed' })));
+      });
+      request.on('error', () => finish(Object.assign(new Error(), { safeCode: 'network_unavailable' })));
+      if (body !== undefined) request.write(body);
+      request.end();
+    } catch { finish(Object.assign(new Error(), { safeCode: 'network_unavailable' })); }
+  });
 }
 async function fetchBounded(origin, requestPath, { method = 'GET', body, limit = MAX_PROBE_BYTES, allowedPaths = [requestPath] } = {}) {
-  const permitted = new Set(allowedPaths);
+  const permitted = new Set(allowedPaths), deadline = Date.now() + TIMEOUT_MS;
   let url = new URL(requestPath, origin), redirects = 0;
-  const signal = AbortSignal.timeout(TIMEOUT_MS);
   while (true) {
     if (!ORIGINS.includes(url.origin) || url.origin !== origin || url.username || url.password || url.search || url.hash || !permitted.has(url.pathname)) fail('redirect_not_allowed');
-    let response;
-    try {
-      response = await fetch(url, {
-        method, body, redirect: 'manual', credentials: 'omit', cache: 'no-store', signal,
-        headers: { 'Cache-Control': 'no-cache', ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }
-      });
-    } catch { fail(signal.aborted ? 'request_timed_out' : 'network_unavailable'); }
+    if (Date.now() >= deadline) fail('request_timed_out');
+    const response = await requestHttp1(url, { method, body, limit, deadline });
     if ([301, 302, 303, 307, 308].includes(response.status)) {
-      const location = response.headers.get('location');
-      await response.body?.cancel();
-      if (method !== 'GET' || !location || ++redirects > 3) fail('redirect_not_allowed');
-      try { url = new URL(location, url); } catch { fail('redirect_not_allowed'); }
+      if (method !== 'GET' || !response.location || ++redirects > 3) fail('redirect_not_allowed');
+      try { url = new URL(response.location, url); } catch { fail('redirect_not_allowed'); }
       continue;
     }
-    let bytes;
-    try { bytes = await readBounded(response, limit); }
-    catch (error) { if (error?.safeCode) throw error; fail(signal.aborted ? 'request_timed_out' : 'response_read_failed'); }
-    return { status: response.status, bytes, finalPath: url.pathname, redirects };
+    return { status: response.status, bytes: response.bytes, finalPath: url.pathname, redirects };
   }
+}
+async function readJsonIfPresent(filename) {
+  try { return JSON.parse(await fs.readFile(path.join(output, filename), 'utf8')); }
+  catch (error) { if (error.code === 'ENOENT') return null; fail('prior_report_invalid'); }
+}
+async function archive(filename) {
+  try { await fs.copyFile(path.join(output, filename), path.join(output, filename.replace(/\.json$/, '') + '.previous-' + archiveStamp + '.json')); }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+}
+function manifestIdentity(manifest) {
+  if (!manifest || !Array.isArray(manifest.files)) fail('resume_manifest_missing');
+  return sha256(JSON.stringify({ version: manifest.version, files: manifest.files.map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })) }));
+}
+function resumedAssets(previous, oldManifest, manifest, origin) {
+  if (!previous || previous.version !== EXPECTED_VERSION || manifestIdentity(oldManifest) !== manifestIdentity(manifest) || previous.manifestSha256 && previous.manifestSha256 !== manifestIdentity(manifest)) fail('resume_manifest_mismatch');
+  const old = previous.origins?.find(item => item.origin === origin);
+  if (!old || !Array.isArray(old.assets)) fail('resume_report_invalid');
+  const indexed = new Map(manifest.files.map(file => [file.path, file])), seen = new Set();
+  return old.assets.filter(item => item.passed === true).map(item => {
+    const file = indexed.get(item.path);
+    if (!file || seen.has(item.path) || item.bytes !== file.bytes || item.sha256 !== file.sha256 ||
+        !(item.status === 200 || item.path === '/404.html' && item.status === 404) || ![file.path, file.canonicalPath].includes(item.finalPath)) fail('resume_passed_result_invalid');
+    seen.add(item.path); return item;
+  });
 }
 async function retry(callback) {
   let last, observed;
@@ -180,22 +214,37 @@ async function verifyProbe(origin, probe) {
 
 async function main() {
   if (args.includes('--help')) {
-    console.log('Usage: node scripts/verify-avatar-production.mjs [--local-manifest]\n\nDefault: verify the deployed dist/web on both fixed production origins, with 12 concurrent requests and at most 3 attempts per check. No credentials or account writes are used.\n--local-manifest: write only artifacts/avatar-release/public-manifest.json; send no requests.\nReports: artifacts/avatar-release/production-verification.json');
+    console.log('Usage: node scripts/verify-avatar-production.mjs [--local-manifest | --resume]\n\nDefault: verify the deployed dist/web on both fixed production origins, with 12 concurrent requests and at most 3 attempts per check. No credentials or account writes are used.\n--local-manifest: write only artifacts/avatar-release/public-manifest.json; send no requests.\n--resume: retain only previously passed byte-matched files from an identical manifest; retry failures.\nReports: artifacts/avatar-release/production-verification.json');
     return;
   }
-  if (args.some(arg => arg !== '--local-manifest') || args.length > 1) fail('unsupported_argument');
+  if (args.some(arg => !['--local-manifest', '--resume'].includes(arg)) || args.length > 1) fail('unsupported_argument');
+  const previousManifest = await readJsonIfPresent('public-manifest.json');
+  const previousReport = args[0] === '--resume' ? await readJsonIfPresent('production-verification.json') : null;
+  await archive('public-manifest.json');
   const manifest = await createManifest();
   console.log('[avatar verification] Local manifest: ' + manifest.fileCount + ' files, ' + manifest.builtinAvatarCount + ' avatars.');
   if (args[0] === '--local-manifest') return;
   const report = {
     schemaVersion: 1, startedAt: new Date().toISOString(), completedAt: null, passed: false,
     version: EXPECTED_VERSION, concurrency: CONCURRENCY, maximumAttempts: ATTEMPTS,
-    manifestCreatedAt: manifest.createdAt, fileCountPerOrigin: manifest.fileCount,
+    manifestCreatedAt: manifest.createdAt, manifestSha256: manifestIdentity(manifest), fileCountPerOrigin: manifest.fileCount,
     origins: ORIGINS.map(origin => ({ origin, passed: false, checkedFiles: 0, matchedFiles: 0, checkedBuiltinAvatars: 0, errorCount: 0, errors: [], assets: [], probes: [] }))
   };
+  if (args[0] === '--resume') {
+    for (const current of report.origins) {
+      current.assets = resumedAssets(previousReport, previousManifest, manifest, current.origin);
+      current.checkedFiles = current.matchedFiles = current.resumedFiles = current.assets.length;
+      current.checkedBuiltinAvatars = current.assets.filter(item => /^\/avatars\/[0-9]{4}\.png$/.test(item.path)).length;
+    }
+  }
+  await archive('production-verification.json');
   await writeJson('production-verification.json', report);
+  let checkpoints = Promise.resolve(), completions = 0;
+  const checkpoint = () => { const snapshot = structuredClone(report); checkpoints = checkpoints.then(() => writeJson('production-verification.json', snapshot)); return checkpoints; };
   const indexed = new Map(report.origins.map(item => [item.origin, item]));
-  const tasks = manifest.files.flatMap(file => ORIGINS.map(origin => ({ origin, file })));
+  const completed = new Map(report.origins.map(item => [item.origin, new Set(item.assets.map(asset => asset.path))]));
+  const tasks = manifest.files.flatMap(file => ORIGINS.filter(origin => !completed.get(origin).has(file.path)).map(origin => ({ origin, file })));
+  console.log('[avatar verification] HTTP/1.1; ' + tasks.length + ' remaining checks; hard deadline ' + TIMEOUT_MS + 'ms per attempt.');
   console.log('[avatar verification] Checking both official origins; public files only.');
   await pool(tasks, async ({ origin, file }) => {
     const current = indexed.get(origin), result = await verifyPublicFile(origin, file);
@@ -204,8 +253,10 @@ async function main() {
       current.matchedFiles++;
       if (/^\/avatars\/[0-9]{4}\.png$/.test(file.path)) current.checkedBuiltinAvatars++;
     } else addError(current, { path: file.path, error: result.error });
+    if (++completions % 50 === 0) await checkpoint();
     if (current.checkedFiles % 250 === 0 || current.checkedFiles === manifest.fileCount) console.log('[avatar verification] ' + origin + ': ' + current.checkedFiles + '/' + manifest.fileCount + ' checked; ' + current.errorCount + ' failures.');
   });
+  await checkpoint();
   await pool(ORIGINS.flatMap(origin => probes().map(probe => ({ origin, probe }))), async ({ origin, probe }) => {
     const current = indexed.get(origin), result = await verifyProbe(origin, probe);
     current.probes.push(result);
@@ -218,6 +269,7 @@ async function main() {
     current.errorsTruncated = current.errorCount > current.errors.length;
   }
   report.completedAt = new Date().toISOString(); report.passed = report.origins.every(item => item.passed);
+  await checkpoints;
   await writeJson('production-verification.json', report);
   console.log(JSON.stringify({ passed: report.passed, version: EXPECTED_VERSION, origins: report.origins.map(({ origin, passed, checkedFiles, matchedFiles, checkedBuiltinAvatars, errorCount, errors }) => ({ origin, passed, checkedFiles, matchedFiles, checkedBuiltinAvatars, errorCount, errors })), report: 'artifacts/avatar-release/production-verification.json' }, null, 2));
   if (!report.passed) process.exitCode = 1;
@@ -227,4 +279,4 @@ main().catch(async error => {
   const code = safeCode(error);
   console.error('[avatar verification] ' + code);
   process.exitCode = 1;
-});
+}).finally(() => agent.destroy());

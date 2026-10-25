@@ -49,13 +49,13 @@
 | 7. 信息对外提供 | 按真实处理关系核对平台条款；不宣称“从未使用第三方服务”。补充文档已披露微信登录、Gmail 验证码邮件、Cloudflare 网络与后端承载、两个 GitHub 私有仓库及有道发音的使用范围。如实际后台另有外部提供方字段，按这些处理关系填报，不虚构对应的客户端 SDK。 |
 | 8. 投诉与联系 | 使用同一可用电话与邮箱。 |
 | 9. 补充文档 | 上传同目录 WECHAT_PRIVACY_SUPPLEMENT.txt，UTF-8 纯文本，小于 100 KB。 |
-| 更新日期 | 2026-10-22；如果实际提交日晚于该日期，应按实际更新日期调整。 |
+| 更新日期 | 2026-10-25；以实际后台保存、提交时的更新日期为准。 |
 | 生效日期 | 按本次指引实际生效时间填写，不将本地文件日期当作已审核生效日期。 |
 | 提交代码审核时的用户隐私保护选择 | 选择「采集用户隐私」。 |
 
 ## 4. 提交前要区分的状态
 
-- 用户当前要求自己填后台，本次只准备本地内容，没有替用户保存、预览提交或撤回微信审核。
+- 本地声明已按头像功能更新；本轮后台自动读取持续超时，尚未保存后台隐私指引或提交、撤回微信审核。不得将本地文案更新视为后台已生效。
 - 「账号设置／服务内容声明」修改现网版本指引；「版本管理／提交代码审核／信息填写」修改提审版本指引，两者独立。要纠正本次提审，需确认改的是对应提审版本。
 - 当前没有自行注册隐私授权监听，调用已声明的隐私接口时可由微信官方隐私授权弹窗处理；不要仅因没有自定义弹窗就认定无需授权。用户拒绝后不能绕过授权继续处理。
 - TXT 导入、相册保存、复制来源链接的实体设备授权与拒绝流程，需要在后台声明生效后实际核验；独立账号还需核验主动同意、拒绝后继续访客使用、邮箱送达、微信登录和退出流程。本地文案检查不能证明后台已生效。
@@ -65,7 +65,7 @@
 
 - `miniprogram/pages/duel/index.js`：聊天 TXT 选择和本机读取、主动保存战报。
 - `miniprogram/lib/duel.js`、`miniprogram/lib/duel-platform.js`：固定来源链接写入剪切板、窗口与画布适配。
-- `miniprogram/pages/account/index.js`、`miniprogram/lib/account.js`：独立账号输入字段、主动同意、邮箱/密码/微信登录、绑定邮箱及退出；当前没有挑战备份上传。
+- `miniprogram/pages/account/index.js`、`miniprogram/lib/account.js`：独立账号输入字段、主动同意、邮箱/密码/微信登录、绑定邮箱、头像选择与退出；`miniprogram/lib/avatar-upload.js` 仅处理主动选中的一张原图与压缩展示图。
 - `miniprogram/lib/ready-go-model.js`：标题、玩家名和彩头的 7 天有效期及下一次初始化清理。
 - `miniprogram/pages/privacy/index.wxml`、`web/account-api.mjs`、`web/account-store.mjs`、`web/account-mail.mjs`：账号说明、微信凭证交换、分库存储、验证码邮件与限流记录；`web/lingotiles-audio.mjs` 仅转当前英文单词至有道发音接口。
 - 微信官方填写说明：https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/index
