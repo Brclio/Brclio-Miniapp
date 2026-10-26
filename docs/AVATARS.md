@@ -29,3 +29,7 @@
 - `npm run build`、`npm run check`：通过，1000 个头像进入网页产物，小程序主包仍小于 2 MiB。
 - 本地 Chromium 实测使用构建产物、真实账号 API 和内存仓库替身，完成随机补齐、内置切换、自定义预览、实际 Canvas 压缩、逐字节原图比对、JPEG 加载、刷新恢复以及 390px 宽度检查。此过程没有写入真实用户仓库。截图保存在本地 `artifacts/avatar-desktop.png`、`artifacts/avatar-mobile.png`。
 - 后续已完成 Pages 部署、真实 GitHub 原图与压缩图联调及微信 0.1.6 开发版上传，详见 [发布记录](AVATAR_RELEASE.md)。微信后台照片选择隐私声明及真机的允许、拒绝、取消、GIF/方向兼容性仍需实际验收；更新的声明素材见 [微信隐私填写说明](WECHAT_PRIVACY_FILLING.md)。
+
+## 0.1.7 素材重制
+
+1000 张内置图已全部改为独立 imagegen 作品，20 主题交错展示，保持原头像编号和自定义存储。完整提示词、来源哈希及 40 张选览见 [素材说明](../design/builtin-avatars-v2/README.md)，当前部署与微信上传阶段见 [0.1.7 发布记录](AVATAR_REDESIGN_RELEASE.md)。
