@@ -9,9 +9,10 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const build = path.join(root, 'dist/web');
-const output = path.join(root, 'artifacts/avatar-release');
+const EXPECTED_VERSION = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
+const output = path.join(root, 'artifacts/avatar-release', EXPECTED_VERSION);
+const reportRelative = 'artifacts/avatar-release/' + EXPECTED_VERSION + '/production-verification.json';
 const ORIGINS = Object.freeze(['https://pocket.bornforthis.cn', 'https://pocket.brclio.com']);
-const EXPECTED_VERSION = '0.1.6';
 const EXCLUDED = new Set(['_worker.js', '_routes.json', '_headers']);
 const CONCURRENCY = 12;
 const ATTEMPTS = 3;
@@ -214,7 +215,7 @@ async function verifyProbe(origin, probe) {
 
 async function main() {
   if (args.includes('--help')) {
-    console.log('Usage: node scripts/verify-avatar-production.mjs [--local-manifest | --resume]\n\nDefault: verify the deployed dist/web on both fixed production origins, with 12 concurrent requests and at most 3 attempts per check. No credentials or account writes are used.\n--local-manifest: write only artifacts/avatar-release/public-manifest.json; send no requests.\n--resume: retain only previously passed byte-matched files from an identical manifest; retry failures.\nReports: artifacts/avatar-release/production-verification.json');
+    console.log('Usage: node scripts/verify-avatar-production.mjs [--local-manifest | --resume]\n\nDefault: verify the deployed dist/web on both fixed production origins, with 12 concurrent requests and at most 3 attempts per check. No credentials or account writes are used.\n--local-manifest: write only artifacts/avatar-release/<version>/public-manifest.json; send no requests.\n--resume: retain only previously passed byte-matched files from an identical manifest; retry failures.\nReports: artifacts/avatar-release/<version>/production-verification.json');
     return;
   }
   if (args.some(arg => !['--local-manifest', '--resume'].includes(arg)) || args.length > 1) fail('unsupported_argument');
@@ -271,7 +272,7 @@ async function main() {
   report.completedAt = new Date().toISOString(); report.passed = report.origins.every(item => item.passed);
   await checkpoints;
   await writeJson('production-verification.json', report);
-  console.log(JSON.stringify({ passed: report.passed, version: EXPECTED_VERSION, origins: report.origins.map(({ origin, passed, checkedFiles, matchedFiles, checkedBuiltinAvatars, errorCount, errors }) => ({ origin, passed, checkedFiles, matchedFiles, checkedBuiltinAvatars, errorCount, errors })), report: 'artifacts/avatar-release/production-verification.json' }, null, 2));
+  console.log(JSON.stringify({ passed: report.passed, version: EXPECTED_VERSION, origins: report.origins.map(({ origin, passed, checkedFiles, matchedFiles, checkedBuiltinAvatars, errorCount, errors }) => ({ origin, passed, checkedFiles, matchedFiles, checkedBuiltinAvatars, errorCount, errors })), report: reportRelative }, null, 2));
   if (!report.passed) process.exitCode = 1;
 }
 

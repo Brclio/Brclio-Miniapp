@@ -2,13 +2,14 @@
 
 // The same immutable IDs are used by the account API, web and native picker.
 // Art is served by the existing web origin; it is not bundled into the miniapp.
+const { VERSION, THEMES, NAMES } = require('./avatar-names');
 const COUNT = 1000;
 const PAGE_SIZE = 40;
-const MOTIFS = Object.freeze(['小猫', '小狐狸', '小熊', '小兔', '熊猫', '小狗', '小青蛙', '猫头鹰', '小企鹅', '机器人']);
+const MOTIFS = THEMES;
 
 function validId(id) { return Number.isInteger(id) && id >= 1 && id <= COUNT; }
-function avatarPath(id) { return validId(id) ? '/avatars/' + String(id).padStart(4, '0') + '.png' : ''; }
-function avatarLabel(id) { return validId(id) ? MOTIFS[Math.floor((id - 1) / 100)] + ' ' + String(id).padStart(4, '0') : ''; }
+function avatarPath(id) { return validId(id) ? '/avatars/' + String(id).padStart(4, '0') + '.png?v=' + VERSION : ''; }
+function avatarLabel(id) { return validId(id) ? NAMES[id - 1] + ' · ' + THEMES[(id - 1) % THEMES.length] : ''; }
 
 // Pages are zero-based. At most 100 thumbnails are created at a time.
 function pageItems(page, pageSize = PAGE_SIZE, origin = '') {
@@ -21,4 +22,4 @@ function pageItems(page, pageSize = PAGE_SIZE, origin = '') {
   });
 }
 
-module.exports = { COUNT, PAGE_SIZE, MOTIFS, validId, avatarPath, avatarLabel, pageItems };
+module.exports = { COUNT, PAGE_SIZE, VERSION, THEMES, MOTIFS, validId, avatarPath, avatarLabel, pageItems };

@@ -10,6 +10,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createGitHubStore } from '../web/account-store.mjs';
 import { accountInternals } from '../web/account-api.mjs';
+import { BUILTIN_AVATAR_VERSION } from '../web/account-avatar.mjs';
 import { readSyncDocument } from '../web/account-sync.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -168,13 +169,15 @@ async function call(route, method, body, token, expected, options = {}) {
   } finally { entry.durationMs = Math.round(performance.now() - started); }
 }
 async function publicImage(url, mimeType, expectedBytes) {
-  const parsed = new URL(url); ensure(allowedBases.has(parsed.origin) && !parsed.search, 'avatar_url_unexpected');
+  const parsed = new URL(url), builtin = /^\/avatars\/([0-9]{4})\.png$/.exec(parsed.pathname);
+  const validBuiltin = builtin && Number(builtin[1]) >= 1 && Number(builtin[1]) <= 1000;
+  ensure(allowedBases.has(parsed.origin) && !parsed.hash && (validBuiltin ? parsed.search === '?v=' + BUILTIN_AVATAR_VERSION : !parsed.search), 'avatar_url_unexpected');
   const started = performance.now(), entry = { route: parsed.pathname, method: 'GET', expected: 200, origin: parsed.origin, status: null, durationMs: null }; report.routes.push(entry);
   try {
     const response = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(60000) }); entry.status = response.status;
     ensure(response.status === 200 && response.headers.get('Content-Type')?.startsWith(mimeType), 'avatar_image_invalid');
     const bytes = Buffer.from(await response.arrayBuffer());
-    ensure(bytes.length > 0 && bytes.length <= 128 * 1024 && (!expectedBytes || bytes.equals(expectedBytes)), 'avatar_image_invalid');
+    ensure(bytes.length > 0 && bytes.length <= (validBuiltin ? 1024 * 1024 : 128 * 1024) && (!expectedBytes || bytes.equals(expectedBytes)), 'avatar_image_invalid');
     ensure(response.headers.get('X-Content-Type-Options') === 'nosniff', 'avatar_image_headers_invalid');
     return bytes;
   } finally { entry.durationMs = Math.round(performance.now() - started); }
@@ -182,7 +185,7 @@ async function publicImage(url, mimeType, expectedBytes) {
 function builtinUser(value, fixture, expectedId) {
   sameUser(value, fixture); const id = value.user.avatarId;
   ensure(value.user.avatarType === 'builtin' && Number.isInteger(id) && id >= 1 && id <= 1000 && (expectedId === undefined || id === expectedId), 'builtin_avatar_invalid');
-  ensure(value.user.avatarUrl === base + '/avatars/' + String(id).padStart(4, '0') + '.png', 'builtin_avatar_url_invalid');
+  ensure(value.user.avatarUrl === base + '/avatars/' + String(id).padStart(4, '0') + '.png?v=' + BUILTIN_AVATAR_VERSION, 'builtin_avatar_url_invalid');
   return id;
 }
 function versionPaths(fixture, version) {

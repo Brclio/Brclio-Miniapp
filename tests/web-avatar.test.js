@@ -64,8 +64,8 @@ test('web picker loads 40 at a time, reaches avatar 1000, persists changes and u
   assert.equal(h.one('[data-avatar-action="next"]').disabled, true);
   h.one('[data-avatar-id="1000"]').click(); await flush();
   assert.deepEqual(h.calls[0], ['builtin', 1000]);
-  assert.match(h.one('[data-account-avatar]').src, /1000\.png$/);
-  assert.match(h.one('[data-account-entry] img').src, /1000\.png$/);
+  assert.match(h.one('[data-account-avatar]').src, /1000\.png\?v=20261026$/);
+  assert.match(h.one('[data-account-entry] img').src, /1000\.png\?v=20261026$/);
   assert.match(h.one('[data-account-session-notice]').textContent, /已更新/);
   h.close();
 });

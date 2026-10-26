@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 2,
+  "reviewedAt": "2026-10-26T15:59:04.683938+00:00",
+  "version": "20261026",
+  "reviewedCount": 1000,
+  "circlePreviewPx": 56,
+  "sourceRecords": 1000,
+  "fixNeededIds": [
+    10,
+    30,
+    65,
+    553,
+    992
+  ],
+  "resolved": [
+    {
+      "id": 10,
+      "sourceSha256": "f4910912c1cd6c131f8dffca23fd46544e84efcf7a67babd3e1fc594e6e3dad5",
+      "promptSha256": "283b4a816c395c9baa8630e31bec46584faa38035e9226c171d6c4eedc67dc7d",
+      "review": "parent viewed replacement and56pxcircle in fixes-review.jpg; silhouette/crop/near-duplicate corrected"
+    },
+    {
+      "id": 30,
+      "sourceSha256": "feba4670afaa9afa71ab7d266d27d024136bc197e5fd850d76b4ff626d91c586",
+      "promptSha256": "9bf5912288a94d5e830c8d6b9f593253b9f9f68a77dabe15a0dce603137fd9ab",
+      "review": "parent viewed replacement and56pxcircle in fixes-review.jpg; silhouette/crop/near-duplicate corrected"
+    },
+    {
+      "id": 65,
+      "sourceSha256": "cc4aed9f31e978504c2f39aec40f19fd38f6f885af0bf14024992095862404f4",
+      "promptSha256": "7affc916e238271c1199b26f057fc29a6f8965ab35e536d0c4cf82be35f7f1c0",
+      "review": "parent viewed replacement and56pxcircle in fixes-review.jpg; silhouette/crop/near-duplicate corrected"
+    },
+    {
+      "id": 553,
+      "sourceSha256": "745f0bbc0d4c7433d7be38539f181d40acfdcbf2d899b7a602666b1a4391ce62",
+      "promptSha256": "0f80e0941cf05a7f69e27229942f5cffbdda1a790c6e577fbf62d7458cc6a64c",
+      "review": "parent viewed replacement and56pxcircle in fixes-review.jpg; silhouette/crop/near-duplicate corrected"
+    },
+    {
+      "id": 992,
+      "sourceSha256": "94cf635b91f39b5042b3682655a064bb7044052d824882a33c7d17b5befa2e0b",
+      "promptSha256": "7bcb4f91e85427336da21deccc35b287266c06dcc31b35d91ec0ee7f5ace5cdf",
+      "review": "parent viewed replacement and56pxcircle in fixes-review.jpg; silhouette/crop/near-duplicate corrected"
+    }
+  ],
+  "parentRecheckedIds": [
+    164,
+    10,
+    30,
+    65,
+    553,
+    992
+  ],
+  "passed": true,
+  "notes": [
+    "Intentional faceless abstract and landscape avatars are allowed.",
+    "Original QA files and rejected generations retained in local artifacts.",
+    "All final1000 are standalone built-in image_gen outputs; no atlas slicing or code-painted artwork."
+  ]
+}

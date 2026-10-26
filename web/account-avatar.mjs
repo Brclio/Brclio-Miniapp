@@ -1,6 +1,7 @@
 // Small raster header validation for account uploads. Clients perform decoding,
 // center cropping and JPEG compression; only the display derivative is served.
 export const BUILTIN_AVATAR_COUNT = 1000;
+export const BUILTIN_AVATAR_VERSION = '20261026';
 export const MAX_AVATAR_ORIGINAL_BYTES = 10 * 1024 * 1024;
 export const MAX_AVATAR_DISPLAY_BYTES = 128 * 1024;
 export const MAX_AVATAR_REQUEST_BYTES = Math.ceil(MAX_AVATAR_ORIGINAL_BYTES / 3) * 4 + Math.ceil(MAX_AVATAR_DISPLAY_BYTES / 3) * 4 + 1024;
@@ -101,6 +102,6 @@ export function publicAvatar(profile, origin = '') {
   }
   const id = profile.avatar?.id;
   return Number.isInteger(id) && id >= 1 && id <= BUILTIN_AVATAR_COUNT ?
-    { avatarType: 'builtin', avatarId: id, avatarUrl: origin + '/avatars/' + String(id).padStart(4, '0') + '.png' } :
+    { avatarType: 'builtin', avatarId: id, avatarUrl: origin + '/avatars/' + String(id).padStart(4, '0') + '.png?v=' + BUILTIN_AVATAR_VERSION } :
     { avatarType: '', avatarId: null, avatarUrl: '' };
 }

@@ -134,7 +134,7 @@ test('native picker pages through all 1000 remote assets and applies a saved sel
   const h = pageHost(), p = h.page; p.openAvatars();
   assert.equal(p.data.avatarItems.length, 40); assert.equal(p.data.avatarItems[0].id, 1);
   p.showAvatarPage(24); assert.equal(p.data.avatarItems.at(-1).id, 1000);
-  assert.equal(p.data.avatarItems.at(-1).url, 'https://miniapp.example.com/avatars/1000.png');
+  assert.equal(p.data.avatarItems.at(-1).url, 'https://miniapp.example.com/avatars/1000.png?v=20261026');
   p.nextAvatarPage(); assert.equal(p.data.avatarPage, 24);
   await p.selectAvatar({ currentTarget: { dataset: { id: 1000 } } });
   assert.equal(p.data.user.avatarId, 1000); assert.equal(p.data.showAvatars, false); assert.equal(p.data.busy, false);

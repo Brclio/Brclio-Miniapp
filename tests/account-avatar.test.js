@@ -51,14 +51,14 @@ test('new accounts receive persisted builtin avatars; later logins retain user s
   const h = await harness(), session = await h.login('same');
   assert.ok(session.user.avatarId >= 1 && session.user.avatarId <= 1000);
   assert.equal(session.user.avatarType, 'builtin');
-  assert.equal(session.user.avatarUrl, 'https://pocket.bornforthis.cn/avatars/' + String(session.user.avatarId).padStart(4, '0') + '.png');
+  assert.equal(session.user.avatarUrl, 'https://pocket.bornforthis.cn/avatars/' + String(session.user.avatarId).padStart(4, '0') + '.png?v=20261026');
   assert.equal((await h.login('same')).user.avatarId, session.user.avatarId);
   const result = await h.call('/avatar', { method: 'PUT', token: session.token, body: { builtinId: 1000 } });
   assert.equal(result.status, 200);
   assert.equal(result.value.user.avatarId, 1000);
   assert.equal((await h.login('same')).user.avatarId, 1000);
   const otherOrigin = await h.call('/session', { token: session.token, url: 'https://pocket.brclio.com/api/account/session' });
-  assert.equal(otherOrigin.value.user.avatarUrl, 'https://pocket.brclio.com/avatars/1000.png');
+  assert.equal(otherOrigin.value.user.avatarUrl, 'https://pocket.brclio.com/avatars/1000.png?v=20261026');
 });
 
 test('legacy profiles migrate at authenticated refresh and login exactly once', async () => {
