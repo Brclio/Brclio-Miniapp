@@ -12,6 +12,7 @@
   let currentPost = null, interaction = { liked: false, favorited: false }, commentPage = 1, commentsRequest = 0, readerMutationPending = false;
   let editor = null, autosaveTimer = null, dirty = false, loadedDraft = null;
   let pendingConfirmation = null;
+  let cache = null, accountUnsubscribe = null, refreshing = false, listReturn = null;
   let query = new URLSearchParams(window.location.search);
   const state = { page: Number(query.get('page')) || 1, q: query.get('q') || '', category: query.get('category') || '', tag: query.get('tag') || '' };
 
@@ -49,7 +50,14 @@
   function principal() { return runtime?.client?.getCachedUser()?.id || null; }
   async function api(path, options = {}, epoch = generation) {
     if (!runtime?.requestBlog) throw new Error('博客服务暂未就绪，请刷新后重试。');
-    const result = await runtime.requestBlog(path, options);
+    if (!cache) {
+      if (!window.BrclioBlogCache) throw new Error('文章缓存组件未能加载，请刷新页面。');
+      cache = window.BrclioBlogCache.createBlogCache({
+        request: (route, method, data) => runtime.requestBlog(route, { method, ...(data === undefined ? {} : { data }) }),
+        getIdentity: () => principal() || ''
+      });
+    }
+    const result = await cache.request(path, options.method || 'GET', options.data, { fresh: !!options.fresh });
     if (stopped || epoch !== generation) { const error = new Error('页面已切换。'); error.canceled = true; throw error; }
     return result;
   }
@@ -69,10 +77,13 @@
   async function navigate(values, options = {}) {
     if (busy || pendingConfirmation) return;
     if (dirty && !options.saved && !await confirmAction({ heading: '离开当前编辑页？', message: '当前文字会保存在这个账号的本机草稿中，可以稍后继续编写。', accept: '保存并离开', cancel: '继续编辑' })) return;
+    if (values.post && ['list', 'saved', 'admin'].includes(view())) listReturn = { values: listQuery(), scroll: window.scrollY || 0 };
     rememberDraft(); dirty = false; editor = null; loadedDraft = null; clearTimeout(autosaveTimer);
     window.history.pushState({}, '', link(values)); query = new URLSearchParams(window.location.search);
     state.page = Number(query.get('page')) || 1; state.q = query.get('q') || ''; state.category = query.get('category') || ''; state.tag = query.get('tag') || '';
-    void route(); window.scrollTo({ top: 0, behavior: 'instant' });
+    const work = route(), epoch = generation;
+    await work;
+    if (epoch === generation && !stopped) window.scrollTo({ top: options.scroll || 0, behavior: 'instant' });
   }
   function listQuery(page = state.page) {
     const values = { page: String(page) };
@@ -120,7 +131,7 @@
     const post = result.post; currentPost = post; interaction = result.interaction || { liked: false, favorited: false };
     title(post.title);
     const cover = safeImage(post.coverUrl), avatar = safeImage(post.author?.avatarUrl);
-    $('#blog-reader').innerHTML = '<div class="reader-nav"><a class="text-button" href="/blog/" data-view="list">← 回到文章列表</a><div>' + (result.canEdit ? '<a class="text-button" href="' + escape(link({ view: 'write', edit: post.id })) + '" data-edit="' + escape(post.id) + '">编辑文章 ↗</a>' : '') + '</div></div><div class="reader-wrap"><div><article><header class="article-header"><div class="post-topline"><span class="category-label">' + escape(post.category || '未分类') + '</span>' + (post.status === 'draft' ? '<span class="status-badge">草稿 · 仅管理员可见</span>' : '') + '<span>' + number(post.readingMinutes || 1) + ' 分钟阅读</span></div><h1 id="post-title">' + escape(post.title) + '</h1><div class="author-line">' + (avatar ? '<img class="author-avatar" alt="" src="' + escape(avatar) + '">' : '') + '<span>' + escape(post.author?.displayName || 'Brclio') + '</span><time>' + escape(date(post.publishedAt || post.updatedAt)) + '</time></div>' + (post.excerpt ? '<p class="article-description">' + escape(post.excerpt) + '</p>' : '') + '</header>' + (cover ? '<img class="article-cover" alt="文章封面" src="' + escape(cover) + '" referrerpolicy="no-referrer">' : '') + '<div class="article-content" id="article-content"></div><div class="tag-list">' + (post.tags || []).map(tag => '<a class="tag" href="' + escape(link({ tag })) + '" data-tag="' + escape(tag) + '">#' + escape(tag) + '</a>').join('') + '</div><div class="reader-end"><div class="reaction-actions"><button type="button" class="secondary" data-reaction="like" aria-pressed="false"></button><button type="button" class="secondary" data-reaction="favorite" aria-pressed="false"></button><button type="button" class="secondary" data-action="copy-link">复制链接 ↗</button></div><p class="reading-count" id="view-count"></p></div></article><section class="comments-section" aria-labelledby="comments-title"><div class="section-heading"><h2 id="comments-title">一起聊聊</h2><span class="small-note" id="comments-count"></span></div><div id="comment-compose"></div><div id="comments" aria-live="polite"></div><div class="comment-pagination" id="comment-pagination"></div></section></div><aside class="reader-aside"><h2>这篇文章的路标</h2><nav id="toc" class="toc" aria-label="文章目录"></nav></aside></div>';
+    $('#blog-reader').innerHTML = '<div class="reader-nav"><a class="text-button" href="' + escape(link(listReturn?.values || {})) + '" data-action="back-list">← 回到文章列表</a><div>' + (result.canEdit ? '<a class="text-button" href="' + escape(link({ view: 'write', edit: post.id })) + '" data-edit="' + escape(post.id) + '">编辑文章 ↗</a>' : '') + '</div></div><div class="reader-wrap"><div><article><header class="article-header"><div class="post-topline"><span class="category-label">' + escape(post.category || '未分类') + '</span>' + (post.status === 'draft' ? '<span class="status-badge">草稿 · 仅管理员可见</span>' : '') + '<span>' + number(post.readingMinutes || 1) + ' 分钟阅读</span></div><h1 id="post-title">' + escape(post.title) + '</h1><div class="author-line">' + (avatar ? '<img class="author-avatar" alt="" src="' + escape(avatar) + '">' : '') + '<span>' + escape(post.author?.displayName || 'Brclio') + '</span><time>' + escape(date(post.publishedAt || post.updatedAt)) + '</time></div>' + (post.excerpt ? '<p class="article-description">' + escape(post.excerpt) + '</p>' : '') + '</header>' + (cover ? '<img class="article-cover" alt="文章封面" src="' + escape(cover) + '" referrerpolicy="no-referrer">' : '') + '<div class="article-content" id="article-content"></div><div class="tag-list">' + (post.tags || []).map(tag => '<a class="tag" href="' + escape(link({ tag })) + '" data-tag="' + escape(tag) + '">#' + escape(tag) + '</a>').join('') + '</div><div class="reader-end"><div class="reaction-actions"><button type="button" class="secondary" data-reaction="like" aria-pressed="false"></button><button type="button" class="secondary" data-reaction="favorite" aria-pressed="false"></button><button type="button" class="secondary" data-action="copy-link">复制链接 ↗</button></div><p class="reading-count" id="view-count"></p></div></article><section class="comments-section" aria-labelledby="comments-title"><div class="section-heading"><h2 id="comments-title">一起聊聊</h2><span class="small-note" id="comments-count"></span></div><div id="comment-compose"></div><div id="comments" aria-live="polite"></div><div class="comment-pagination" id="comment-pagination"></div></section></div><aside class="reader-aside"><h2>这篇文章的路标</h2><nav id="toc" class="toc" aria-label="文章目录"></nav></aside></div>';
     $('#article-content').innerHTML = window.BrclioBlogContent.renderMarkdown(post.content || '');
     $('#article-content').querySelectorAll('h1,h2,h3').forEach((heading, index) => { heading.id = 'section-' + index; const anchor = document.createElement('a'); anchor.href = '#' + heading.id; anchor.textContent = heading.textContent; $('#toc').appendChild(anchor); });
     renderCounts();
@@ -143,11 +154,11 @@
       if (result.post.status === 'published') api('/posts/' + encodeURIComponent(id) + '/view', { method: 'POST', data: { visitorId: visitorId() } }, epoch).then(value => { if (value.counts) currentPost.counts = { ...currentPost.counts, views: Math.max(currentPost.counts?.views || 0, value.counts.views || 0) }; renderCounts(); }).catch(() => {});
     } catch (error) { if (epoch === generation) { title('文章暂不可读'); $('#blog-reader').innerHTML = empty('这篇文章暂时无法阅读。', error.message || '文章可能已经撤回，请稍后再试。', true) + '<a class="text-button" href="/blog/" data-view="list">← 返回文章列表</a>'; } }
   }
-  async function loadComments(epoch = generation) {
+  async function loadComments(epoch = generation, fresh = false) {
     if (!currentPost || !$('#comments')) return;
     const id = currentPost.id, request = ++commentsRequest; $('#comments').textContent = '正在加载留言…';
     try {
-      const result = await api('/posts/' + encodeURIComponent(id) + '/comments?page=' + commentPage + '&pageSize=20', {}, epoch);
+      const result = await api('/posts/' + encodeURIComponent(id) + '/comments?page=' + commentPage + '&pageSize=20', { fresh }, epoch);
       if (request !== commentsRequest || currentPost?.id !== id) return;
       $('#comments').innerHTML = result.comments?.length ? result.comments.map(comment => '<article class="comment"><div class="comment-heading"><strong>' + escape(comment.author?.displayName || '悦创读者') + '</strong><time>' + escape(date(comment.createdAt)) + '</time>' + (comment.canDelete ? '<button type="button" class="text-button" data-delete-comment="' + escape(comment.id) + '">删除</button>' : '') + '</div><p class="comment-body">' + escape(comment.content) + '</p></article>').join('') : '<p class="small-note">还没有留言，第一份想法也许来自你。</p>';
       const pages = Math.max(1, Math.ceil((result.total || 0) / (result.pageSize || 20))); commentPage = result.page || commentPage;
@@ -184,7 +195,7 @@
     const id = query.get('edit');
     if (!id) return renderEditor();
     $('#blog-editor').innerHTML = empty('拿出你的草稿…', '正在读取文章最新版本。');
-    try { const result = await api('/posts/' + encodeURIComponent(id), {}, epoch); if (!result.canEdit) throw new Error('当前账号没有编辑权限。'); renderEditor(result.post); }
+    try { const result = await api('/posts/' + encodeURIComponent(id), { fresh: true }, epoch); if (!result.canEdit) throw new Error('当前账号没有编辑权限。'); renderEditor(result.post); }
     catch (error) { if (epoch === generation) $('#blog-editor').innerHTML = empty('这次没能打开编辑器。', error.message, true); }
   }
   function editorBusy(value) { busy = value; $('#editor-form')?.setAttribute('aria-busy', String(value)); $('#editor-form')?.querySelectorAll('button,input,textarea').forEach(element => { element.disabled = value; }); }
@@ -216,6 +227,7 @@
     closeConfirmation();
     const epoch = ++generation; commentsRequest += 1; notice(); currentPost = null; editor = null; commentPage = 1; readerMutationPending = false;
     const mode = view(); setTab(mode);
+    $('#refresh-blog').hidden = mode === 'write';
     $('#blog-list').hidden = !['list', 'saved', 'admin'].includes(mode); $('#blog-reader').hidden = mode !== 'post'; $('#blog-editor').hidden = mode !== 'write';
     if (mode === 'post') return loadReader(query.get('post'), epoch);
     if (mode === 'write') return loadEditor(epoch);
@@ -278,8 +290,9 @@
       document.querySelectorAll('[data-editor-mode]').forEach(element => element.setAttribute('aria-pressed', String(element === target))); return;
     }
     switch (target.dataset.action) {
-      case 'retry': void route(); break;
-      case 'retry-comments': void loadComments(); break;
+      case 'retry': cache?.reset(); void route(); break;
+      case 'retry-comments': void loadComments(generation, true); break;
+      case 'back-list': event.preventDefault(); navigate(listReturn?.values || {}, { scroll: listReturn?.scroll || 0 }); break;
       case 'back-admin': navigate({ view: 'admin' }); break;
       case 'copy-link':
         try { await window.navigator.clipboard.writeText(window.location.origin + link({ post: currentPost.id })); notice('文章链接已复制。'); } catch (_) { notice('请复制浏览器地址栏中的文章链接。'); } break;
@@ -305,6 +318,12 @@
   });
   $('#search-form').addEventListener('submit', event => { event.preventDefault(); state.q = $('#search').value.trim(); navigate(listQuery(1)); });
   $('#clear-filters').addEventListener('click', () => navigate(view() === 'list' ? {} : { view: view() }));
+  $('#refresh-blog').addEventListener('click', async () => {
+    if (refreshing || busy || readerMutationPending || pendingConfirmation || view() === 'write') return;
+    refreshing = true; $('#refresh-blog').disabled = true; $('#refresh-blog').textContent = '正在刷新…'; cache?.reset();
+    try { await initialize(); }
+    finally { refreshing = false; $('#refresh-blog').disabled = false; $('#refresh-blog').textContent = '刷新内容 ↻'; }
+  });
   document.addEventListener('input', event => { if (event.target.closest('#editor-form')) inputChanged(); });
   document.addEventListener('change', event => { if (event.target.closest('#editor-form')) inputChanged(); });
   document.addEventListener('submit', async event => {
@@ -317,21 +336,24 @@
     });
   });
   window.addEventListener('beforeunload', event => { if (dirty) { rememberDraft(); event.preventDefault(); event.returnValue = ''; } });
-  window.addEventListener('pagehide', () => { rememberDraft(); stopped = true; closeConfirmation(); clearTimeout(autosaveTimer); });
-  window.addEventListener('pageshow', event => { if (event.persisted) { stopped = false; void initialize(); } });
+  window.addEventListener('pagehide', () => { rememberDraft(); stopped = true; closeConfirmation(); cache?.reset(); clearTimeout(autosaveTimer); });
+  window.addEventListener('pageshow', event => { if (event.persisted) { stopped = false; cache?.reset(); void initialize(); } });
   window.addEventListener('popstate', () => { rememberDraft(); dirty = false; query = new URLSearchParams(window.location.search); state.page = Number(query.get('page')) || 1; for (const name of ['q', 'category', 'tag']) state[name] = query.get(name) || ''; void route(); });
   async function initialize() {
+    const epoch = generation;
     runtime = window.BrclioAccount;
     try {
       await runtime?.ready;
+      if (stopped || epoch !== generation) return;
       if (!window.BrclioBlogContent) throw new Error('文章排版组件未能加载，请刷新页面。');
-      const result = await api('/me'); user = result.user || null; canWrite = !!result.canWrite;
+      const result = await api('/me', {}, epoch); user = result.user || null; canWrite = !!result.canWrite;
       document.querySelectorAll('[data-view="admin"],[data-view="write"]').forEach(element => { element.hidden = !canWrite; });
       $('#account-entry').textContent = user ? (user.displayName || '我的账号') + ' ↗' : '登录 / 注册 ↗';
-      if (runtime?.onAccountChange) runtime.onAccountChange(snapshot => { if ((snapshot.user?.id || null) !== (user?.id || null)) { rememberDraft(); ++generation; closeConfirmation(); window.location.reload(); } });
+      if (accountUnsubscribe) accountUnsubscribe();
+      if (runtime?.onAccountChange) accountUnsubscribe = runtime.onAccountChange(snapshot => { if ((snapshot.user?.id || null) !== (user?.id || null)) { rememberDraft(); ++generation; closeConfirmation(); cache?.reset(); window.location.reload(); } });
       await route();
     } catch (error) {
-      if (stopped) return;
+      if (stopped || error?.canceled || epoch !== generation) return;
       user = null; canWrite = false; notice(error.message || '账号状态暂时无法读取，互动功能稍后再试。', true);
       if (['list', 'saved', 'admin'].includes(view()) && window.BrclioBlogContent) await loadList(generation);
       else { $('#blog-list').hidden = true; const target = view() === 'write' ? $('#blog-editor') : $('#blog-reader'); target.hidden = false; target.innerHTML = empty('这次没能打开博客。', error.message, true); }

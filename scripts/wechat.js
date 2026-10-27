@@ -30,7 +30,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：新增原生博客，支持文章阅读、分类标签搜索、评论、点赞、收藏、分享与阅读统计；网页端提供草稿、预览、发布和管理，两端共用账号，博客数据独立存储于私有仓库。保留摄影、挑战、悦学、育儿及头像功能。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
+    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：优化博客双端阅读缓存，列表返回保留筛选与分页，重复阅读复用数据；支持主动刷新、互动后同步统计及账号隔离。网页发布使用页内确认弹窗。保留摄影、挑战、悦学、育儿、头像与既有博客功能。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');

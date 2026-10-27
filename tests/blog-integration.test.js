@@ -7,6 +7,7 @@ const { JSDOM } = require('jsdom');
 const { createBrowserAccount } = require('../web/account-browser');
 const { createAccountClient } = require('../miniprogram/lib/account');
 const renderer = require('../miniprogram/lib/blog-content');
+const cacheEngine = require('../miniprogram/lib/blog-cache');
 const ORIGIN = 'https://pocket.bornforthis.cn';
 const html = fs.readFileSync(path.join(__dirname, '../web/blog/index.html'), 'utf8');
 const main = fs.readFileSync(path.join(__dirname, '../web/blog/main.js'), 'utf8');
@@ -67,6 +68,7 @@ test('web editor and native account client share draft, publication, interaction
   async function browser(url, prepare) {
     const dom = new JSDOM(html, { url, runScripts: 'outside-only', pretendToBeVisual: true }), window = dom.window;
     window.scrollTo = () => {}; window.confirm = window.alert = () => { throw Error('Use the in-page confirmation'); }; window.BrclioBlogContent = renderer;
+    window.BrclioBlogCache = cacheEngine;
     window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
     window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); window.queueMicrotask(() => this.dispatchEvent(new window.Event('close'))); };
     const runtime = createBrowserAccount(window, { now, fetchImpl: transport, portal: true });
@@ -77,7 +79,7 @@ test('web editor and native account client share draft, publication, interaction
     return { window, runtime, get: selector => window.document.querySelector(selector),
       input(name, value) { const element = window.document.querySelector('#editor-form').elements[name]; element.value = value; element.dispatchEvent(new window.Event('input', { bubbles: true })); },
       click(selector) { const element = window.document.querySelector(selector); assert.ok(element, selector); element.click(); },
-      refreshRoute() { window.dispatchEvent(new window.PopStateEvent('popstate')); } };
+      refreshRoute() { window.document.querySelector('#refresh-blog').click(); } };
   }
 
   const writer = await browser(ORIGIN + '/blog/?view=write', client => register(client, 'aiyuechuang@gmail.com', 'blog_writer'));

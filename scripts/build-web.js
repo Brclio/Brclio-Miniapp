@@ -56,6 +56,7 @@ for (const file of ['index.html', 'style.css', 'catalog.js', 'main.js', 'project
 esbuild.buildSync({ entryPoints: [path.join(root, 'web/account-browser.js')], outfile: path.join(output, 'account-runtime.js'), bundle: true, format: 'iife', platform: 'browser', target: ['es2020'], legalComments: 'eof' });
 fs.cpSync(path.join(root, 'web/blog'), path.join(output, 'blog'), { recursive: true });
 fs.copyFileSync(path.join(root, 'miniprogram/lib/blog-content.js'), path.join(output, 'blog/content.js'));
+fs.copyFileSync(path.join(root, 'miniprogram/lib/blog-cache.js'), path.join(output, 'blog/cache.js'));
 fs.mkdirSync(path.join(output, 'schemas'), { recursive: true });
 fs.copyFileSync(path.join(root, 'docs/blog-storage.schema.json'), path.join(output, 'schemas/blog-storage-v1.json'));
 for (const project of published) {

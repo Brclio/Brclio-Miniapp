@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/blog/style.css">
   <script src="/account-runtime.js" defer></script>
   <script src="/blog/content.js" defer></script>
+  <script src="/blog/cache.js" defer></script>
   <script src="/blog/main.js" defer></script>
 </head>
 <body>
@@ -19,7 +20,7 @@
     <nav class="header-actions" aria-label="主要导航"><a href="/">悦创首页</a><a href="/blog/" aria-current="page">博客</a><a id="account-entry" href="/?category=mine">登录 / 注册 ↗</a></nav>
   </header>
   <div class="app-shell">
-    <nav class="tab-bar" aria-label="博客导航"><a class="tab active" href="/blog/" data-view="list">所有文章</a><a class="tab" href="/blog/?view=saved" data-view="saved">我的收藏</a><a class="tab" href="/blog/?view=admin" data-view="admin" hidden>文章管理</a><a class="tab write-entry" href="/blog/?view=write" data-view="write" hidden>写篇文章 ↗</a></nav>
+    <nav class="tab-bar" aria-label="博客导航"><a class="tab active" href="/blog/" data-view="list">所有文章</a><a class="tab" href="/blog/?view=saved" data-view="saved">我的收藏</a><a class="tab" href="/blog/?view=admin" data-view="admin" hidden>文章管理</a><a class="tab write-entry" href="/blog/?view=write" data-view="write" hidden>写篇文章 ↗</a><button id="refresh-blog" class="text-button refresh-entry" type="button" title="重新读取最新文章与留言">刷新内容 ↻</button></nav>
     <main id="blog-main" class="app-content" tabindex="-1">
       <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
       <section id="blog-list" aria-labelledby="list-title">

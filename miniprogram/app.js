@@ -1,5 +1,6 @@
 const sync = require('./lib/account-sync');
 const learning = require('./lib/lingotiles');
+const blogSession = require('./lib/blog-session');
 
 App({
   onLaunch() {
@@ -9,6 +10,6 @@ App({
     this._networkListener = event => sync.networkChanged(event);
     if (wx.onNetworkStatusChange) wx.onNetworkStatusChange(this._networkListener);
   },
-  onShow() { sync.flush(); },
+  onShow() { blogSession.reset(); sync.flush(); },
   onHide() { sync.onHide(); }
 });

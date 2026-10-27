@@ -7,6 +7,7 @@ const { JSDOM } = require('jsdom');
 const html = fs.readFileSync(path.join(__dirname, '../web/blog/index.html'), 'utf8');
 const script = fs.readFileSync(path.join(__dirname, '../web/blog/main.js'), 'utf8');
 const renderer = require('../miniprogram/lib/blog-content');
+const cacheEngine = require('../miniprogram/lib/blog-cache');
 const ID = 'a'.repeat(32), USER = { id: 'b'.repeat(32), displayName: '写作者' };
 const post = { id: ID, title: '写下一点好奇', content: '## 开始\n\n一点文字。', excerpt: '给想法一个位置。', status: 'published', revision: 3, category: '学习', tags: ['记录'], author: { id: USER.id, displayName: USER.displayName }, readingMinutes: 1, publishedAt: 1793088000000, updatedAt: 1793088000000, commentsEnabled: true, counts: { views: 12, likes: 2, favorites: 1, comments: 0 } };
 const flush = async () => { for (let index = 0; index < 40; index++) await Promise.resolve(); };
@@ -15,6 +16,7 @@ async function harness(options = {}) {
   const window = dom.window, calls = [], timers = new Map(); let nextTimer = 0, accountListener;
   const activeUser = options.user === undefined ? USER : options.user;
   window.BrclioBlogContent = renderer;
+  window.BrclioBlogCache = cacheEngine;
   window.scrollTo = () => {};
   window.confirm = window.alert = () => { throw new Error('Blog confirmations must stay inside the page'); };
   let dialogFocus;
@@ -346,5 +348,87 @@ test('leaving a dirty editor requires in-page consent and retains account-scoped
   await h.click('[data-action="back-admin"]'); await h.click('#confirm-accept');
   assert.equal(new URL(h.window.location.href).searchParams.get('view'), 'admin');
   assert.equal(JSON.parse(h.window.localStorage.getItem('brclio.blog-draft.v1:' + USER.id + ':new')).fields.content, '本机文字');
+  h.close();
+});
+
+test('list and repeated article navigation reuse cached data and restore the list filters', async () => {
+  const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?category=' + encodeURIComponent('学习') + '&page=2', respond(request) {
+    if (request.route.startsWith('/posts?')) return { posts: [post], total: 25, page: 2, pageSize: 12, categories: ['学习'], tags: ['记录'] };
+  } });
+  const reads = () => h.calls.filter(call => !call.method || call.method === 'GET');
+  await h.click('[data-post]'); await h.click('[data-action="back-list"]');
+  assert.equal(new URL(h.window.location.href).searchParams.get('category'), '学习');
+  assert.equal(new URL(h.window.location.href).searchParams.get('page'), '2');
+  await h.click('[data-post]'); await h.click('[data-action="back-list"]');
+  assert.equal(reads().filter(call => call.route === '/posts/' + ID).length, 1);
+  assert.equal(reads().filter(call => call.route.includes('/comments?')).length, 1);
+  assert.equal(h.calls.filter(call => call.route.endsWith('/view')).length, 1);
+  assert.equal(reads().filter(call => call.route.startsWith('/posts?')).length, 1);
+  h.close();
+});
+
+test('own interactions update cached list and article state without refetching their content', async () => {
+  const h = await harness();
+  await h.click('[data-post]'); await h.click('[data-reaction="like"]'); await h.click('[data-action="back-list"]');
+  assert.match(h.get('.post-meta').textContent, /3 赞/);
+  await h.click('[data-post]');
+  assert.equal(h.get('[data-reaction="like"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(h.calls.filter(call => call.route === '/posts/' + ID).length, 1);
+  assert.equal(h.calls.filter(call => call.route.startsWith('/posts?')).length, 1);
+  h.close();
+});
+
+test('manual refresh and re-entry replace cached data with the latest server data', async () => {
+  let remoteTitle = '第一次内容';
+  const h = await harness({ respond(request) {
+    if (request.route.startsWith('/posts?')) return { posts: [{ ...post, title: remoteTitle }], total: 1, page: 1, pageSize: 12, categories: [], tags: [] };
+  } });
+  remoteTitle = '最新内容';
+  await h.click('[data-view="list"]'); assert.equal(h.get('.post-row h2').textContent, '第一次内容');
+  await h.click('#refresh-blog'); assert.equal(h.get('.post-row h2').textContent, '最新内容');
+  assert.equal(h.get('#refresh-blog').disabled, false);
+  remoteTitle = '重新进入的内容';
+  h.window.dispatchEvent(new h.window.Event('pagehide'));
+  h.window.dispatchEvent(new h.window.PageTransitionEvent('pageshow', { persisted: true })); await flush();
+  assert.equal(h.get('.post-row h2').textContent, '重新进入的内容');
+  assert.equal(h.calls.filter(call => call.route.startsWith('/posts?')).length, 3);
+  h.close();
+});
+
+test('opening the editor always reads the latest revision even after a cached article read', async () => {
+  let revision = 3;
+  const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?post=' + ID, respond(request) {
+    if (request.route === '/posts/' + ID) return { post: { ...post, revision }, canEdit: true, interaction: {} };
+  } });
+  revision = 4;
+  await h.click('[data-edit]');
+  assert.equal(h.calls.filter(call => call.route === '/posts/' + ID).length, 2);
+  h.input('content', '从最新版本继续修改'); await h.click('[data-save="published"]');
+  assert.equal(h.calls.find(call => call.method === 'PUT').data.revision, 4);
+  h.close();
+});
+
+test('a forced refresh never keeps displaying cached article content after the server withdraws it', async () => {
+  let withdrawn = false;
+  const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?post=' + ID, respond(request) {
+    if (withdrawn && request.route === '/posts/' + ID) { const error = new Error('文章已撤回。'); error.status = 404; throw error; }
+  } });
+  assert.equal(h.get('#post-title').textContent, post.title);
+  withdrawn = true; await h.click('#refresh-blog');
+  assert.equal(h.get('#post-title'), null); assert.match(h.get('#blog-reader').textContent, /撤回/);
+  h.close();
+});
+
+test('a delayed refresh cannot replace a newly opened editor or erase its unsaved words', async () => {
+  let reads = 0, finishRefresh;
+  const pending = new Promise(resolve => { finishRefresh = resolve; });
+  const h = await harness({ respond(request) { if (request.route === '/me' && ++reads === 2) return pending; } });
+  await h.click('#refresh-blog'); await h.click('[data-view="write"]');
+  h.input('title', '正在写的新文章'); h.input('content', '不能被延迟刷新覆盖');
+  finishRefresh({ user: USER, canWrite: true }); await flush();
+  assert.equal(h.get('#editor-form').elements.content.value, '不能被延迟刷新覆盖');
+  assert.equal(h.get('#account-entry').textContent, USER.displayName + ' ↗');
+  assert.equal(h.get('[data-view="write"]').hidden, false);
+  assert.equal(h.get('#refresh-blog').disabled, false);
   h.close();
 });

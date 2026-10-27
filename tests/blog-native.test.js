@@ -6,6 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '../miniprogram');
 const { createAccountClient, STORAGE_KEY } = require('../miniprogram/lib/account');
+const { createBlogCache } = require('../miniprogram/lib/blog-cache');
 const utils = require('../miniprogram/blog/lib/client');
 const markdown = require('../miniprogram/lib/blog-content');
 const counts = { views: 3, likes: 0, favorites: 0, comments: 1 };
@@ -29,19 +30,25 @@ function host(kind, options = {}) {
     if (route.includes('/comments?')) return { comments: [comment], total: 1, page: 1, pageSize: 20 };
     throw new Error('Unexpected route ' + route);
   });
-  const api = { ...utils, account: { getCachedUser: () => cached, subscribe(fn) { listener = fn; return () => { listener = null; }; } },
+  const cache = options.cache || createBlogCache({
     request(route, method = 'GET', payload) { calls.push({ route, method, payload }); return request(route, method, payload); },
+    getIdentity: () => cached && cached.id || '', ...(options.now ? { now: options.now } : {})
+  });
+  const api = { ...utils, account: { getCachedUser: () => cached, subscribe(fn) { listener = fn; return () => { listener = null; }; } },
+    request: cache.request, peek: cache.peek, reset: cache.reset, revision: cache.revision,
+    enter() { if (!options.internal) cache.reset(); },
     visitorId: () => 'mini_1234567890123456', login() { navigations.push('/pages/account/index'); } };
   vm.runInNewContext(fs.readFileSync(path.join(root, 'blog/pages', kind, 'index.js'), 'utf8'), {
     Page(value) { definition = value; }, require(name) { return name.includes('blog-content') ? markdown : api; },
-    wx: { navigateTo(value) { navigations.push(value.url); }, setNavigationBarTitle() {}, showToast(value) { toasts.push(value); }, showModal(value) { modals.push(value); }, stopPullDownRefresh() {}, setClipboardData() {} }
+    getCurrentPages: () => options.pages || [],
+    wx: { navigateTo(value) { navigations.push(value.url); }, navigateBack(value) { navigations.push('back:' + value.delta); }, setNavigationBarTitle() {}, showToast(value) { toasts.push(value); }, showModal(value) { modals.push(value); }, stopPullDownRefresh() {}, setClipboardData() {} }
   });
   const page = { ...definition, data: structuredClone(definition.data), setData(patch, done) {
     patches.push(structuredClone(patch));
     Object.entries(patch).forEach(([key, value]) => { const parts = key.replace(/\[(\d+)\]/g, '.$1').split('.'); let target = this.data; while (parts.length > 1) target = target[parts.shift()]; target[parts[0]] = value; }); if (done) done();
   } };
   page.onLoad(options.query || (kind === 'article' ? { id: 'post_1' } : {}));
-  return { page, calls, navigations, modals, toasts, patches, setUser(user) { cached = user; if (listener) listener({ user }); } };
+  return { page, calls, navigations, modals, toasts, patches, cache, setUser(user) { cached = user; if (listener) listener({ user }); } };
 }
 
 test('blog client reuses private session, permits anonymous reads and rejects unsafe routes', async () => {
@@ -78,9 +85,9 @@ test('native list filters and paging use server data and preserve a reachable sa
   assert.equal(h.page.data.posts.length, 1);
   assert.equal(h.page.data.posts[0].dateText.length, 10);
   h.page.inputSearch({ detail: { value: '写作 & 阅读' } }); await h.page.search();
-  assert.match(h.calls.at(-2).route, /q=%E5%86%99%E4%BD%9C%20%26%20%E9%98%85%E8%AF%BB/);
+  assert.match(h.calls.findLast(call => call.route.startsWith('/posts?')).route, /q=%E5%86%99%E4%BD%9C%20%26%20%E9%98%85%E8%AF%BB/);
   await h.page.selectCategory(event({ category: '随笔' }));
-  assert.match(h.calls.at(-2).route, /category=/);
+  assert.match(h.calls.findLast(call => call.route.startsWith('/posts?')).route, /category=/);
   await h.page.selectTag(event({ tag: '生活' }));
   assert.equal(h.page.data.tag, '生活');
   h.page.openPost(event({ id: 'post_1' }));
@@ -162,4 +169,147 @@ test('long native articles transfer balanced chunks without sending source and H
   assert.equal(h.page.data.contentLoading, false);
   assert.ok(h.patches.every(patch => Buffer.byteLength(JSON.stringify(patch), 'utf8') < 1024 * 1024));
   h.page.onUnload();
+});
+
+test('returning from a cached article preserves loaded list pages and updates counts without rereading', async () => {
+  const list = host('list', { user: author, request: async (route, method, payload) => {
+    if (route === '/me') return { user: author, canWrite: true };
+    if (route.startsWith('/posts?')) return { posts: [{ ...article, id: route.includes('page=2') ? 'post_2' : 'post_1' }], total: 13, page: route.includes('page=2') ? 2 : 1, pageSize: 12, categories: ['随笔'], tags: ['生活'] };
+    if (route === '/posts/post_1') return { post: structuredClone(article), interaction: { liked: false, favorited: false }, canEdit: true };
+    if (route.endsWith('/view')) return { counts: { ...counts, views: 4 } };
+    if (route.endsWith('/like')) return { counts: { ...counts, views: 4, likes: 1 }, interaction: { liked: true, favorited: false } };
+    if (route.includes('/comments?')) return { comments: [comment], total: 1, page: 1, pageSize: 20 };
+    throw Error('Unexpected ' + route + ' ' + method + ' ' + payload);
+  } });
+  await list.page.onShow(); await list.page.loadMore(); list.page.onHide();
+  const reader = host('article', { user: author, internal: true, cache: list.cache });
+  await reader.page.onShow(); await flush(); await reader.page.react(event({ type: 'like' }));
+  const before = list.calls.length;
+  reader.page.onHide(); await list.page.onShow();
+  assert.equal(list.calls.length, before, 'returning to the existing list only reads memory');
+  assert.equal(list.page.data.page, 2); assert.deepEqual(Array.from(list.page.data.posts, post => post.id), ['post_1', 'post_2']);
+  assert.equal(list.page.data.posts[0].counts.likes, 1); assert.equal(list.page.data.posts[0].counts.views, 4);
+  list.page.onHide(); await reader.page.onShow();
+  assert.equal(list.calls.length, before, 'returning to the reader keeps cached content and comments');
+  assert.equal(reader.page.data.interaction.liked, true);
+  reader.page.onUnload(); list.page.onUnload();
+});
+
+test('native refresh bypasses cache while filters and repeated opens reuse the same visit', async () => {
+  const list = host('list'); await list.page.onShow();
+  const initial = list.calls.length;
+  list.page.onHide(); await list.page.onShow(); assert.equal(list.calls.length, initial);
+  await list.page.selectCategory(event({ category: '随笔' }));
+  const filtered = list.calls.length;
+  await list.page.clearFilters(); assert.equal(list.calls.length, filtered, 'returning to a loaded query uses its cache');
+  await list.page.onPullDownRefresh(); assert.equal(list.calls.length, filtered + 2, 'pull down explicitly refreshes list and account permissions');
+  const reader = host('article', { internal: true, cache: list.cache }); await reader.page.onShow(); await flush();
+  const once = list.calls.length;
+  reader.page.onHide(); await reader.page.onShow(); assert.equal(list.calls.length, once);
+  reader.page.inputComment({ detail: { value: '未发送的想法' } });
+  await reader.page.onPullDownRefresh(); await flush();
+  assert.equal(list.calls.length, once + 2, 'article and first comments are refreshed; successful daily view is reused');
+  assert.equal(reader.page.data.commentText, '未发送的想法');
+  reader.page.onUnload(); list.page.onUnload();
+});
+
+test('a new visit or expired native cache fetches fresh data without dropping a draft', async () => {
+  let now = 0;
+  const reader = host('article', { now: () => now }); await reader.page.onShow(); await flush();
+  reader.page.inputComment({ detail: { value: '还在思考' } }); reader.page.onHide();
+  const initial = reader.calls.length; now += 5 * 60 * 1000 + 1;
+  await reader.page.onShow(); await flush();
+  assert.equal(reader.calls.length, initial + 2); assert.equal(reader.page.data.commentText, '还在思考');
+  reader.page.onHide(); reader.cache.reset();
+  const beforeReturn = reader.calls.length; await reader.page.onShow(); await flush();
+  assert.equal(reader.calls.length, beforeReturn + 3, 'foreground visit reset reads article, comments and daily view anew');
+  assert.equal(reader.page.data.commentText, '还在思考'); reader.page.onUnload();
+});
+
+test('returning to invalidated saved results fetches membership again and keeps ordinary list cache', async () => {
+  let favorite = true;
+  const list = host('list', { user: author, query: { saved: '1' }, request: async (route, method) => {
+    if (route === '/me') return { user: author, canWrite: true };
+    if (route.startsWith('/posts?')) return { posts: favorite ? [article] : [], total: favorite ? 1 : 0, page: 1, pageSize: 12, categories: [], tags: [] };
+    if (route.endsWith('/favorite') && method === 'PUT') { favorite = false; return { counts: { ...counts, favorites: 0 }, interaction: { liked: false, favorited: false } }; }
+    throw Error('Unexpected ' + route);
+  } });
+  await list.page.onShow(); list.page.onHide();
+  await list.cache.request('/posts/post_1/favorite', 'PUT', { active: false });
+  const before = list.calls.length; await list.page.onShow();
+  assert.equal(list.calls.length, before + 1); assert.equal(list.page.data.posts.length, 0); assert.equal(list.page.data.total, 0);
+  list.page.onUnload();
+});
+
+test('native blog navigation shares a visit internally and resets it when entering from elsewhere', () => {
+  let pages = [{ route: 'pages/home/index' }, { route: 'blog/pages/list/index' }], resets = 0;
+  const module = { exports: {} }, session = { request() {}, peek() {}, revision() {}, reset() { resets += 1; } };
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'blog/lib/client.js'), 'utf8'), {
+    module, getCurrentPages: () => pages,
+    require(name) { return name.includes('blog-session') ? session : name.includes('config') ? { webOrigin: 'https://pocket.bornforthis.cn' } : {}; }
+  });
+  module.exports.enter(); assert.equal(resets, 1);
+  pages = [{ route: 'blog/pages/list/index' }, { route: 'blog/pages/article/index' }];
+  module.exports.enter(); assert.equal(resets, 1);
+  pages = [{ route: 'blog/pages/article/index' }, { route: 'blog/pages/list/index' }];
+  module.exports.enter(); assert.equal(resets, 1);
+  pages = [{ route: 'pages/account/index' }, { route: 'blog/pages/article/index' }];
+  module.exports.enter(); assert.equal(resets, 2);
+});
+
+test('a returning article keeps all cached comment pages and does not retransmit its rich text', async () => {
+  const reader = host('article', { request: async route => {
+    if (route === '/posts/post_1') return { post: structuredClone(article), interaction: { liked: false, favorited: false }, canEdit: false };
+    if (route.endsWith('/view')) return { counts };
+    if (route.includes('/comments?')) {
+      const page = Number(new URL('https://example.test' + route).searchParams.get('page'));
+      return { comments: Array.from({ length: page === 3 ? 1 : 20 }, (_, index) => ({ ...comment, id: 'comment_' + page + '_' + index })), total: 41, page, pageSize: 20 };
+    }
+    throw Error('Unexpected ' + route);
+  } });
+  await reader.page.onShow(); await reader.page.moreComments(); await reader.page.moreComments(); await flush();
+  assert.equal(reader.page.data.comments.length, 41); assert.equal(reader.page.data.commentPage, 3);
+  const requests = reader.calls.length, richTextPatches = reader.patches.filter(patch => Object.keys(patch).some(key => key.startsWith('htmlChunks'))).length;
+  reader.page.onHide(); await reader.page.onShow(); await flush();
+  assert.equal(reader.calls.length, requests); assert.equal(reader.page.data.comments.length, 41); assert.equal(reader.page.data.commentPage, 3);
+  assert.equal(reader.patches.filter(patch => Object.keys(patch).some(key => key.startsWith('htmlChunks'))).length, richTextPatches);
+  reader.page.onUnload();
+});
+
+test('returning to the cached list clears a failed load-more message without another request', async () => {
+  const list = host('list', { request: async route => {
+    if (route === '/me') return { user: null, canWrite: false };
+    if (route.includes('page=2')) throw Error('network unavailable');
+    return { posts: [article], total: 13, page: 1, pageSize: 12, categories: [], tags: [] };
+  } });
+  await list.page.onShow(); await list.page.loadMore();
+  assert.equal(list.page.data.error, 'network unavailable');
+  const before = list.calls.length; list.page.onHide(); await list.page.onShow();
+  assert.equal(list.calls.length, before); assert.equal(list.page.data.error, ''); assert.equal(list.page.data.loading, false);
+  assert.equal(list.page.data.posts.length, 1); assert.equal(list.page.data.hasMore, true);
+  list.page.onUnload();
+});
+
+test('cached comments clear an old pagination error on return while retaining the unfinished comment', async () => {
+  const reader = host('article', { request: async route => {
+    if (route === '/posts/post_1') return { post: structuredClone(article), interaction: { liked: false, favorited: false }, canEdit: false };
+    if (route.endsWith('/view')) return { counts };
+    if (route.includes('page=2')) throw Error('comments offline');
+    return { comments: [comment], total: 21, page: 1, pageSize: 20 };
+  } });
+  await reader.page.onShow(); reader.page.inputComment({ detail: { value: '写到一半的想法' } }); await reader.page.moreComments();
+  assert.equal(reader.page.data.commentsError, 'comments offline');
+  const before = reader.calls.length; reader.page.onHide(); await reader.page.onShow(); await flush();
+  assert.equal(reader.calls.length, before); assert.equal(reader.page.data.commentsError, ''); assert.equal(reader.page.data.commentsLoading, false);
+  assert.equal(reader.page.data.commentText, '写到一半的想法'); assert.equal(reader.page.data.comments.length, 1); assert.equal(reader.page.data.commentsMore, true);
+  reader.page.onUnload();
+});
+
+test('the article list link returns to an existing list and only opens a new list for direct entries', () => {
+  const returning = host('article', { pages: [{ route: 'blog/pages/list/index' }, { route: 'blog/pages/article/index' }] });
+  returning.page.inputComment({ detail: { value: '没有发送的评论' } }); returning.page.openList();
+  assert.equal(returning.navigations.at(-1), 'back:1'); assert.equal(returning.page.data.commentText, '没有发送的评论');
+  returning.page.onUnload();
+  const direct = host('article', { pages: [{ route: 'blog/pages/article/index' }] }); direct.page.openList();
+  assert.equal(direct.navigations.at(-1), '/blog/pages/list/index'); direct.page.onUnload();
 });
