@@ -66,7 +66,9 @@ test('web editor and native account client share draft, publication, interaction
   }
   async function browser(url, prepare) {
     const dom = new JSDOM(html, { url, runScripts: 'outside-only', pretendToBeVisual: true }), window = dom.window;
-    window.scrollTo = () => {}; window.confirm = () => true; window.BrclioBlogContent = renderer;
+    window.scrollTo = () => {}; window.confirm = window.alert = () => { throw Error('Use the in-page confirmation'); }; window.BrclioBlogContent = renderer;
+    window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
+    window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); window.queueMicrotask(() => this.dispatchEvent(new window.Event('close'))); };
     const runtime = createBrowserAccount(window, { now, fetchImpl: transport, portal: true });
     window.BrclioAccount = runtime;
     t.after(() => { runtime.destroy(); dom.window.close(); });
@@ -89,6 +91,12 @@ test('web editor and native account client share draft, publication, interaction
   await assert.rejects(guest.blogRequest('/posts/' + id), { status: 404, code: 'post_not_found' });
 
   writer.click('[data-save="published"]');
+  assert.equal(writer.get('#confirm-dialog').open, true);
+  assert.equal((await guest.blogRequest('/posts')).total, 0, 'publication remains private until explicitly confirmed');
+  writer.click('#confirm-cancel');
+  assert.equal(writer.get('#confirm-dialog').open, false);
+  assert.equal((await writer.runtime.requestBlog('/posts/' + id)).post.status, 'draft');
+  writer.click('[data-save="published"]'); writer.click('#confirm-accept');
   await until(() => /文章已发布/.test(writer.get('#notice').textContent), 'publication through web editor');
   const published = await guest.blogRequest('/posts/' + id);
   assert.equal(published.post.status, 'published'); assert.match(published.post.content, /共同的文章/);
@@ -110,6 +118,9 @@ test('web editor and native account client share draft, publication, interaction
   assert.equal(reader.get('#comments-count').textContent, '1 条留言');
 
   writer.click('[data-save="draft"]');
+  assert.equal(writer.get('#confirm-dialog').open, true);
+  assert.equal((await guest.blogRequest('/posts/' + id)).post.status, 'published', 'withdrawal also waits for confirmation');
+  writer.click('#confirm-accept');
   await until(() => /草稿已保存/.test(writer.get('#notice').textContent), 'withdrawal through web editor');
   await assert.rejects(guest.blogRequest('/posts/' + id), { status: 404, code: 'post_not_found' });
   await assert.rejects(member.blogRequest('/posts/' + id), { status: 404, code: 'post_not_found' });

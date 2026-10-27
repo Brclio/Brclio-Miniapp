@@ -11,12 +11,39 @@
   let runtime = null, user = null, canWrite = false, generation = 0, stopped = false, busy = false;
   let currentPost = null, interaction = { liked: false, favorited: false }, commentPage = 1, commentsRequest = 0, readerMutationPending = false;
   let editor = null, autosaveTimer = null, dirty = false, loadedDraft = null;
+  let pendingConfirmation = null;
   let query = new URLSearchParams(window.location.search);
   const state = { page: Number(query.get('page')) || 1, q: query.get('q') || '', category: query.get('category') || '', tag: query.get('tag') || '' };
 
   function notice(message = '', error = false) {
     const element = $('#notice'); element.textContent = message; element.hidden = !message; element.classList.toggle('error', error);
   }
+  function closeConfirmation(confirmed = false) {
+    const pending = pendingConfirmation;
+    if (!pending) return;
+    pendingConfirmation = null;
+    const dialog = $('#confirm-dialog');
+    if (dialog.open) dialog.close();
+    pending.resolve(confirmed && !stopped && pending.epoch === generation && pending.userId === principal());
+  }
+  function confirmAction({ heading, message, subject = '', accept = '确认', cancel = '取消', danger = false }) {
+    if (pendingConfirmation || stopped) return Promise.resolve(false);
+    const dialog = $('#confirm-dialog');
+    $('#confirm-title').textContent = heading;
+    $('#confirm-message').textContent = message;
+    $('#confirm-subject').textContent = subject; $('#confirm-subject').hidden = !subject;
+    $('#confirm-accept').textContent = accept; $('#confirm-cancel').textContent = cancel;
+    dialog.dataset.danger = String(danger);
+    return new Promise(resolve => {
+      pendingConfirmation = { resolve, epoch: generation, userId: principal() };
+      try { dialog.showModal(); $('#confirm-cancel').focus(); }
+      catch (_) { closeConfirmation(); notice('确认窗口暂时无法打开，请刷新页面后重试。', true); }
+    });
+  }
+  $('#confirm-accept').addEventListener('click', () => closeConfirmation(true));
+  $('#confirm-cancel').addEventListener('click', () => closeConfirmation());
+  $('#confirm-dialog').addEventListener('cancel', event => { event.preventDefault(); closeConfirmation(); });
+  $('#confirm-dialog').addEventListener('close', () => { if (!$('#confirm-dialog').open) closeConfirmation(); });
   function empty(title, description, retry = false) { return '<div class="empty-state"><div class="empty-mark" aria-hidden="true">b.</div><h2>' + escape(title) + '</h2><p>' + escape(description) + '</p>' + (retry ? '<button class="secondary" data-action="retry" type="button">重新加载 ↗</button>' : '') + '</div>'; }
   function view() { return query.has('post') ? 'post' : query.get('view') || (query.get('saved') === '1' ? 'saved' : 'list'); }
   function principal() { return runtime?.client?.getCachedUser()?.id || null; }
@@ -39,9 +66,9 @@
       $('#draft-status').textContent = '本机草稿已保存 · ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
     } catch (_) { $('#draft-status').textContent = '本机存储不可用，请及时保存到云端。'; }
   }
-  function navigate(values, options = {}) {
-    if (busy) return;
-    if (dirty && !options.saved && !window.confirm('文字已保存在本机草稿中。离开当前编辑页？')) return;
+  async function navigate(values, options = {}) {
+    if (busy || pendingConfirmation) return;
+    if (dirty && !options.saved && !await confirmAction({ heading: '离开当前编辑页？', message: '当前文字会保存在这个账号的本机草稿中，可以稍后继续编写。', accept: '保存并离开', cancel: '继续编辑' })) return;
     rememberDraft(); dirty = false; editor = null; loadedDraft = null; clearTimeout(autosaveTimer);
     window.history.pushState({}, '', link(values)); query = new URLSearchParams(window.location.search);
     state.page = Number(query.get('page')) || 1; state.q = query.get('q') || ''; state.category = query.get('category') || ''; state.tag = query.get('tag') || '';
@@ -162,15 +189,18 @@
   }
   function editorBusy(value) { busy = value; $('#editor-form')?.setAttribute('aria-busy', String(value)); $('#editor-form')?.querySelectorAll('button,input,textarea').forEach(element => { element.disabled = value; }); }
   async function saveArticle(status) {
-    if (!editor || busy) return;
+    if (!editor || busy || pendingConfirmation) return;
+    const editing = editor, epoch = generation;
     const form = $('#editor-form'), data = readEditor();
     if (!form.reportValidity()) return;
     if (!data.content.trim() || !data.title.trim()) { notice('先写好标题和正文，再保存。', true); return; }
     if (data.tags.length > 8 || data.tags.some(tag => tag.length > 24)) { notice('标签最多 8 个，每个最多 24 字。', true); return; }
     if (data.coverUrl && (!/^https:\/\//i.test(data.coverUrl) || !safeImage(data.coverUrl))) { notice('封面请使用有效的 HTTPS 图片链接。', true); return; }
-    if (editor.recoveryNeedsReview && !window.confirm('这份草稿基于版本 ' + editor.draftBaseRevision + '，云端当前为版本 ' + editor.revision + '。请先在另一个页面比较云端文章。确认已经核对，并用当前文字替换云端内容？')) return;
-    if (editor.status === 'published' && status === 'draft' && !window.confirm('撤回后，读者将无法访问这篇文章。确定撤回为草稿？')) return;
-    if (status === 'published' && editor.status !== 'published' && !window.confirm('发布后，网页和小程序中的所有读者都能阅读这篇文章。确认发布？')) return;
+    if (editing.recoveryNeedsReview && !await confirmAction({ heading: '确认替换云端内容？', message: '这份草稿基于版本 ' + editing.draftBaseRevision + '，云端当前为版本 ' + editing.revision + '。请先在另一个页面比较云端文章，核对后再用当前文字替换。', accept: '已核对，继续保存', danger: true })) return;
+    if (editor !== editing || epoch !== generation || stopped) return;
+    if (editing.status === 'published' && status === 'draft' && !await confirmAction({ heading: '撤回这篇文章？', message: '撤回后，网页和小程序中的读者将无法访问这篇文章。文字会保留为云端草稿。', subject: data.title, accept: '撤回为草稿', danger: true })) return;
+    if (status === 'published' && editing.status !== 'published' && !await confirmAction({ heading: '确认发布这篇文章？', message: '发布后，网页和小程序中的所有读者都能阅读这篇文章。', subject: data.title, accept: '确认发布 ↗', cancel: '继续编辑' })) return;
+    if (editor !== editing || epoch !== generation || stopped) return;
     rememberDraft(); notice(); editorBusy(true);
     try {
       const oldKey = draftKey(editor.id);
@@ -183,6 +213,7 @@
     finally { editorBusy(false); }
   }
   async function route() {
+    closeConfirmation();
     const epoch = ++generation; commentsRequest += 1; notice(); currentPost = null; editor = null; commentPage = 1; readerMutationPending = false;
     const mode = view(); setTab(mode);
     $('#blog-list').hidden = !['list', 'saved', 'admin'].includes(mode); $('#blog-reader').hidden = mode !== 'post'; $('#blog-editor').hidden = mode !== 'write';
@@ -217,6 +248,7 @@
   }
   document.addEventListener('click', async event => {
     const target = event.target.closest('a,button'); if (!target || target.disabled || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button > 0) return;
+    if (pendingConfirmation) { event.preventDefault(); return; }
     if (target.dataset.view !== undefined) { event.preventDefault(); navigate(target.dataset.view === 'list' ? {} : { view: target.dataset.view }); return; }
     if (target.dataset.post !== undefined) { event.preventDefault(); navigate({ post: target.dataset.post }); return; }
     if (target.dataset.edit !== undefined) { event.preventDefault(); navigate({ view: 'write', edit: target.dataset.edit }); return; }
@@ -226,7 +258,9 @@
     if (target.dataset.reaction) { await react(target.dataset.reaction); return; }
     if (target.dataset.commentPage) { commentPage = Number(target.dataset.commentPage); void loadComments(); return; }
     if (target.dataset.deleteComment) {
-      if (readerMutationPending || !window.confirm('删除这条留言？')) return;
+      if (readerMutationPending || !currentPost) return;
+      const post = currentPost, epoch = generation;
+      if (!await confirmAction({ heading: '删除这条留言？', message: '删除后，这条留言将不再展示。此操作无法撤销。', accept: '删除留言', danger: true }) || currentPost !== post || epoch !== generation || readerMutationPending) return;
       await mutateReader(async () => {
         const result = await api('/posts/' + encodeURIComponent(currentPost.id) + '/comments/' + encodeURIComponent(target.dataset.deleteComment), { method: 'DELETE' });
         currentPost.counts = result.counts; renderCounts(); await loadComments();
@@ -256,13 +290,17 @@
           writeEditor(loadedDraft.fields); dirty = true; $('#draft-recovery').hidden = true; rememberDraft();
           notice(editor.recoveryNeedsReview ? '已恢复旧版本的本机文字。保存前须比较云端文章，并确认替换。' : '已恢复本机文字。保存前请检查内容与云端版本。');
         } break;
-      case 'discard-draft':
-        if (window.confirm('丢弃这份本机恢复草稿？云端文章不会改变。')) { try { window.localStorage.removeItem(draftKey(editor.id)); } catch (_) {} loadedDraft = null; $('#draft-recovery').hidden = true; } break;
-      case 'delete-post':
-        if (!editor?.id || busy || !window.confirm('永久删除这篇文章？相关互动将不再展示，此操作无法撤销。')) break;
+      case 'discard-draft': {
+        const editing = editor;
+        if (editing && loadedDraft && await confirmAction({ heading: '丢弃本机恢复草稿？', message: '这份本机恢复草稿将被移除，云端文章不会改变。', accept: '丢弃草稿', danger: true }) && editor === editing) { try { window.localStorage.removeItem(draftKey(editor.id)); } catch (_) {} loadedDraft = null; $('#draft-recovery').hidden = true; } break;
+      }
+      case 'delete-post': {
+        const editing = editor, epoch = generation;
+        if (!editing?.id || busy || !await confirmAction({ heading: '永久删除这篇文章？', message: '文章及相关互动将不再展示，此操作无法撤销。', subject: editing.title, accept: '永久删除', danger: true }) || editor !== editing || epoch !== generation) break;
         editorBusy(true);
         try { await api('/admin/posts/' + encodeURIComponent(editor.id), { method: 'DELETE', data: { revision: editor.revision } }); try { window.localStorage.removeItem(draftKey(editor.id)); } catch (_) {} dirty = false; busy = false; navigate({ view: 'admin' }, { saved: true }); notice('文章已删除。'); }
         catch (error) { fail(error); editorBusy(false); } break;
+      }
     }
   });
   $('#search-form').addEventListener('submit', event => { event.preventDefault(); state.q = $('#search').value.trim(); navigate(listQuery(1)); });
@@ -272,14 +310,14 @@
   document.addEventListener('submit', async event => {
     if (event.target.id === 'editor-form') { event.preventDefault(); return; }
     if (event.target.id !== 'comment-form') return;
-    event.preventDefault(); const form = event.target, content = form.elements.content.value.trim(); if (!content || readerMutationPending) return;
+    event.preventDefault(); const form = event.target, content = form.elements.content.value.trim(); if (!content || readerMutationPending || pendingConfirmation) return;
     await mutateReader(async () => {
       const result = await api('/posts/' + encodeURIComponent(currentPost.id) + '/comments', { method: 'POST', data: { content } });
       form.elements.content.value = ''; currentPost.counts = result.counts; renderCounts(); commentPage = 1; await loadComments(); notice('留言已发表。');
     });
   });
   window.addEventListener('beforeunload', event => { if (dirty) { rememberDraft(); event.preventDefault(); event.returnValue = ''; } });
-  window.addEventListener('pagehide', () => { rememberDraft(); stopped = true; clearTimeout(autosaveTimer); });
+  window.addEventListener('pagehide', () => { rememberDraft(); stopped = true; closeConfirmation(); clearTimeout(autosaveTimer); });
   window.addEventListener('pageshow', event => { if (event.persisted) { stopped = false; void initialize(); } });
   window.addEventListener('popstate', () => { rememberDraft(); dirty = false; query = new URLSearchParams(window.location.search); state.page = Number(query.get('page')) || 1; for (const name of ['q', 'category', 'tag']) state[name] = query.get(name) || ''; void route(); });
   async function initialize() {
@@ -290,7 +328,7 @@
       const result = await api('/me'); user = result.user || null; canWrite = !!result.canWrite;
       document.querySelectorAll('[data-view="admin"],[data-view="write"]').forEach(element => { element.hidden = !canWrite; });
       $('#account-entry').textContent = user ? (user.displayName || '我的账号') + ' ↗' : '登录 / 注册 ↗';
-      if (runtime?.onAccountChange) runtime.onAccountChange(snapshot => { if ((snapshot.user?.id || null) !== (user?.id || null)) { rememberDraft(); ++generation; window.location.reload(); } });
+      if (runtime?.onAccountChange) runtime.onAccountChange(snapshot => { if ((snapshot.user?.id || null) !== (user?.id || null)) { rememberDraft(); ++generation; closeConfirmation(); window.location.reload(); } });
       await route();
     } catch (error) {
       if (stopped) return;

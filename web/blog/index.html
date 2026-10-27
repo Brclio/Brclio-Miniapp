@@ -31,6 +31,18 @@
     </main>
     <footer class="site-footer"><a href="https://brclio.com">Brclio</a><span>Stay curious. Keep building.</span><a href="/blog/">回到文章列表 ↑</a></footer>
   </div>
+  <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <div class="confirm-panel">
+      <span class="confirm-mark" aria-hidden="true">b.</span>
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-subject" class="confirm-subject" hidden></p>
+      <p id="confirm-message" class="confirm-message"></p>
+      <div class="confirm-actions">
+        <button id="confirm-cancel" class="secondary" type="button" autofocus>取消</button>
+        <button id="confirm-accept" class="primary" type="button">确认</button>
+      </div>
+    </div>
+  </dialog>
   <!-- Adapted from Brclio Design System app template. © Brclio, CC BY-NC-SA 4.0. -->
 </body>
 </html>

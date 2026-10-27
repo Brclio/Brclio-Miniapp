@@ -16,7 +16,10 @@ async function harness(options = {}) {
   const activeUser = options.user === undefined ? USER : options.user;
   window.BrclioBlogContent = renderer;
   window.scrollTo = () => {};
-  window.confirm = () => options.confirm !== false;
+  window.confirm = window.alert = () => { throw new Error('Blog confirmations must stay inside the page'); };
+  let dialogFocus;
+  window.HTMLDialogElement.prototype.showModal = function () { dialogFocus = window.document.activeElement; this.setAttribute('open', ''); };
+  window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); dialogFocus?.focus(); window.queueMicrotask(() => this.dispatchEvent(new window.Event('close'))); };
   window.setTimeout = callback => { const id = ++nextTimer; timers.set(id, callback); return id; };
   window.clearTimeout = id => timers.delete(id);
   if (options.storage) for (const [key, value] of Object.entries(options.storage)) window.localStorage.setItem(key, JSON.stringify(value));
@@ -87,7 +90,9 @@ test('comment content remains plain text and authorized delete uses confirmed AP
   h.get('#comment-content').value = '谢谢分享'; h.get('#comment-form').dispatchEvent(new h.window.Event('submit', { bubbles: true, cancelable: true })); await flush();
   assert.ok(h.calls.some(call => call.route.endsWith('/comments') && call.data.content === '谢谢分享'));
   assert.equal(h.get('#comment-content').value, '');
-  await h.click('[data-delete-comment]'); assert.ok(h.calls.some(call => call.method === 'DELETE' && call.route.endsWith(commentId)));
+  await h.click('[data-delete-comment]');
+  assert.equal(h.calls.some(call => call.method === 'DELETE'), false);
+  await h.click('#confirm-accept'); assert.ok(h.calls.some(call => call.method === 'DELETE' && call.route.endsWith(commentId)));
   h.close();
 });
 
@@ -187,13 +192,13 @@ test('restoring an older draft keeps its base revision and requires comparison a
   await h.click('[data-action="restore-draft"]');
   assert.equal(JSON.parse(h.window.localStorage.getItem(key)).revision, 2);
   assert.match(h.get('#notice').textContent, /旧版本/);
-  const confirmations = []; h.window.confirm = message => { confirmations.push(message); return false; };
   await h.click('[data-save="published"]');
   assert.equal(h.calls.some(call => call.method === 'PUT'), false);
-  assert.match(confirmations[0], /版本 2/); assert.match(confirmations[0], /版本 3/); assert.match(confirmations[0], /比较/);
+  assert.match(h.get('#confirm-message').textContent, /版本 2/); assert.match(h.get('#confirm-message').textContent, /版本 3/); assert.match(h.get('#confirm-message').textContent, /比较/);
+  await h.click('#confirm-cancel');
   assert.equal(h.get('#editor-form').elements.content.value, '需要先和云端比较的文字');
-  h.window.confirm = () => true;
   await h.click('[data-save="published"]');
+  await h.click('#confirm-accept');
   const save = h.calls.find(call => call.method === 'PUT'); assert.equal(save.data.revision, 3);
   assert.equal(h.window.localStorage.getItem(key), null);
   h.close();
@@ -237,5 +242,109 @@ test('rapid comment pagination keeps the newest requested page when an older rep
   finishThird(page(3)); await flush();
   assert.equal(h.get('.comment-body').textContent, '第 1 页留言');
   assert.match(h.get('#comment-pagination').textContent, /1 \/ 3/);
+  h.close();
+});
+
+test('publishing uses an in-page confirmation; cancel and Escape preserve the editor without a write', async () => {
+  const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?view=write' });
+  h.input('title', '<文章标题>'); h.input('content', '准备分享的文字');
+  const publish = h.get('[data-save="published"]'); publish.focus();
+  await h.click('[data-save="published"]');
+  assert.equal(h.get('#confirm-dialog').open, true);
+  assert.match(h.get('#confirm-title').textContent, /确认发布/);
+  assert.equal(h.get('#confirm-subject').textContent, '<文章标题>'); assert.equal(h.get('#confirm-subject').children.length, 0);
+  assert.equal(h.window.document.activeElement, h.get('#confirm-cancel'));
+  assert.equal(h.calls.some(call => call.method === 'POST'), false);
+  await h.click('#confirm-cancel');
+  assert.equal(h.get('#confirm-dialog').open, false); assert.equal(h.window.document.activeElement, publish);
+  assert.equal(h.get('#editor-form').elements.content.value, '准备分享的文字');
+  await h.click('[data-save="published"]');
+  const escape = new h.window.Event('cancel', { cancelable: true }); h.get('#confirm-dialog').dispatchEvent(escape); await flush();
+  assert.equal(escape.defaultPrevented, true); assert.equal(h.get('#confirm-dialog').open, false);
+  assert.equal(h.calls.some(call => call.method === 'POST'), false);
+  await h.click('[data-save="published"]'); await h.click('#confirm-accept');
+  assert.equal(h.calls.filter(call => call.route === '/admin/posts').length, 1);
+  assert.equal(h.calls.find(call => call.route === '/admin/posts').data.status, 'published');
+  assert.match(h.get('#notice').textContent, /已发布/);
+  assert.equal(h.get('#confirm-dialog').open, false);
+  h.close();
+});
+
+test('repeated publish clicks and confirmation clicks send exactly one write while saving', async () => {
+  let finishSave;
+  const saving = new Promise(resolve => { finishSave = resolve; });
+  const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?view=write', respond(request) { if (request.route === '/admin/posts') return saving; } });
+  h.input('title', '只发布一次'); h.input('content', '正文');
+  await h.click('[data-save="published"]'); await h.click('[data-save="published"]');
+  assert.equal(h.calls.some(call => call.method === 'POST'), false);
+  await h.click('#confirm-accept'); await h.click('#confirm-accept'); await h.click('[data-save="published"]');
+  assert.equal(h.calls.filter(call => call.route === '/admin/posts').length, 1);
+  assert.equal(h.get('[data-save="published"]').disabled, true);
+  finishSave({ post }); await flush();
+  assert.equal(h.get('[data-save="published"]').disabled, false);
+  h.close();
+});
+
+test('route and page lifecycle changes cancel pending confirmations without sending stale writes', async () => {
+  for (const type of ['popstate', 'pagehide']) {
+    const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?view=write' });
+    h.input('title', '没有确认的文章'); h.input('content', '保留的文字');
+    await h.click('[data-save="published"]');
+    if (type === 'popstate') h.window.history.replaceState({}, '', '/blog/');
+    h.window.dispatchEvent(new h.window.Event(type)); await flush();
+    assert.equal(h.get('#confirm-dialog').open, false, type);
+    await h.click('#confirm-accept');
+    assert.equal(h.calls.some(call => call.method === 'POST'), false, type);
+    assert.equal(JSON.parse(h.window.localStorage.getItem('brclio.blog-draft.v1:' + USER.id + ':new')).fields.content, '保留的文字');
+    h.close();
+  }
+});
+
+test('old draft review and publication confirmations remain separate across queued close events', async () => {
+  const key = 'brclio.blog-draft.v1:' + USER.id + ':' + ID;
+  const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?view=write&edit=' + ID,
+    storage: { [key]: { version: 1, userId: USER.id, postId: ID, at: Date.now(), revision: 2, fields: { title: '本机草稿', content: '待发布正文', tags: [] } } },
+    respond(request) { if (request.route === '/posts/' + ID) return { post: { ...post, status: 'draft' }, canEdit: true }; }
+  });
+  await h.click('[data-action="restore-draft"]'); await h.click('[data-save="published"]');
+  assert.match(h.get('#confirm-title').textContent, /替换/);
+  await h.click('#confirm-accept');
+  assert.equal(h.get('#confirm-dialog').open, true); assert.match(h.get('#confirm-title').textContent, /发布/);
+  assert.equal(h.calls.some(call => call.method === 'PUT'), false);
+  await h.click('#confirm-cancel'); assert.equal(h.calls.some(call => call.method === 'PUT'), false);
+  await h.click('[data-save="published"]'); await h.click('#confirm-accept'); await h.click('#confirm-accept');
+  assert.equal(h.calls.filter(call => call.method === 'PUT').length, 1);
+  h.close();
+});
+
+test('withdrawal, article deletion and local draft removal use explicit in-page danger confirmations', async () => {
+  const key = 'brclio.blog-draft.v1:' + USER.id + ':' + ID;
+  const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?view=write&edit=' + ID,
+    storage: { [key]: { version: 1, userId: USER.id, postId: ID, at: Date.now(), revision: 3, fields: { title: '草稿', content: '保留的文字' } } },
+    respond(request) { if (request.method === 'DELETE') return { deleted: true }; }
+  });
+  await h.click('[data-action="discard-draft"]'); assert.equal(h.get('#confirm-dialog').dataset.danger, 'true');
+  await h.click('#confirm-cancel'); assert.notEqual(h.window.localStorage.getItem(key), null);
+  await h.click('[data-action="discard-draft"]'); await h.click('#confirm-accept'); assert.equal(h.window.localStorage.getItem(key), null);
+  await h.click('[data-save="draft"]'); assert.match(h.get('#confirm-title').textContent, /撤回/);
+  await h.click('#confirm-cancel'); assert.equal(h.calls.some(call => call.method === 'PUT'), false);
+  await h.click('[data-save="draft"]'); await h.click('#confirm-accept');
+  assert.equal(h.calls.find(call => call.method === 'PUT').data.status, 'draft');
+  await h.click('[data-action="delete-post"]'); assert.match(h.get('#confirm-title').textContent, /永久删除/);
+  await h.click('#confirm-cancel'); assert.equal(h.calls.some(call => call.method === 'DELETE'), false);
+  await h.click('[data-action="delete-post"]'); await h.click('#confirm-accept');
+  assert.equal(h.calls.filter(call => call.method === 'DELETE').length, 1);
+  assert.equal(new URL(h.window.location.href).searchParams.get('view'), 'admin');
+  h.close();
+});
+
+test('leaving a dirty editor requires in-page consent and retains account-scoped local text', async () => {
+  const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?view=write' });
+  h.input('title', '稍后继续'); h.input('content', '本机文字');
+  await h.click('[data-action="back-admin"]'); assert.match(h.get('#confirm-title').textContent, /离开/);
+  await h.click('#confirm-cancel'); assert.equal(new URL(h.window.location.href).searchParams.get('view'), 'write');
+  await h.click('[data-action="back-admin"]'); await h.click('#confirm-accept');
+  assert.equal(new URL(h.window.location.href).searchParams.get('view'), 'admin');
+  assert.equal(JSON.parse(h.window.localStorage.getItem('brclio.blog-draft.v1:' + USER.id + ':new')).fields.content, '本机文字');
   h.close();
 });
