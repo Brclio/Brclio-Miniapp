@@ -2,5 +2,9 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "brclio-miniapp-wechat",
   "pages_build_output_dir": "./dist/web",
-  "compatibility_date": "2026-10-01"
+  "compatibility_date": "2026-10-01",
+  "vars": {
+    "BLOG_ADMIN_EMAILS": "aiyuechuang@gmail.com",
+    "GITHUB_BLOG_BRANCH": "main"
+  }
 }

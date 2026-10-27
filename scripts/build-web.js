@@ -54,6 +54,10 @@ fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });
 for (const file of ['index.html', 'style.css', 'catalog.js', 'main.js', 'projects.json', 'account.js', 'account-widget.css']) fs.copyFileSync(path.join(portal, file), path.join(output, file));
 esbuild.buildSync({ entryPoints: [path.join(root, 'web/account-browser.js')], outfile: path.join(output, 'account-runtime.js'), bundle: true, format: 'iife', platform: 'browser', target: ['es2020'], legalComments: 'eof' });
+fs.cpSync(path.join(root, 'web/blog'), path.join(output, 'blog'), { recursive: true });
+fs.copyFileSync(path.join(root, 'miniprogram/lib/blog-content.js'), path.join(output, 'blog/content.js'));
+fs.mkdirSync(path.join(output, 'schemas'), { recursive: true });
+fs.copyFileSync(path.join(root, 'docs/blog-storage.schema.json'), path.join(output, 'schemas/blog-storage-v1.json'));
 for (const project of published) {
   const folder = path.join(output, 'projects', project.id);
   const source = sourcePath(project.source);

@@ -2,7 +2,7 @@
 // fixed repositories. No credentials or repository URLs enter client responses.
 const API = 'https://api.github.com';
 const OWNER = 'BrclioData';
-const REPOSITORIES = Object.freeze({ users: 'Brclio-Miniapp-UserData', data: 'Brclio-Miniapp-Data' });
+const REPOSITORIES = Object.freeze({ users: 'Brclio-Miniapp-UserData', data: 'Brclio-Miniapp-Data', blog: 'Brclio-Miniapp-Blog-Data' });
 const MAX_DOCUMENT_BYTES = 1024 * 1024;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 const MAX_TRANSACTION_DOCUMENTS = 100;
@@ -150,7 +150,7 @@ export function createGitHubStore(env, { fetchImpl = fetch, repository = 'users'
   if (!Object.hasOwn(REPOSITORIES, repository)) fail(503, 'store_configuration_invalid');
   const repo = REPOSITORIES[repository];
   const prefix = '/repos/' + OWNER + '/' + repo;
-  const branch = validBranch(env?.[repository === 'users' ? 'GITHUB_USERDATA_BRANCH' : 'GITHUB_DATA_BRANCH']);
+  const branch = validBranch(env?.[{ users: 'GITHUB_USERDATA_BRANCH', data: 'GITHUB_DATA_BRANCH', blog: 'GITHUB_BLOG_BRANCH' }[repository]]);
   const refPath = 'heads/' + encodePath(branch);
   const appId = String(env?.GITHUB_APP_CLIENT_ID || env?.GITHUB_APP_ID || '');
   const privateKey = env?.GITHUB_APP_PRIVATE_KEY;
@@ -344,7 +344,7 @@ export function createGitHubStore(env, { fetchImpl = fetch, repository = 'users'
         const tree = await request(prefix + '/git/trees', { method: 'POST', body: { base_tree: baseTree, tree: entries } });
         const treeSha = validSha(tree.value?.sha);
         const commit = await request(prefix + '/git/commits', {
-          method: 'POST', body: { message: 'Update Brclio account records', tree: treeSha, parents: [head] }
+          method: 'POST', body: { message: repository === 'blog' ? 'Update Brclio blog records' : 'Update Brclio account records', tree: treeSha, parents: [head] }
         });
         const commitSha = validSha(commit.value?.sha);
         const update = await request(prefix + '/git/refs/' + refPath, {

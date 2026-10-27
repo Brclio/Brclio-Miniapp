@@ -2,6 +2,7 @@
 // Native miniapp accounts use their own private GitHub repositories.
 import { proxyAccount } from './account-proxy.mjs';
 import { pronounceWord } from './lingotiles-audio.mjs';
+import { handleBlog } from './blog-api.mjs';
 export function createPagesWorker({ activeProjectIds = [], firstsightAssetPaths = [], version = 'unknown' } = {}) {
 const active = new Set(activeProjectIds);
 const firstsightAssets = new Set(firstsightAssetPaths);
@@ -9,6 +10,7 @@ return {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
     if (path === '/api/account' || path.startsWith('/api/account/')) return proxyAccount(request, env);
+    if (path === '/api/blog' || path.startsWith('/api/blog/')) return handleBlog(request, env);
     if (path === '/api/lingotiles/pronounce' && active.has('lingotiles')) return pronounceWord(request);
     if (path === '/api/health' && request.method === 'GET') {
       return Response.json({ ok: true, service: 'brclio-pocket', version, syncAvailable: false }, { headers: { 'Cache-Control': 'no-store' } });

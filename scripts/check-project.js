@@ -83,7 +83,9 @@ try {
   const covers = require('./check-nursery-covers').verifyNurseryCovers();
   check(covers.count === 47, '47 首独立儿歌封面、256px 压缩、来源提示词及网页字节一致');
   const nativeCatalog = require(path.join(appRoot, 'data/catalog.js'));
-  check(nativeCatalog.features.map(function (feature) { return feature.id; }).sort().join(',') === 'content-hub,firstsight,learn,lingotiles,nursery-music,ready-go-duel,relax,wedding-inspiration' && nativeCatalog.getFeatureRoute('lingotiles') === '/pages/lingotiles/index' && nativeCatalog.getFeatureRoute('nursery-music') === '/nursery/pages/player/index' && nativeCatalog.getFeatureUrl('nursery-music') === '' && config.pages.includes('pages/parenting/index'), '原生固定入口、育儿音乐及历史分享入口登记完整');
+  check(nativeCatalog.features.map(function (feature) { return feature.id; }).sort().join(',') === 'blog,content-hub,firstsight,learn,lingotiles,nursery-music,ready-go-duel,relax,wedding-inspiration' && nativeCatalog.getFeatureRoute('lingotiles') === '/pages/lingotiles/index' && nativeCatalog.getFeatureRoute('nursery-music') === '/nursery/pages/player/index' && nativeCatalog.getFeatureUrl('nursery-music') === '' && config.pages.includes('pages/parenting/index'), '原生固定入口、育儿音乐及历史分享入口登记完整');
+  check(nativeCatalog.getFeatureRoute('blog') === '/blog/pages/list/index' && packages.some(pack => pack.root === 'blog') && ['blog/index.html', 'blog/main.js', 'blog/style.css', 'blog/content.js'].every(file => fs.existsSync(path.join(outputRoot, file))), '博客原生分包、网页阅读写作与共享排版已构建');
+  check(fs.readFileSync(path.join(outputRoot, 'blog/content.js'), 'utf8') === fs.readFileSync(path.join(appRoot, 'lib/blog-content.js'), 'utf8') && /api\/blog/.test(fs.readFileSync(path.join(outputRoot, '_worker.js'), 'utf8')), '博客两端排版字节一致且发布产物包含 API');
   const photoData = JSON.parse(fs.readFileSync(path.join(root, 'web/projects/firstsight/original-data.json'), 'utf8'));
   const photoAssets = photoData.assets.filter(function (asset) { return asset.available; });
   check(photoAssets.length > 2 && photoAssets.every(function (asset) {

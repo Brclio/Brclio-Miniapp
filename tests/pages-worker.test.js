@@ -4,6 +4,19 @@ const fs = require('node:fs');
 const path = require('node:path');
 const load = import('../web/pages-worker.mjs');
 
+test('blog requests reach the blog service and never fall through to static assets', async () => {
+  const { createPagesWorker } = await load;
+  const worker = createPagesWorker();
+  let assets = 0;
+  const env = { ASSETS: { fetch() { assets++; return new Response('asset'); } } };
+  const response = await worker.fetch(new Request('https://pocket.bornforthis.cn/api/blog/posts'), env);
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, 'blog_unavailable');
+  assert.equal(assets, 0);
+  assert.equal((await worker.fetch(new Request('https://pocket.bornforthis.cn/blog/'), env)).status, 200);
+  assert.equal(assets, 1);
+});
+
 test('single-project health identifies the release and storage remains disabled', async () => {
   const { createPagesWorker } = await load;
   const worker = createPagesWorker({ activeProjectIds: ['firstsight'], version: '0.1.1' });

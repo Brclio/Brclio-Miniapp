@@ -11,6 +11,14 @@ const features = Object.freeze([
     path: '/?entry=wechat'
   }),
   Object.freeze({
+    id: 'blog',
+    title: 'Brclio 博客',
+    subtitle: '阅读，也留下你的想法',
+    category: '博客',
+    description: '阅读公开文章，搜索分类与标签，登录后评论、点赞和收藏。',
+    path: '/blog/?entry=wechat'
+  }),
+  Object.freeze({
     id: 'learn',
     title: '悦学',
     subtitle: '每天学一点，好奇多一点',
@@ -87,6 +95,7 @@ function getFeatureRoute(id) {
   if (!getFeature(id)) return '';
   const routes = {
     'content-hub': '/pages/home/index',
+    blog: '/blog/pages/list/index',
     firstsight: '/pages/gallery/index',
     relax: '/pages/home/index?tab=relax',
     learn: '/pages/home/index?tab=learn',

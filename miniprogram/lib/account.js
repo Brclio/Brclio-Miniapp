@@ -91,7 +91,7 @@ function createAccountClient(options) {
     emit(reason || 'login');
     return { user: safeUser(user), expiresAt: session.expiresAt };
   }
-  function request(path, method, data, token) {
+  function request(path, method, data, token, serviceBase = base) {
     const requestGeneration = generation;
     return new Promise((resolve, reject) => {
       const api = platform();
@@ -100,7 +100,7 @@ function createAccountClient(options) {
       if (token) header.Authorization = 'Bearer ' + token;
       if (path === '/sync') header['X-Brclio-Sync-Version'] = '2';
       try {
-        api.request({ url: base + path, method, header, timeout: REQUEST_TIMEOUT,
+        api.request({ url: serviceBase + path, method, header, timeout: REQUEST_TIMEOUT,
           ...(data === undefined ? {} : { data }),
           success(response) {
             const body = response.data;
@@ -217,6 +217,23 @@ function createAccountClient(options) {
   }
   const client = {
     flushRevocations,
+    async blogRequest(path, method = 'GET', data) {
+      // The existing private session stays inside this client. Both anonymous
+      // reads and authenticated writes reject late results after account changes.
+      const route = typeof path === 'string' ? path.split('?')[0] : '';
+      if (!/^\/(?:me|posts(?:\/[A-Za-z0-9_-]{1,80}(?:\/(?:view|like|favorite|comments(?:\/[A-Za-z0-9_-]{1,80})?))?)?|admin\/posts(?:\/[A-Za-z0-9_-]{1,80})?)$/.test(route) ||
+          path.length > 3000 || /[\\\u0000-\u001f\u007f#]/.test(path) || !['GET', 'POST', 'PUT', 'DELETE'].includes(method)) {
+        throw accountError('invalid_request', '博客请求格式不受支持。');
+      }
+      const session = readSession();
+      const expected = generation;
+      if (method !== 'GET' && !(method === 'POST' && /\/view$/.test(route)) && !session) {
+        throw accountError('session_expired', '请先登录后再操作。');
+      }
+      const result = await request(path, method, data, session && session.token, base.replace(/\/account$/, '/blog'));
+      if (expected !== generation) throw accountError('operation_canceled', '账号已变化，请重试。');
+      return result;
+    },
     getSessionSnapshot() { const session = readSession(); return session ? { user: safeUser(session.user), expiresAt: session.expiresAt } : { user: null, expiresAt: null }; },
     subscribe(listener) { if (typeof listener !== 'function') return () => {}; subscribers.add(listener); return () => subscribers.delete(listener); },
     readSync() { return authedRequest('/sync', 'GET'); },

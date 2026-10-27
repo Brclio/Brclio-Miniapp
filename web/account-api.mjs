@@ -132,6 +132,12 @@ async function authenticate(tx, request, at, { migrate = true } = {}) {
   }
   return { profile: migrate ? ensureAvatar(tx, profile, at) : profile, session, sessions, tokenHash };
 }
+// Server modules can share account authentication without exposing sessions,
+// credentials, or creating a second login protocol. This check is read-only.
+export async function authenticateAccountUser(store, request, at = Date.now(), origin = '') {
+  const { profile } = await authenticate({ get: path => store.read(path) }, request, at, { migrate: false });
+  return safeUser(profile, origin);
+}
 async function issueSession(tx, profile, at, token, origin) {
   profile = ensureAvatar(tx, profile, at);
   const path = userPath(profile.id, 'sessions');

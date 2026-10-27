@@ -28,7 +28,9 @@ App 实际安装范围为 `repository_selection: all`，用户明确授权保留
 | `GITHUB_APP_PRIVATE_KEY` | Secret；App 完整 PEM 私钥，支持 PKCS#1 和 PKCS#8 |
 | `GITHUB_APP_INSTALLATION_ID` | 可选普通变量；未配置时按固定仓库查询该 App 安装 |
 | `GITHUB_USERDATA_BRANCH` | 可选普通变量；默认 `main` |
-| `GITHUB_DATA_BRANCH` | 可选普通变量；默认 `main` |
+| `GITHUB_DATA_BRANCH` | 可选普通变量；学习、挑战和儿歌业务库分支，默认 `main` |
+| `GITHUB_BLOG_BRANCH` | 可选普通变量；独立博客库分支，默认 `main` |
+| `BLOG_ADMIN_EMAILS` / `BLOG_ADMIN_USER_IDS` | 非密钥管理员白名单；博客写作与评论管理权限 |
 | `EMAIL_PROVIDER` | 普通变量；本轮使用 `gmail`；也保留 Resend 路径 |
 | `SMTP_USERNAME` | 邮件发件 Gmail 完整地址；后端配置 |
 | `SMTP_APP_PASSWORD` | Secret；上述 Gmail 的应用专用密码，不是普通账号密码 |
@@ -43,10 +45,11 @@ App 实际安装范围为 `repository_selection: all`，用户明确授权保留
 
 ## GitHub App 与仓库
 
-App 安装须同时包含以下两个私有仓库，授予 Repository Contents 读写：
+0.1.9 起，App 安装须同时包含以下三个私有仓库，授予 Repository Contents 读写：
 
 - `BrclioData/Brclio-Miniapp-UserData`
-- `BrclioData/Brclio-Miniapp-Data`
+- `BrclioData/Brclio-Miniapp-Data`（学习、挑战、儿歌偏好）
+- `BrclioData/Brclio-Miniapp-Blog-Data`（文章与互动，结构化 JSON）
 
 后端分别申请仅包含当前仓库的 installation token，按返回到期时间刷新，不依赖固定 token 长度或个人 PAT。Client ID 可作为 JWT `iss`，GitHub 官方推荐该方式；App ID 和 Installation ID 是不同标识。[GitHub JWT](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app)、[Installation token](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app)
 

@@ -15,6 +15,8 @@
     <button class="category-tab {{activeTab === 'mine' ? 'category-tab-active' : ''}}" data-tab="mine" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'mine' ? '我的，当前栏目' : '切换到我的栏目'}}"><text>我的</text><text class="tab-english">ME</text></button>
   </view>
 
+  <button class="blog-home-entry" style="width: 100%; display: flex;" data-id="blog" bindtap="openFeature" hover-class="button-pressed" aria-label="打开 Brclio 博客，阅读文章、评论、点赞和收藏"><view class="blog-home-mark serif" aria-hidden="true">✳</view><view class="blog-home-body"><view class="blog-home-title serif">博客 · 把想法写下来</view><view class="blog-home-copy">读一篇文章，留一点思考。</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
+
   <view wx:if="{{activeTab === 'photo'}}" class="tab-content">
     <view class="section-intro">
       <view class="intro-topline"><text class="eyebrow">A WAY OF SEEING</text><text class="issue-number">01 / 摄影</text></view>
@@ -97,6 +99,7 @@
       <view class="account-note"><view class="account-title"><text class="status-dot" aria-hidden="true"></text>记录，先留在这台设备</view><view class="entry-copy">摄影、挑战、学习与儿歌，都可以随心打开。<view>登录后自动同步进度和记录，换设备也能继续。</view></view></view>
     </view>
     <view class="personal-links">
+      <button class="personal-link" style="width: 100%; display: flex;" bindtap="openBlogFavorites" hover-class="button-pressed"><view><view class="personal-link-title">我收藏的文章</view><view class="personal-link-copy">网页和小程序共享你的阅读收藏</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
       <button class="personal-link" style="width: 100%; display: flex;" data-id="content-hub" bindtap="openFeature" hover-class="button-pressed" aria-label="浏览全部已发布的内容与项目"><view><view class="personal-link-title">全部内容</view><view class="personal-link-copy">摄影、放松、悦学与育儿，随时回来看看</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
       <button class="personal-link" style="width: 100%; display: flex;" bindtap="openAbout" hover-class="button-pressed" aria-label="查看关于 Brclio 悦创与服务信息"><view><view class="personal-link-title">关于悦创</view><view class="personal-link-copy">从摄影开始，慢慢生长</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
       <button class="personal-link" style="width: 100%; display: flex;" bindtap="openPrivacy" hover-class="button-pressed" aria-label="查看隐私、权限与本机数据说明"><view><view class="personal-link-title">隐私与数据</view><view class="personal-link-copy">了解权限与本机记录</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>

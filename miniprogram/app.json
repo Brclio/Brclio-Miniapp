@@ -51,6 +51,14 @@
       "pages": [
         "pages/player/index"
       ]
+    },
+    {
+      "root": "blog",
+      "name": "blog",
+      "pages": [
+        "pages/list/index",
+        "pages/article/index"
+      ]
     }
   ],
   "preloadRule": {

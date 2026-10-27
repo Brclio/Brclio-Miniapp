@@ -1,0 +1,52 @@
+/* Native adaptation of Brclio Design System · CC BY-NC-SA 4.0. */
+.article-shell { padding-top: 14rpx; }
+.article-nav { display: flex; justify-content: space-between; gap: 20rpx; border-bottom: 1rpx solid #dedbd2; }
+.article-nav .text-button { font-size: 22rpx; }
+.article-header { margin-top: 30rpx; }
+.article-category { color: #2b7fd8; font-size: 22rpx; }
+.draft-label { display: inline-block; color: #8a7040; background: #f4efd9; margin-left: 15rpx; padding: 3rpx 10rpx; font-size: 19rpx; }
+.article-title { font-size: 44rpx; line-height: 1.55; font-weight: 700; margin: 16rpx 0 24rpx; overflow-wrap: anywhere; }
+.article-author { display: flex; align-items: center; gap: 16rpx; font-size: 24rpx; color: #4a4a5a; }
+.author-avatar { width: 66rpx; height: 66rpx; border-radius: 50%; flex-shrink: 0; }
+.article-date { color: #817d76; font-size: 21rpx; margin-top: 2rpx; }
+.article-excerpt { font-size: 27rpx; color: #6b665f; margin: 26rpx 0 0; line-height: 1.85; }
+.article-tags { display: flex; flex-wrap: wrap; gap: 10rpx 22rpx; font-size: 21rpx; color: #817d76; margin-top: 20rpx; }
+.article-cover { display: block; width: 100%; margin: 32rpx 0 20rpx; border-radius: 8rpx; background: #faf6eb; }
+.article-content { display: block; font-size: 30rpx; line-height: 1.95; color: #33333f; overflow-wrap: anywhere; padding-top: 18rpx; }
+.reading-end { text-align: center; padding: 45rpx 0 32rpx; color: #817d76; font-size: 22rpx; }
+.reading-end > text { display: block; color: #2b7fd8; font-size: 30rpx; letter-spacing: 13rpx; margin-bottom: 14rpx; }
+.article-actions { display: flex; gap: 16rpx; padding: 22rpx 0; border-top: 1rpx solid #dedbd2; border-bottom: 1rpx solid #dedbd2; }
+.reaction { flex: 1; background: #faf6eb; padding: 16rpx 18rpx; border-radius: 6rpx; color: #5d5a52; font-size: 25rpx; display: flex; justify-content: center; align-items: center; gap: 12rpx; }
+.reaction text { font-size: 23rpx; }
+.reaction-active { color: #2b7fd8; background: #eaf1f6; }
+.favorite-active { color: #736126; background: #f6eab3; }
+.share-button { background: transparent; padding: 16rpx 12rpx; color: #2b7fd8; font-size: 24rpx; }
+button[disabled] { opacity: .55; }
+.action-error { color: #a13b49; padding: 16rpx 0; font-size: 23rpx; }
+.admin-link { font-size: 23rpx; padding: 16rpx 0; background: transparent; color: #2b7fd8; text-align: left; }
+.comments-section { padding-top: 36rpx; }
+.comments-title { font-size: 34rpx; font-weight: 700; }
+.comments-title text { color: #817d76; font-family: -apple-system, 'PingFang SC', sans-serif; font-size: 24rpx; font-weight: 400; margin-left: 14rpx; }
+.comments-intro { font-size: 22rpx; color: #817d76; line-height: 1.8; margin-top: 8rpx; }
+.comment-compose { padding: 20rpx; border: 1rpx solid #dedbd2; border-radius: 8rpx; margin-top: 24rpx; background: #faf6eb; }
+.comment-input { display: block; width: 100%; min-height: 140rpx; font-size: 26rpx; line-height: 1.85; }
+.compose-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 18rpx; gap: 15rpx; }
+.compose-bottom > text { color: #817d76; font-size: 20rpx; }
+.comment-submit { background: #2b7fd8; color: #fefcf6; padding: 12rpx 24rpx; border-radius: 6rpx; font-size: 24rpx; display: flex; align-items: center; }
+.comments-closed { font-size: 23rpx; color: #817d76; background: #faf6eb; padding: 22rpx; margin-top: 24rpx; border-radius: 6rpx; }
+.comment { display: flex; gap: 18rpx; padding: 28rpx 0; border-bottom: 1rpx solid #dedbd2; }
+.comment-avatar { width: 58rpx; height: 58rpx; border-radius: 50%; flex-shrink: 0; background: #f4efd9; }
+.comment-initial { display: flex; align-items: center; justify-content: center; color: #817550; font-size: 25rpx; }
+.comment-body { flex: 1; min-width: 0; }
+.comment-byline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10rpx; }
+.comment-author { font-size: 24rpx; color: #4a4a5a; }
+.comment-date { font-size: 19rpx; color: #817d76; }
+.comment-content { font-size: 26rpx; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.85; margin-top: 10rpx; }
+.delete-comment { color: #a13b49; background: transparent; font-size: 21rpx; padding: 7rpx 0; min-height: 64rpx; text-align: left; margin-top: 5rpx; }
+.state-message { font-size: 24rpx; color: #817d76; text-align: center; padding: 32rpx 0; }
+.error-message { color: #a13b49; }
+.error-message .secondary-button { margin: 20rpx auto 0; max-width: 390rpx; }
+.no-comments { color: #817d76; font-size: 23rpx; padding: 32rpx 0; }
+.blog-signature { font-size: 20rpx; color: #817d76; padding-top: 36rpx; }
+@media (max-width: 350px) { .article-title { font-size: 40rpx; } .article-actions { gap: 10rpx; } .reaction { padding-left: 10rpx; padding-right: 10rpx; } .share-button { padding-left: 8rpx; padding-right: 8rpx; } }
+@media (min-width: 900px) { .article-title { font-size: 49rpx; } .article-content { font-size: 31rpx; } }

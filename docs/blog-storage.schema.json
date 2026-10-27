@@ -1,0 +1,583 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pocket.bornforthis.cn/schemas/blog-storage-v1.json",
+  "title": "Brclio Miniapp Blog structured storage v1",
+  "description": "Each storage path selects exactly one closed record type; Markdown is an article content string.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/article"
+    },
+    {
+      "$ref": "#/$defs/summary"
+    },
+    {
+      "$ref": "#/$defs/catalog"
+    },
+    {
+      "$ref": "#/$defs/reactions"
+    },
+    {
+      "$ref": "#/$defs/comments"
+    },
+    {
+      "$ref": "#/$defs/comment"
+    },
+    {
+      "$ref": "#/$defs/views"
+    },
+    {
+      "$ref": "#/$defs/favorites"
+    },
+    {
+      "$ref": "#/$defs/rate"
+    }
+  ],
+  "$defs": {
+    "article": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "title",
+        "excerpt",
+        "category",
+        "tags",
+        "coverUrl",
+        "status",
+        "commentsEnabled",
+        "author",
+        "createdAt",
+        "publishedAt",
+        "updatedAt",
+        "readingMinutes",
+        "revision",
+        "counts",
+        "content"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 120,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+          "minLength": 1
+        },
+        "excerpt": {
+          "type": "string",
+          "maxLength": 300,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 24,
+            "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+            "minLength": 1
+          },
+          "maxItems": 8,
+          "uniqueItems": true
+        },
+        "coverUrl": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+          "format": "https-url-or-empty"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published"
+          ]
+        },
+        "commentsEnabled": {
+          "type": "boolean"
+        },
+        "author": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "displayName",
+            "avatarUrl"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            },
+            "displayName": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+              "minLength": 1
+            },
+            "avatarUrl": {
+              "type": "string",
+              "maxLength": 2048,
+              "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+              "format": "https-url-or-empty"
+            }
+          }
+        },
+        "createdAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "publishedAt": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updatedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "readingMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "views",
+            "likes",
+            "favorites",
+            "comments"
+          ],
+          "properties": {
+            "views": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "likes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5000
+            },
+            "favorites": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5000
+            },
+            "comments": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            }
+          }
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 100000,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+          "minLength": 1,
+          "x-maxLines": 5000
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "title",
+        "excerpt",
+        "category",
+        "tags",
+        "coverUrl",
+        "status",
+        "commentsEnabled",
+        "author",
+        "createdAt",
+        "publishedAt",
+        "updatedAt",
+        "readingMinutes",
+        "revision",
+        "counts"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 120,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+          "minLength": 1
+        },
+        "excerpt": {
+          "type": "string",
+          "maxLength": 300,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 24,
+            "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+            "minLength": 1
+          },
+          "maxItems": 8,
+          "uniqueItems": true
+        },
+        "coverUrl": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+          "format": "https-url-or-empty"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published"
+          ]
+        },
+        "commentsEnabled": {
+          "type": "boolean"
+        },
+        "author": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "displayName",
+            "avatarUrl"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            },
+            "displayName": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+              "minLength": 1
+            },
+            "avatarUrl": {
+              "type": "string",
+              "maxLength": 2048,
+              "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+              "format": "https-url-or-empty"
+            }
+          }
+        },
+        "createdAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "publishedAt": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updatedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "readingMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "views",
+            "likes",
+            "favorites",
+            "comments"
+          ],
+          "properties": {
+            "views": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "likes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5000
+            },
+            "favorites": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5000
+            },
+            "comments": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            }
+          }
+        }
+      }
+    },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "posts"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "posts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/summary"
+          },
+          "maxItems": 500
+        }
+      }
+    },
+    "reactions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "likes",
+        "favorites"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "likes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "maxItems": 5000,
+          "uniqueItems": true
+        },
+        "favorites": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "maxItems": 5000,
+          "uniqueItems": true
+        }
+      }
+    },
+    "comments": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "items"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{32}$"
+              }
+            }
+          },
+          "maxItems": 1000
+        }
+      }
+    },
+    "comment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "content",
+        "author",
+        "createdAt"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 1000,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+          "minLength": 1
+        },
+        "author": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "displayName",
+            "avatarUrl"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$"
+            },
+            "displayName": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+              "minLength": 1
+            },
+            "avatarUrl": {
+              "type": "string",
+              "maxLength": 2048,
+              "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]*$",
+              "format": "https-url-or-empty"
+            }
+          }
+        },
+        "createdAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "views": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "visitors"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "visitors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "maxItems": 10000,
+          "uniqueItems": true
+        }
+      }
+    },
+    "favorites": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "ids"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+          },
+          "maxItems": 500,
+          "uniqueItems": true
+        }
+      }
+    },
+    "rate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "count",
+        "resetAt"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "resetAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    }
+  }
+}

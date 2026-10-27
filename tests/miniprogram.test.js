@@ -23,6 +23,7 @@ function loadPage(file, extra) {
 }
 const routes = [
   ['content-hub', '/pages/home/index'],
+  ['blog', '/blog/pages/list/index'],
   ['firstsight', '/pages/gallery/index'],
   ['relax', '/pages/home/index?tab=relax'],
   ['learn', '/pages/home/index?tab=learn'],

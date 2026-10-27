@@ -9,12 +9,17 @@ GITHUB_APP_CLIENT_ID="Iv23liYOn19I2ZrQXQSq"
 GITHUB_APP_PRIVATE_KEY="replace-with-complete-app-pem"
 GITHUB_USERDATA_BRANCH="main"
 GITHUB_DATA_BRANCH="main"
+GITHUB_BLOG_BRANCH="main"
 EMAIL_PROVIDER="gmail"
 SMTP_USERNAME="your-sender@gmail.com"
 SMTP_APP_PASSWORD="replace-with-gmail-app-password"
 EMAIL_FROM="your-sender@gmail.com"
 WECHAT_APP_ID="wx59aa532fbf6fa540"
 WECHAT_APP_SECRET="replace-with-miniapp-appsecret"
+# Blog writers/moderators: comma-separated existing account IDs or verified emails.
+# Empty lists keep writing closed; reading and signed-in interactions stay available.
+BLOG_ADMIN_USER_IDS=""
+BLOG_ADMIN_EMAILS=""
 # Alternative email provider: remove SMTP_* and use EMAIL_PROVIDER=resend.
 # RESEND_API_KEY="replace-with-resend-api-key"
 # EMAIL_FROM="Brclio <verified-sender@example.com>"

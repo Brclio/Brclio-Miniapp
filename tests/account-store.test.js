@@ -294,3 +294,18 @@ test('GitHub redirect responses fail closed without forwarding an App credential
   assert.equal(mock.calls.filter(call => call.path.includes('/git/ref/')).length, 1);
   assert.equal(mock.calls.some(call => call.path.includes('/contents/')), false);
 });
+
+test('blog storage uses only the fixed dedicated repository and independent blog branch', async () => {
+  const { createGitHubStore } = await api();
+  const mock = fixture();
+  const env = configuration({ GITHUB_BLOG_BRANCH: 'release/blog', GITHUB_DATA_BRANCH: 'wrong-data', GITHUB_USERDATA_BRANCH: 'wrong-users' });
+  const blog = createGitHubStore(env, { fetchImpl: mock.fetchImpl, repository: 'blog' });
+  await blog.transaction(tx => tx.put('blog/v1/catalog/a.json', { schemaVersion: 1, posts: [] }));
+  const grant = mock.calls.find(call => call.path.endsWith('/access_tokens'));
+  assert.deepEqual(grant.body, { repositories: ['Brclio-Miniapp-Blog-Data'], permissions: { contents: 'write' } });
+  assert.ok(mock.calls.some(call => call.path === '/repos/BrclioData/Brclio-Miniapp-Blog-Data/git/ref/heads/release/blog'));
+  assert.ok(mock.calls.every(call => !call.path.startsWith('/repos/') || call.path === '/repos/BrclioData/Brclio-Miniapp-Blog-Data' || call.path.startsWith('/repos/BrclioData/Brclio-Miniapp-Blog-Data/')));
+  assert.equal(mock.calls.some(call => call.path.includes('wrong-data') || call.path.includes('wrong-users')), false);
+  const commit = mock.calls.find(call => call.path.endsWith('/git/commits') && call.method === 'POST');
+  assert.equal(commit.body.message, 'Update Brclio blog records');
+});

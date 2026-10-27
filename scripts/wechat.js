@@ -30,7 +30,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：全新1000款创意头像，涵盖人物、萌宠、海洋、自然、太空与艺术等20个主题；支持随机分配、自由切换和自定义上传。修复小屏头像网格溢出、选中边框和关闭按钮布局，保留原图及压缩头像分别保存。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
+    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：新增原生博客，支持文章阅读、分类标签搜索、评论、点赞、收藏、分享与阅读统计；网页端提供草稿、预览、发布和管理，两端共用账号，博客数据独立存储于私有仓库。保留摄影、挑战、悦学、育儿及头像功能。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');

@@ -1,0 +1,44 @@
+/* Native adaptation of Brclio Design System · CC BY-NC-SA 4.0. */
+.blog-shell { padding-top: 28rpx; }
+.blog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18rpx; padding: 16rpx 0 26rpx; }
+.blog-heading .eyebrow { font-size: 18rpx; letter-spacing: 2rpx; }
+.blog-title { font-size: 39rpx; font-weight: 700; margin-top: 14rpx; line-height: 1.5; }
+.blog-intro { font-size: 23rpx; color: #817d76; margin-top: 8rpx; }
+.account-link { min-width: 88rpx; padding: 0; background: transparent; color: #2b7fd8; font-size: 23rpx; display: flex; align-items: center; white-space: nowrap; }
+.view-tabs { display: flex; gap: 30rpx; border-bottom: 1rpx solid #dedbd2; }
+.view-tab { background: transparent; padding: 18rpx 0; border-bottom: 4rpx solid transparent; font-size: 26rpx; color: #817d76; }
+.view-tab.selected { color: #2b7fd8; border-bottom-color: #2b7fd8; font-weight: 600; }
+.search-row { display: flex; gap: 16rpx; margin: 28rpx 0 18rpx; }
+.search-input { flex: 1; min-width: 0; height: 88rpx; padding: 0 22rpx; border: 1rpx solid #dedbd2; border-radius: 8rpx; font-size: 24rpx; background: #faf6eb; }
+.search-button { background: #2b7fd8; color: #fefcf6; padding: 16rpx 26rpx; border-radius: 8rpx; font-size: 24rpx; display: flex; align-items: center; }
+.filter-scroll { white-space: nowrap; width: 100%; }
+.filter-row { display: flex; gap: 12rpx; width: max-content; padding: 5rpx 0; }
+.filter { display: inline-flex; align-items: center; background: #faf6eb; color: #6b665d; font-size: 23rpx; min-height: 76rpx; padding: 12rpx 22rpx; border-radius: 6rpx; flex-shrink: 0; }
+.filter-selected { background: #f4d758; color: #625321; }
+.tags-scroll { margin-bottom: 8rpx; }
+.tag { display: inline-flex; align-items: center; padding: 10rpx 10rpx; font-size: 21rpx; background: transparent; color: #817d76; min-height: 68rpx; flex-shrink: 0; }
+.tag-selected { color: #2b7fd8; text-decoration: underline; }
+.filter-summary { display: flex; justify-content: space-between; align-items: center; color: #817d76; font-size: 21rpx; }
+.clear-link { background: transparent; font-size: 21rpx; padding: 8rpx; color: #2b7fd8; }
+.post-entry { display: flex; width: 100%; gap: 22rpx; background: transparent; text-align: left; padding: 30rpx 0; border-bottom: 1rpx solid #dedbd2; }
+.post-cover { width: 154rpx; height: 166rpx; border-radius: 6rpx; background: #faf6eb; flex-shrink: 0; }
+.post-entry-body { flex: 1; min-width: 0; }
+.post-topline { display: flex; justify-content: space-between; gap: 10rpx; color: #817d76; font-size: 19rpx; }
+.post-topline text:first-child { color: #2b7fd8; }
+.post-title { font-size: 31rpx; line-height: 1.5; font-weight: 700; margin: 9rpx 0; overflow-wrap: anywhere; }
+.post-excerpt { color: #75716a; font-size: 23rpx; line-height: 1.8; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.post-meta { display: flex; flex-wrap: wrap; gap: 5rpx 16rpx; font-size: 19rpx; color: #817d76; margin-top: 14rpx; }
+.state-message { padding: 32rpx 0; text-align: center; color: #75716a; font-size: 24rpx; }
+.error-message { color: #a13b49; line-height: 1.8; }
+.error-message .secondary-button { margin: 20rpx auto 0; max-width: 360rpx; }
+.empty-state { padding: 56rpx 0; }
+.empty-mark { color: #2b7fd8; font-size: 60rpx; }
+.empty-title { font-size: 30rpx; font-weight: 600; margin: 10rpx 0; }
+.empty-copy { color: #817d76; font-size: 24rpx; line-height: 1.8; }
+.load-more { margin-top: 28rpx; }
+.list-end { text-align: center; color: #817d76; font-size: 22rpx; padding: 30rpx 0; }
+.writing-link { display: flex; width: 100%; background: #faf6eb; color: #2b7fd8; text-align: left; padding: 22rpx; margin-top: 28rpx; border-radius: 8rpx; font-size: 25rpx; }
+.writing-note { color: #817d76; font-size: 21rpx; margin-top: 4rpx; }
+.blog-signature { font-size: 20rpx; color: #817d76; padding-top: 36rpx; }
+@media (max-width: 350px) { .post-entry { gap: 16rpx; } .post-cover { width: 120rpx; height: 150rpx; } .post-title { font-size: 29rpx; } }
+@media (min-width: 900px) { .blog-title { font-size: 44rpx; } .post-cover { width: 185rpx; height: 172rpx; } }

@@ -1,0 +1,21 @@
+<view class="page-shell blog-shell">
+  <view class="blog-heading"><view><view class="eyebrow">BRCLIO / JOURNAL</view><view class="blog-title serif">把想法，写下来。</view><view class="blog-intro">阅读，也留下你的想法。</view></view><button class="account-link" bindtap="openAccount" hover-class="button-pressed">{{user ? '我的账号' : '登录'}}</button></view>
+  <view class="view-tabs"><button class="view-tab {{!saved ? 'selected' : ''}}" data-view="all" bindtap="switchView">全部文章</button><button class="view-tab {{saved ? 'selected' : ''}}" data-view="saved" bindtap="switchView">我的收藏</button></view>
+  <view class="search-row"><input class="search-input" value="{{query}}" bindinput="inputSearch" bindconfirm="search" maxlength="100" confirm-type="search" placeholder="搜索标题、摘要或标签" aria-label="搜索文章" /><button class="search-button" bindtap="search" hover-class="button-pressed">搜索</button></view>
+  <scroll-view wx:if="{{categories.length}}" class="filter-scroll" scroll-x="true" enable-flex="true"><view class="filter-row"><button class="filter {{!category ? 'filter-selected' : ''}}" data-category="" bindtap="selectCategory">全部分类</button><button wx:for="{{categories}}" wx:key="*this" class="filter {{category === item ? 'filter-selected' : ''}}" data-category="{{item}}" bindtap="selectCategory">{{item}}</button></view></scroll-view>
+  <scroll-view wx:if="{{tags.length}}" class="filter-scroll tags-scroll" scroll-x="true" enable-flex="true"><view class="filter-row"><button wx:for="{{tags}}" wx:key="*this" class="tag {{tag === item ? 'tag-selected' : ''}}" data-tag="{{item}}" bindtap="selectTag"># {{item}}</button></view></scroll-view>
+  <view wx:if="{{query || category || tag}}" class="filter-summary"><text>{{total}} 篇符合条件</text><button class="clear-link" bindtap="clearFilters">清除筛选</button></view>
+  <view wx:if="{{error}}" class="state-message error-message" role="alert"><text>{{error}}</text><button wx:if="{{saved && !user}}" class="secondary-button" bindtap="openAccount">去登录</button><button wx:else class="secondary-button" bindtap="reload">重新加载</button></view>
+  <view class="post-list">
+    <button wx:for="{{posts}}" wx:key="id" class="post-entry" data-id="{{item.id}}" bindtap="openPost" hover-class="button-pressed" aria-label="阅读 {{item.title}}">
+      <image wx:if="{{item.coverUrl}}" class="post-cover" src="{{item.coverUrl}}" mode="aspectFill" lazy-load="true" />
+      <view class="post-entry-body"><view class="post-topline"><text>{{item.category || '随笔'}}</text><text>{{item.dateText}}</text></view><view class="post-title serif">{{item.title}}</view><view class="post-excerpt">{{item.excerpt}}</view><view class="post-meta"><text>{{item.readingMinutes}} 分钟阅读</text><text>{{item.counts.views}} 阅读</text><text>{{item.counts.likes}} 赞</text><text>{{item.counts.comments}} 评论</text></view></view>
+    </button>
+  </view>
+  <view wx:if="{{loading}}" class="state-message" aria-live="polite">正在加载文章…</view>
+  <view wx:elif="{{!posts.length && !error}}" class="empty-state"><text class="empty-mark serif">✳</text><view class="empty-title serif">{{saved ? '把喜欢的文章留在这里。' : '给下一篇文字留个位置。'}}</view><view class="empty-copy">{{query || category || tag ? '试试其他关键词，或清除筛选。' : saved ? '阅读时点击收藏，网页和小程序都能找到。' : '文章发布后，会出现在这里。'}}</view></view>
+  <button wx:if="{{hasMore && !loading}}" class="secondary-button load-more" bindtap="loadMore">继续阅读更多</button>
+  <view wx:if="{{posts.length && !hasMore && !loading}}" class="list-end">读到这里，刚刚好。</view>
+  <button wx:if="{{canWrite}}" class="writing-link" bindtap="copyWritingUrl" hover-class="button-pressed"><view><view>去网页端写文章 ↗</view><view class="writing-note">复制写作地址，在浏览器中打开</view></view></button>
+  <view class="blog-signature">Brclio · Stay curious. Keep building.</view>
+</view>
