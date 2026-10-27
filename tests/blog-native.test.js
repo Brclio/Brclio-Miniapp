@@ -18,7 +18,7 @@ const deferred = () => { let resolve; const promise = new Promise(done => { reso
 const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
 function host(kind, options = {}) {
   let definition, cached = options.user || null, listener;
-  const calls = [], navigations = [], modals = [], toasts = [], patches = [];
+  const calls = [], navigations = [], modals = [], toasts = [], patches = [], scrolls = [];
   const request = options.request || (async (route, method, payload) => {
     if (route === '/me') return { user: cached, canWrite: !!cached };
     if (route.startsWith('/posts?')) return { posts: [article], page: 1, pageSize: 12, total: 1, categories: ['随笔'], tags: ['生活'] };
@@ -41,14 +41,14 @@ function host(kind, options = {}) {
   vm.runInNewContext(fs.readFileSync(path.join(root, 'blog/pages', kind, 'index.js'), 'utf8'), {
     Page(value) { definition = value; }, require(name) { return name.includes('blog-content') ? markdown : api; },
     getCurrentPages: () => options.pages || [],
-    wx: { navigateTo(value) { navigations.push(value.url); }, navigateBack(value) { navigations.push('back:' + value.delta); }, setNavigationBarTitle() {}, showToast(value) { toasts.push(value); }, showModal(value) { modals.push(value); }, stopPullDownRefresh() {}, setClipboardData() {} }
+    wx: { navigateTo(value) { navigations.push(value.url); }, navigateBack(value) { navigations.push('back:' + value.delta); }, pageScrollTo(value) { scrolls.push(value); if (value.success) value.success(); }, setNavigationBarTitle() {}, showToast(value) { toasts.push(value); }, showModal(value) { modals.push(value); }, stopPullDownRefresh() {}, setClipboardData() {} }
   });
   const page = { ...definition, data: structuredClone(definition.data), setData(patch, done) {
     patches.push(structuredClone(patch));
     Object.entries(patch).forEach(([key, value]) => { const parts = key.replace(/\[(\d+)\]/g, '.$1').split('.'); let target = this.data; while (parts.length > 1) target = target[parts.shift()]; target[parts[0]] = value; }); if (done) done();
   } };
   page.onLoad(options.query || (kind === 'article' ? { id: 'post_1' } : {}));
-  return { page, calls, navigations, modals, toasts, patches, cache, setUser(user) { cached = user; if (listener) listener({ user }); } };
+  return { page, calls, navigations, modals, toasts, patches, scrolls, cache, setUser(user) { cached = user; if (listener) listener({ user }); } };
 }
 
 test('blog client reuses private session, permits anonymous reads and rejects unsafe routes', async () => {
@@ -149,7 +149,7 @@ test('blog pages are native subpackage routes and every WXML event has a handler
   for (const kind of ['list', 'article']) {
     const h = host(kind), wxml = fs.readFileSync(path.join(root, 'blog/pages', kind, 'index.wxml'), 'utf8');
     assert.doesNotMatch(wxml, /<web-view\b/);
-    for (const match of wxml.matchAll(/(?:bind|catch)(?:tap|input|confirm)="([^"]+)"/g)) assert.equal(typeof h.page[match[1]], 'function', match[1]);
+    for (const match of wxml.matchAll(/(?:bind|catch)(?:tap|input|confirm|blur)="([^"]+)"/g)) assert.equal(typeof h.page[match[1]], 'function', match[1]);
     h.page.onUnload();
   }
 });
@@ -312,4 +312,14 @@ test('the article list link returns to an existing list and only opens a new lis
   returning.page.onUnload();
   const direct = host('article', { pages: [{ route: 'blog/pages/article/index' }] }); direct.page.openList();
   assert.equal(direct.navigations.at(-1), '/blog/pages/list/index'); direct.page.onUnload();
+});
+
+test('the reading toolbar scrolls to the real comment input and focuses it without losing its draft', async () => {
+  const reader = host('article'); await reader.page.onShow();
+  reader.page.inputComment({ detail: { value: '先留下一点想法' } }); reader.page.focusComments();
+  assert.equal(reader.scrolls.at(-1).selector, '#comment-compose'); assert.equal(reader.page.data.commentFocused, true);
+  assert.equal(reader.page.data.commentText, '先留下一点想法'); reader.page.blurComment(); assert.equal(reader.page.data.commentFocused, false);
+  reader.page.data.post.commentsEnabled = false; reader.page.focusComments();
+  assert.equal(reader.scrolls.at(-1).selector, '#comments-section'); assert.equal(reader.page.data.commentFocused, false);
+  reader.page.onUnload();
 });

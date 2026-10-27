@@ -1,5 +1,7 @@
 {
   "navigationBarTitleText": "博客 · Brclio",
   "enablePullDownRefresh": true,
+  "navigationBarBackgroundColor": "#f5f4ee",
+  "backgroundColor": "#f5f4ee",
   "backgroundTextStyle": "dark"
 }

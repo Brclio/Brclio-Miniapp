@@ -432,3 +432,52 @@ test('a delayed refresh cannot replace a newly opened editor or erase its unsave
   assert.equal(h.get('#refresh-blog').disabled, false);
   h.close();
 });
+
+test('article cards use optional left thumbnails and accessible real interaction statistics', async () => {
+  const h = await harness({ respond(request) {
+    if (request.route.startsWith('/posts?')) return { posts: [{ ...post, coverUrl: 'https://images.example.test/cover.jpg' }, { ...post, id: 'c'.repeat(32), coverUrl: '' }], total: 2, page: 1, pageSize: 12, categories: [], tags: [] };
+  } });
+  const cards = [...h.window.document.querySelectorAll('.post-row')];
+  assert.equal(cards.length, 2); assert.equal(cards[0].classList.contains('has-cover'), true);
+  assert.equal(cards[0].querySelector('.post-row-main').firstElementChild.className, 'post-cover');
+  assert.equal(cards[0].querySelector('.post-row-image').getAttribute('src'), 'https://images.example.test/cover.jpg');
+  assert.equal(cards[1].querySelector('.post-cover'), null); assert.equal(cards[1].classList.contains('has-cover'), false);
+  assert.equal(cards[0].querySelector('.stat-item').getAttribute('aria-label'), '12 次阅读');
+  assert.equal(cards[0].querySelectorAll('.stat-item svg[aria-hidden="true"]').length, 4);
+  h.close();
+});
+
+test('mobile reading actions update both toolbars, focus the real comment field and share the article link', async () => {
+  const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?post=' + ID });
+  const scrolled = [], copied = [];
+  h.window.HTMLElement.prototype.scrollIntoView = function () { scrolled.push(this); };
+  Object.defineProperty(h.window.navigator, 'clipboard', { value: { async writeText(value) { copied.push(value); } } });
+  await h.click('.reader-dock [data-action="jump-comments"]');
+  assert.equal(h.window.document.activeElement, h.get('#comment-content'));
+  assert.equal(scrolled.at(-1), h.get('#comment-content'));
+  await h.click('.reader-dock [data-reaction="like"]');
+  const likes = [...h.window.document.querySelectorAll('[data-reaction="like"]')];
+  assert.equal(likes.length, 2); likes.forEach(button => { assert.equal(button.getAttribute('aria-pressed'), 'true'); assert.match(button.getAttribute('aria-label'), /已赞/); assert.equal(button.querySelector('.action-count').textContent, '3'); });
+  await h.click('.reader-dock [data-reaction="favorite"]');
+  [...h.window.document.querySelectorAll('[data-reaction="favorite"]')].forEach(button => assert.equal(button.getAttribute('aria-pressed'), 'true'));
+  await h.click('.reader-dock [data-action="copy-link"]');
+  assert.deepEqual(copied, ['https://pocket.bornforthis.cn/blog/?post=' + ID]);
+  assert.match(h.get('#notice').textContent, /已复制/);
+  h.close();
+});
+
+test('the reading dock opens existing comments when commenting is closed and reader refresh fetches latest content', async () => {
+  let remoteTitle = post.title;
+  const h = await harness({ url: 'https://pocket.bornforthis.cn/blog/?post=' + ID, respond(request) {
+    if (request.route === '/posts/' + ID) return { post: { ...post, title: remoteTitle, commentsEnabled: false }, interaction: {}, canEdit: false };
+  } });
+  let scrolled;
+  h.window.HTMLElement.prototype.scrollIntoView = function () { scrolled = this; };
+  assert.equal(h.get('.dock-comment-text').textContent, '查看留言');
+  await h.click('.reader-dock [data-action="jump-comments"]'); assert.equal(scrolled, h.get('.comments-section'));
+  assert.equal(h.get('#comment-content'), null);
+  remoteTitle = '重新读取后的文章'; await h.click('[data-action="refresh-reader"]');
+  assert.equal(h.get('#post-title').textContent, remoteTitle);
+  assert.equal(h.calls.filter(call => call.route === '/posts/' + ID).length, 2);
+  h.close();
+});

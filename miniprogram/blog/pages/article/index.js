@@ -3,7 +3,7 @@ const blog = require('../../lib/client');
 const content = require('../../../lib/blog-content');
 Page({
   data: { post: null, htmlChunks: [], contentLoading: false, user: null, canEdit: false, interaction: { liked: false, favorited: false },
-    comments: [], commentText: '', commentPage: 0, commentTotal: 0, commentsMore: false,
+    comments: [], commentText: '', commentFocused: false, commentPage: 0, commentTotal: 0, commentsMore: false,
     loading: false, commentsLoading: false, reactionBusy: '', commentBusy: false, error: '', commentsError: '', actionError: '' },
   onLoad(options) {
     blog.enter();
@@ -14,13 +14,13 @@ Page({
       if (identity !== this._identity) {
         const clearDraft = !!this._identity; this._identity = identity; this._version += 1; this._commentsVersion += 1; this._loaded = false;
         this.setData({ user: snapshot.user || null, interaction: { liked: false, favorited: false }, comments: [], canEdit: false,
-          post: null, htmlChunks: [], contentLoading: false, loading: false, commentsLoading: false, reactionBusy: '', commentBusy: false, actionError: '', ...(clearDraft ? { commentText: '' } : {}) });
+          post: null, htmlChunks: [], contentLoading: false, loading: false, commentsLoading: false, reactionBusy: '', commentBusy: false, commentFocused: false, actionError: '', ...(clearDraft ? { commentText: '' } : {}) });
         if (this._visible) this.reload(false);
       } else if (this._alive) this.setData({ user: snapshot.user || null });
     });
   },
   onShow() { this._visible = true; this.setData({ user: blog.account.getCachedUser() }); return this.restore(); },
-  onHide() { if (this.data.contentLoading) this._loaded = false; this._visible = false; this._version += 1; this._commentsVersion += 1; this.setData({ loading: false, contentLoading: false, commentsLoading: false, reactionBusy: '', commentBusy: false }); },
+  onHide() { if (this.data.contentLoading) this._loaded = false; this._visible = false; this._version += 1; this._commentsVersion += 1; this.setData({ loading: false, contentLoading: false, commentsLoading: false, reactionBusy: '', commentBusy: false, commentFocused: false }); },
   onUnload() { this._alive = false; this._visible = false; this._version += 1; this._commentsVersion += 1; if (this._unsubscribe) this._unsubscribe(); },
   current(version) { return this._alive && this._visible && version === this._version; },
   async restore() {
@@ -121,6 +121,14 @@ Page({
     finally { if (this.current(version)) this.setData({ reactionBusy: '' }); }
   },
   inputComment(event) { this.setData({ commentText: String(event.detail.value || '').slice(0, 1000) }); },
+  blurComment() { this.setData({ commentFocused: false }); },
+  focusComments() {
+    if (!this.data.post) return;
+    const compose = this.data.post.commentsEnabled && this.data.post.status === 'published', version = this._version;
+    this.setData({ commentFocused: false });
+    wx.pageScrollTo({ selector: compose ? '#comment-compose' : '#comments-section', duration: 220,
+      success: () => { if (compose && this.current(version)) this.setData({ commentFocused: true }); } });
+  },
   async submitComment() {
     if (!this.data.post || !this.data.post.commentsEnabled || this.data.commentBusy || this.data.reactionBusy) return;
     if (!blog.account.getCachedUser()) { blog.login(); return; }

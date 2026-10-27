@@ -1,52 +1,72 @@
-/* Native adaptation of Brclio Design System · CC BY-NC-SA 4.0. */
-.article-shell { padding-top: 14rpx; }
-.article-nav { display: flex; justify-content: space-between; gap: 20rpx; border-bottom: 1rpx solid #dedbd2; }
-.article-nav .text-button { font-size: 22rpx; }
-.article-header { margin-top: 30rpx; }
-.article-category { color: #2b7fd8; font-size: 22rpx; }
-.draft-label { display: inline-block; color: #8a7040; background: #f4efd9; margin-left: 15rpx; padding: 3rpx 10rpx; font-size: 19rpx; }
-.article-title { font-size: 44rpx; line-height: 1.55; font-weight: 700; margin: 16rpx 0 24rpx; overflow-wrap: anywhere; }
-.article-author { display: flex; align-items: center; gap: 16rpx; font-size: 24rpx; color: #4a4a5a; }
-.author-avatar { width: 66rpx; height: 66rpx; border-radius: 50%; flex-shrink: 0; }
-.article-date { color: #817d76; font-size: 21rpx; margin-top: 2rpx; }
-.article-excerpt { font-size: 27rpx; color: #6b665f; margin: 26rpx 0 0; line-height: 1.85; }
-.article-tags { display: flex; flex-wrap: wrap; gap: 10rpx 22rpx; font-size: 21rpx; color: #817d76; margin-top: 20rpx; }
-.article-cover { display: block; width: 100%; margin: 32rpx 0 20rpx; border-radius: 8rpx; background: #faf6eb; }
-.article-content { display: block; font-size: 30rpx; line-height: 1.95; color: #33333f; overflow-wrap: anywhere; padding-top: 18rpx; }
-.reading-end { text-align: center; padding: 45rpx 0 32rpx; color: #817d76; font-size: 22rpx; }
-.reading-end > text { display: block; color: #2b7fd8; font-size: 30rpx; letter-spacing: 13rpx; margin-bottom: 14rpx; }
-.article-actions { display: flex; gap: 16rpx; padding: 22rpx 0; border-top: 1rpx solid #dedbd2; border-bottom: 1rpx solid #dedbd2; }
-.reaction { flex: 1; background: #faf6eb; padding: 16rpx 18rpx; border-radius: 6rpx; color: #5d5a52; font-size: 25rpx; display: flex; justify-content: center; align-items: center; gap: 12rpx; }
-.reaction text { font-size: 23rpx; }
-.reaction-active { color: #2b7fd8; background: #eaf1f6; }
-.favorite-active { color: #736126; background: #f6eab3; }
-.share-button { background: transparent; padding: 16rpx 12rpx; color: #2b7fd8; font-size: 24rpx; }
-button[disabled] { opacity: .55; }
-.action-error { color: #a13b49; padding: 16rpx 0; font-size: 23rpx; }
-.admin-link { font-size: 23rpx; padding: 16rpx 0; background: transparent; color: #2b7fd8; text-align: left; }
-.comments-section { padding-top: 36rpx; }
-.comments-title { font-size: 34rpx; font-weight: 700; }
-.comments-title text { color: #817d76; font-family: -apple-system, 'PingFang SC', sans-serif; font-size: 24rpx; font-weight: 400; margin-left: 14rpx; }
-.comments-intro { font-size: 22rpx; color: #817d76; line-height: 1.8; margin-top: 8rpx; }
-.comment-compose { padding: 20rpx; border: 1rpx solid #dedbd2; border-radius: 8rpx; margin-top: 24rpx; background: #faf6eb; }
-.comment-input { display: block; width: 100%; min-height: 140rpx; font-size: 26rpx; line-height: 1.85; }
-.compose-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 18rpx; gap: 15rpx; }
-.compose-bottom > text { color: #817d76; font-size: 20rpx; }
-.comment-submit { background: #2b7fd8; color: #fefcf6; padding: 12rpx 24rpx; border-radius: 6rpx; font-size: 24rpx; display: flex; align-items: center; }
-.comments-closed { font-size: 23rpx; color: #817d76; background: #faf6eb; padding: 22rpx; margin-top: 24rpx; border-radius: 6rpx; }
-.comment { display: flex; gap: 18rpx; padding: 28rpx 0; border-bottom: 1rpx solid #dedbd2; }
-.comment-avatar { width: 58rpx; height: 58rpx; border-radius: 50%; flex-shrink: 0; background: #f4efd9; }
-.comment-initial { display: flex; align-items: center; justify-content: center; color: #817550; font-size: 25rpx; }
-.comment-body { flex: 1; min-width: 0; }
-.comment-byline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10rpx; }
-.comment-author { font-size: 24rpx; color: #4a4a5a; }
-.comment-date { font-size: 19rpx; color: #817d76; }
-.comment-content { font-size: 26rpx; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.85; margin-top: 10rpx; }
-.delete-comment { color: #a13b49; background: transparent; font-size: 21rpx; padding: 7rpx 0; min-height: 64rpx; text-align: left; margin-top: 5rpx; }
-.state-message { font-size: 24rpx; color: #817d76; text-align: center; padding: 32rpx 0; }
-.error-message { color: #a13b49; }
-.error-message .secondary-button { margin: 20rpx auto 0; max-width: 390rpx; }
-.no-comments { color: #817d76; font-size: 23rpx; padding: 32rpx 0; }
-.blog-signature { font-size: 20rpx; color: #817d76; padding-top: 36rpx; }
-@media (max-width: 350px) { .article-title { font-size: 40rpx; } .article-actions { gap: 10rpx; } .reaction { padding-left: 10rpx; padding-right: 10rpx; } .share-button { padding-left: 8rpx; padding-right: 8rpx; } }
-@media (min-width: 900px) { .article-title { font-size: 49rpx; } .article-content { font-size: 31rpx; } }
+/* Brclio Design System app and reading layout. CC BY-NC-SA 4.0. */
+page { background: #fefcf6; }
+.article-shell { max-width: 920rpx; padding: 0 38rpx 156rpx; padding-bottom: calc(156rpx + env(safe-area-inset-bottom)); }
+.article-shell button { box-sizing: border-box; display: flex; flex: none; align-items: center; justify-content: center; width: auto; min-width: 0; max-width: none; height: auto; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font-size: inherit; font-weight: 400; line-height: 1.5; overflow: visible; }
+.article-shell button::after { border: 0; }
+.article-shell button[disabled] { opacity: .45; }
+.article-shell .reader-pressed { opacity: .6; }
+.article-nav { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; border-bottom: 1rpx solid #e9e7de; }
+.article-shell .article-nav-link { min-height: 88rpx; color: #6b7c73; font-size: 23rpx; }
+.article-shell .article-copy { color: #929b8e; font-size: 21rpx; }
+.article-header { padding-top: 32rpx; }
+.reader-author { display: flex; align-items: center; gap: 16rpx; }
+.reader-avatar { display: block; flex: none; width: 72rpx; height: 72rpx; border-radius: 50%; background: #eaf0ed; }
+.reader-avatar-fallback { display: flex; align-items: center; justify-content: center; color: #2b7fd8; font-size: 52rpx; font-style: italic; line-height: 1; letter-spacing: -4rpx; }
+.reader-author-info { flex: 1; min-width: 0; }
+.reader-author-name { color: #4b554d; font-size: 25rpx; font-weight: 500; line-height: 1.5; }
+.reader-date { display: flex; flex-wrap: wrap; gap: 10rpx; color: #70776b; font-size: 20rpx; line-height: 1.5; margin-top: 4rpx; }
+.reader-category { flex: none; max-width: 180rpx; color: #2b7fd8; font-size: 21rpx; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reader-draft { display: inline-block; margin-top: 22rpx; padding: 6rpx 14rpx; color: #95834b; background: #f5efd8; font-size: 21rpx; border-radius: 5rpx; }
+.reader-title { font-size: 46rpx; line-height: 1.55; font-weight: 700; margin: 30rpx 0 22rpx; color: #30332f; overflow-wrap: anywhere; }
+.reader-excerpt { padding: 0 0 8rpx; font-size: 27rpx; line-height: 1.85; color: #6b7267; }
+.reader-tags { display: flex; flex-wrap: wrap; gap: 12rpx 22rpx; margin-top: 18rpx; color: #70776b; font-size: 21rpx; }
+.reader-cover { display: block; width: 100%; margin: 32rpx 0 18rpx; border-radius: 12rpx; background: #f1efe5; }
+.reader-content { display: block; width: 100%; padding-top: 20rpx; font-size: 31rpx; line-height: 1.95; color: #41463d; overflow-wrap: anywhere; }
+.reader-content rich-text { display: block; width: 100%; }
+.reader-end { display: flex; align-items: center; justify-content: center; gap: 24rpx; margin: 52rpx 0 24rpx; color: #b0b7a7; font-size: 21rpx; }
+.reader-end-line { width: 70rpx; height: 1rpx; background: #e4e7db; }
+.reader-footnote { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding-bottom: 20rpx; color: #70776b; font-size: 21rpx; }
+.article-shell .reader-edit { min-height: 88rpx; font-size: 22rpx; color: #2b7fd8; }
+.reader-action-error { padding: 16rpx 0; color: #a64552; font-size: 23rpx; }
+.reader-comments { padding-top: 34rpx; margin-top: 14rpx; border-top: 1rpx solid #e8e8dd; }
+.reader-comments-heading { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin-bottom: 24rpx; }
+.reader-comments-heading > view:first-child { font-size: 29rpx; font-weight: 600; color: #4b5848; }
+.reader-comments-heading text { margin-left: 12rpx; font-size: 22rpx; font-weight: 400; color: #a1aa95; }
+.comments-heading-note { font-size: 19rpx; color: #a6ad9d; }
+.reader-compose { padding: 24rpx 24rpx 16rpx; margin-bottom: 26rpx; border-radius: 14rpx; background: #f1f2e9; }
+.reader-comment-input { display: block; width: 100%; min-height: 118rpx; font-size: 26rpx; line-height: 1.85; color: #485141; }
+.comment-placeholder { color: #a4ad98; }
+.reader-compose-footer { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; }
+.reader-compose-footer > text { font-size: 19rpx; color: #a2ac95; }
+.article-shell .reader-comment-submit { min-height: 72rpx; padding: 0 22rpx; border-radius: 10rpx; background: #2b7fd8; color: #fefcf6; font-size: 23rpx; }
+.reader-comments-closed { padding: 24rpx 0; font-size: 23rpx; color: #929d87; line-height: 1.8; }
+.reader-comment { display: flex; align-items: flex-start; gap: 18rpx; padding: 26rpx 0; border-bottom: 1rpx solid #eeeee4; }
+.comment-face { display: block; flex: none; width: 60rpx; height: 60rpx; border-radius: 50%; background: #eaf0e1; }
+.comment-face-fallback { display: flex; align-items: center; justify-content: center; font-size: 24rpx; color: #8d9e7e; }
+.comment-main { flex: 1; min-width: 0; }
+.comment-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20rpx; }
+.comment-person { font-size: 24rpx; line-height: 1.5; color: #66725d; font-weight: 500; }
+.comment-time { font-size: 19rpx; line-height: 1.5; margin-top: 4rpx; color: #70776b; }
+.article-shell .comment-delete { align-self: flex-start; min-width: 88rpx; min-height: 88rpx; margin: -16rpx -12rpx -10rpx 0; color: #b16e73; font-size: 20rpx; }
+.comment-text { margin-top: 14rpx; font-size: 27rpx; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; color: #515b48; }
+.reader-state { padding: 38rpx 16rpx; text-align: center; color: #929d87; font-size: 23rpx; line-height: 1.8; }
+.reader-error { color: #a64552; }
+.article-shell .reader-retry { min-height: 88rpx; padding: 0 24rpx; margin: 14rpx auto 0; color: #2b7fd8; font-size: 24rpx; }
+.article-shell .reader-comments-more { width: 100%; min-height: 88rpx; margin-top: 16rpx; color: #829173; font-size: 23rpx; }
+.reader-no-comments { padding: 36rpx 0; color: #a2ac95; font-size: 22rpx; text-align: center; line-height: 1.8; }
+.reader-signature { padding-top: 44rpx; font-family: Georgia, serif; color: #a5ae99; font-size: 20rpx; font-style: italic; text-align: center; }
+.reader-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; align-items: center; gap: 12rpx; max-width: 920rpx; margin: 0 auto; padding: 12rpx 28rpx 14rpx; padding-bottom: calc(14rpx + env(safe-area-inset-bottom)); border-top: 1rpx solid #e8e8dd; background: #fefcf6; }
+.article-shell .dock-compose { flex: 1; width: 0; min-width: 0; min-height: 80rpx; justify-content: flex-start; gap: 12rpx; padding: 0 22rpx; border-radius: 40rpx; background: #eff1e8; color: #626b5d; font-size: 23rpx; overflow: hidden; white-space: nowrap; }
+.dock-compose > text { overflow: hidden; text-overflow: ellipsis; }
+.dock-compose .dock-comment-count { flex: none; margin-left: auto; color: #626b5d; font-size: 20rpx; }
+.dock-comment-icon { position: relative; flex: none; width: 24rpx; height: 21rpx; border: 2rpx solid #a0aa92; border-radius: 6rpx; }
+.dock-comment-icon::after { content: ''; position: absolute; left: 4rpx; bottom: -5rpx; width: 7rpx; height: 7rpx; border-left: 2rpx solid #a0aa92; background: #eff1e8; transform: skewY(-35deg); }
+.article-shell .dock-action { flex: none; flex-direction: column; justify-content: center; gap: 0; width: 78rpx; min-height: 88rpx; color: #70776b; }
+.dock-symbol { display: block; font-size: 40rpx; line-height: 1; font-weight: 400; }
+.dock-share { font-size: 39rpx; }
+.dock-heart { font-size: 43rpx; line-height: .95; }
+.dock-label { display: block; margin-top: 6rpx; font-size: 18rpx; line-height: 1.2; }
+.article-shell .dock-favorite-active { color: #b69b4f; }
+.article-shell .dock-like-active { color: #e84a5f; }
+@media (max-width: 350px) { .article-shell { padding-left: 30rpx; padding-right: 30rpx; } .reader-title { font-size: 43rpx; } .reader-content { font-size: 30rpx; } .reader-category { max-width: 140rpx; } .comments-heading-note { display: none; } .reader-dock { padding-left: 20rpx; padding-right: 20rpx; gap: 6rpx; } .article-shell .dock-action { width: 72rpx; } .article-shell .dock-compose { padding-left: 18rpx; padding-right: 18rpx; font-size: 22rpx; } }
+@media (min-width: 900px) { .article-shell { max-width: 760px; } .reader-dock { max-width: 760px; } }

@@ -16,16 +16,20 @@
 <body>
   <a class="skip-link" href="#blog-main">跳到主要内容</a>
   <header class="app-header">
-    <a class="brand" href="/" aria-label="Brclio 悦创首页"><span class="brand-mark" aria-hidden="true">b.</span><span>Brclio <small>悦创 / JOURNAL</small></span></a>
-    <nav class="header-actions" aria-label="主要导航"><a href="/">悦创首页</a><a href="/blog/" aria-current="page">博客</a><a id="account-entry" href="/?category=mine">登录 / 注册 ↗</a></nav>
+    <a class="brand" href="/" aria-label="Brclio 悦创首页"><span class="brand-mark" aria-hidden="true">b.</span><span>Brclio <small>悦创 · 博客</small></span></a>
+    <nav class="header-actions" aria-label="主要导航"><a href="/" class="home-entry">悦创首页</a><a id="account-entry" href="/?category=mine">登录 / 注册 ↗</a></nav>
   </header>
   <div class="app-shell">
-    <nav class="tab-bar" aria-label="博客导航"><a class="tab active" href="/blog/" data-view="list">所有文章</a><a class="tab" href="/blog/?view=saved" data-view="saved">我的收藏</a><a class="tab" href="/blog/?view=admin" data-view="admin" hidden>文章管理</a><a class="tab write-entry" href="/blog/?view=write" data-view="write" hidden>写篇文章 ↗</a><button id="refresh-blog" class="text-button refresh-entry" type="button" title="重新读取最新文章与留言">刷新内容 ↻</button></nav>
+    <section id="channel-profile" class="channel-profile" aria-labelledby="list-title">
+      <img class="channel-avatar" src="/projects/ready-go-duel/assets/avatar.png" alt="Brclio 的头像" width="64" height="64">
+      <div class="channel-intro"><p class="profile-caption">BRCLIO JOURNAL</p><h1 id="list-title">Brclio 的文字</h1><p id="list-description">写代码，教编程，做产品。记录学习与生活。</p></div>
+      <span class="channel-signature" aria-hidden="true">Stay curious.</span>
+    </section>
+    <nav class="tab-bar" aria-label="博客导航"><a class="tab active" href="/blog/" data-view="list">全部文章</a><a class="tab" href="/blog/?view=saved" data-view="saved">我的收藏</a><a class="tab" href="/blog/?view=admin" data-view="admin" hidden>文章管理</a><a class="tab write-entry" href="/blog/?view=write" data-view="write" hidden>写篇文章</a><button id="refresh-blog" class="text-button refresh-entry" type="button" title="重新读取最新文章与留言" aria-label="刷新内容"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-5L3 9m0-6v6h6M4 13a8 8 0 0 0 14 5l3-3m0 6v-6h-6"/></svg><span>刷新</span></button></nav>
     <main id="blog-main" class="app-content" tabindex="-1">
       <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
       <section id="blog-list" aria-labelledby="list-title">
-        <div class="page-heading"><div><p class="eyebrow">NOTES ON LEARNING & LIVING</p><h1 id="list-title">留一点文字，给好奇心。</h1><p class="intro-description" id="list-description">写代码，教编程，做产品。也记下生活里的小发现。</p></div><span class="heading-mark" aria-hidden="true">✳</span></div>
-        <div class="listing-layout"><aside class="collection-aside"><form id="search-form" role="search"><label for="search">寻找一篇文章</label><div class="search-row"><input id="search" name="q" type="search" maxlength="100" placeholder="标题、摘要或标签"><button type="submit" aria-label="搜索文章">↗</button></div></form><h2 class="filter-title">按分类阅读</h2><div id="categories" class="category-list"></div><h2 class="filter-title">文字的线索</h2><div id="tags" class="tag-list"></div><p class="aside-note">值得重读的，<br>就先收藏起来。</p></aside><div class="listing-content"><div class="collection-toolbar"><p id="result-count" aria-live="polite"></p><button id="clear-filters" class="text-button" type="button" hidden>清除筛选</button></div><div id="posts" class="post-list" aria-live="polite"></div><div id="pagination" class="pagination" aria-label="文章翻页"></div></div></div>
+        <div class="listing-layout"><aside class="collection-aside"><form id="search-form" role="search"><label for="search" class="sr-only">搜索文章</label><div class="search-row"><button type="submit" aria-label="搜索文章"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button><input id="search" name="q" type="search" maxlength="100" placeholder="搜索文章、标签"></div></form><h2 class="filter-title">文章分类</h2><div id="categories" class="category-list"></div><h2 class="filter-title tag-heading">标签</h2><div id="tags" class="tag-list"></div><p class="aside-note">写下所学，<br>也留住好奇。</p></aside><div class="listing-content"><div class="collection-toolbar"><p id="result-count" aria-live="polite"></p><button id="clear-filters" class="text-button" type="button" hidden>清除筛选</button></div><div id="posts" class="post-list" aria-live="polite"></div><div id="pagination" class="pagination" aria-label="文章翻页"></div></div></div>
       </section>
       <section id="blog-reader" hidden aria-labelledby="post-title"></section>
       <section id="blog-editor" hidden aria-labelledby="editor-title"></section>

@@ -7,6 +7,17 @@
   const number = value => new Intl.NumberFormat('zh-CN').format(Math.max(0, Number(value) || 0));
   const link = values => '/blog/' + (new URLSearchParams(values).toString() ? '?' + new URLSearchParams(values).toString() : '');
   const safeImage = value => { try { const url = new URL(value, window.location.origin); return value && url.protocol === 'https:' && !url.username && !url.password ? url.href : ''; } catch (_) { return ''; } };
+  const icons = {
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+    heart: '<path d="m12 20-8.1-7.7a5.1 5.1 0 0 1 7.2-7.2l.9.9.9-.9a5.1 5.1 0 0 1 7.2 7.2Z"/>',
+    bookmark: '<path d="M6 3h12v18l-6-4-6 4Z"/>',
+    message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-1 1v-9.5a9 9 0 1 1 18 0Z"/><path d="M7 10h10M7 14h6"/>',
+    share: '<path d="M12 16V3m-5 5 5-5 5 5M5 13v7h14v-7"/>',
+    refresh: '<path d="M20 11a8 8 0 0 0-14-5L3 9m0-6v6h6M4 13a8 8 0 0 0 14 5l3-3m0 6v-6h-6"/>',
+    back: '<path d="m14 5-7 7 7 7"/>',
+    edit: '<path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m13 6 5 5"/>'
+  };
+  const icon = name => '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + (icons[name] || '') + '</svg>';
   const fields = ['title', 'excerpt', 'category', 'tags', 'coverUrl', 'content'];
   let runtime = null, user = null, canWrite = false, generation = 0, stopped = false, busy = false;
   let currentPost = null, interaction = { liked: false, favorited: false }, commentPage = 1, commentsRequest = 0, readerMutationPending = false;
@@ -91,16 +102,18 @@
     for (const name of ['q', 'category', 'tag']) if (state[name]) values[name] = state[name];
     return values;
   }
-  function counts(value = {}) { return '<span>' + number(value.views) + ' 次阅读</span><span>' + number(value.likes) + ' 赞</span><span>' + number(value.favorites) + ' 收藏</span><span>' + number(value.comments) + ' 评论</span>'; }
+  function counts(value = {}) {
+    return [['eye', 'views', '次阅读'], ['message', 'comments', '评论'], ['heart', 'likes', '赞'], ['bookmark', 'favorites', '收藏']].map(([name, field, label]) => '<span class="stat-item" aria-label="' + number(value[field]) + ' ' + label + '">' + icon(name) + '<span aria-hidden="true">' + number(value[field]) + '<span class="stat-label"> ' + label + '</span></span></span>').join('');
+  }
   function postRow(post, admin = false) {
     const cover = safeImage(post.coverUrl), url = link({ post: post.id });
-    return '<article class="post-row"><div class="post-row-body"><div class="post-topline"><span class="category-label">' + escape(post.category || '未分类') + '</span><span>' + escape(date(post.publishedAt || post.updatedAt)) + '</span>' + (admin ? '<span class="status-badge">' + (post.status === 'published' ? '已发布' : '草稿') + '</span>' : '') + '</div><h2><a href="' + escape(url) + '" data-post="' + escape(post.id) + '">' + escape(post.title || '未命名文章') + '</a></h2><p class="post-excerpt">' + escape(post.excerpt || '') + '</p><div class="post-meta"><span>' + number(post.readingMinutes || 1) + ' 分钟阅读</span>' + counts(post.counts) + '</div>' + (admin ? '<div class="post-row-actions"><a class="text-button" data-edit="' + escape(post.id) + '" href="' + escape(link({ view: 'write', edit: post.id })) + '">编辑文章 ↗</a></div>' : '') + '</div>' + (cover ? '<a href="' + escape(url) + '" data-post="' + escape(post.id) + '" tabindex="-1" aria-hidden="true"><img class="post-row-image" src="' + escape(cover) + '" loading="lazy" referrerpolicy="no-referrer" alt=""></a>' : '') + '</article>';
+    return '<article class="post-row' + (cover ? ' has-cover' : '') + '"><div class="post-row-main">' + (cover ? '<a class="post-cover" href="' + escape(url) + '" data-post="' + escape(post.id) + '" tabindex="-1" aria-hidden="true"><img class="post-row-image" src="' + escape(cover) + '" loading="lazy" referrerpolicy="no-referrer" alt=""></a>' : '') + '<div class="post-row-body"><div class="post-topline"><span class="category-label">' + escape(post.category || '未分类') + '</span>' + (admin ? '<span class="status-badge">' + (post.status === 'published' ? '已发布' : '草稿') + '</span>' : '') + '</div><h2><a href="' + escape(url) + '" data-post="' + escape(post.id) + '">' + escape(post.title || '未命名文章') + '</a></h2>' + (post.excerpt ? '<p class="post-excerpt">' + escape(post.excerpt) + '</p>' : '') + '</div></div><div class="post-meta"><div class="post-byline"><span>' + escape(post.author?.displayName || 'Brclio') + '</span><time>' + escape(date(post.publishedAt || post.updatedAt)) + '</time><span class="reading-time">' + number(post.readingMinutes || 1) + ' 分钟阅读</span></div><div class="post-statistics">' + counts(post.counts) + '</div></div>' + (admin ? '<div class="post-row-actions"><a class="text-button" data-edit="' + escape(post.id) + '" href="' + escape(link({ view: 'write', edit: post.id })) + '">' + icon('edit') + '编辑文章</a></div>' : '') + '</article>';
   }
   async function loadList(epoch) {
     const mode = view(), admin = mode === 'admin', saved = mode === 'saved';
     title(admin ? '文章管理' : saved ? '我的收藏' : '博客');
-    $('#list-title').textContent = admin ? '把想法，写成一篇文章。' : saved ? '那些，想再读一次的文字。' : '留一点文字，给好奇心。';
-    $('#list-description').textContent = admin ? '草稿留给自己，发布之后，网页与小程序都能读到。' : saved ? '你的收藏跟随账号，在网页与小程序之间同步。' : '写代码，教编程，做产品。也记下生活里的小发现。';
+    $('#list-title').textContent = admin ? '文章管理' : saved ? '收藏的文字' : 'Brclio 的文字';
+    $('#list-description').textContent = admin ? '从草稿开始，让想法慢慢成篇。' : saved ? '喜欢的文章，在这里再读一次。' : '写代码，教编程，做产品。记录学习与生活。';
     $('#search').value = state.q;
     $('#clear-filters').hidden = !state.q && !state.category && !state.tag;
     $('#posts').innerHTML = empty('正在找来文字…', '稍等一下，文章很快就到。'); $('#pagination').replaceChildren();
@@ -127,11 +140,19 @@
     const key = 'brclio.blog-visitor.v1';
     try { let id = window.localStorage.getItem(key); if (!/^[a-f0-9]{32}$/.test(id || '')) { id = Array.from(window.crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join(''); window.localStorage.setItem(key, id); } return id; } catch (_) { return Array.from(window.crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join(''); }
   }
+  function authorAvatar(author, className) {
+    const avatar = safeImage(author?.avatarUrl), initial = Array.from(author?.displayName || '读')[0];
+    return avatar ? '<img class="' + className + '" alt="" src="' + escape(avatar) + '" referrerpolicy="no-referrer">' : '<span class="' + className + ' author-initial" aria-hidden="true">' + escape(initial) + '</span>';
+  }
+  function commentRow(comment) {
+    const name = comment.author?.displayName || '悦创读者', isAuthor = !!comment.author?.id && comment.author.id === currentPost?.author?.id;
+    return '<article class="comment">' + authorAvatar(comment.author, 'comment-avatar') + '<div class="comment-main"><div class="comment-heading"><div class="comment-author"><div><strong>' + escape(name) + '</strong>' + (isAuthor ? '<span class="comment-author-badge">作者</span>' : '') + '</div><time>' + escape(date(comment.createdAt)) + '</time></div>' + (comment.canDelete ? '<button type="button" class="text-button" data-delete-comment="' + escape(comment.id) + '">删除</button>' : '') + '</div><p class="comment-body">' + escape(comment.content) + '</p></div></article>';
+  }
   function renderReader(result) {
     const post = result.post; currentPost = post; interaction = result.interaction || { liked: false, favorited: false };
     title(post.title);
-    const cover = safeImage(post.coverUrl), avatar = safeImage(post.author?.avatarUrl);
-    $('#blog-reader').innerHTML = '<div class="reader-nav"><a class="text-button" href="' + escape(link(listReturn?.values || {})) + '" data-action="back-list">← 回到文章列表</a><div>' + (result.canEdit ? '<a class="text-button" href="' + escape(link({ view: 'write', edit: post.id })) + '" data-edit="' + escape(post.id) + '">编辑文章 ↗</a>' : '') + '</div></div><div class="reader-wrap"><div><article><header class="article-header"><div class="post-topline"><span class="category-label">' + escape(post.category || '未分类') + '</span>' + (post.status === 'draft' ? '<span class="status-badge">草稿 · 仅管理员可见</span>' : '') + '<span>' + number(post.readingMinutes || 1) + ' 分钟阅读</span></div><h1 id="post-title">' + escape(post.title) + '</h1><div class="author-line">' + (avatar ? '<img class="author-avatar" alt="" src="' + escape(avatar) + '">' : '') + '<span>' + escape(post.author?.displayName || 'Brclio') + '</span><time>' + escape(date(post.publishedAt || post.updatedAt)) + '</time></div>' + (post.excerpt ? '<p class="article-description">' + escape(post.excerpt) + '</p>' : '') + '</header>' + (cover ? '<img class="article-cover" alt="文章封面" src="' + escape(cover) + '" referrerpolicy="no-referrer">' : '') + '<div class="article-content" id="article-content"></div><div class="tag-list">' + (post.tags || []).map(tag => '<a class="tag" href="' + escape(link({ tag })) + '" data-tag="' + escape(tag) + '">#' + escape(tag) + '</a>').join('') + '</div><div class="reader-end"><div class="reaction-actions"><button type="button" class="secondary" data-reaction="like" aria-pressed="false"></button><button type="button" class="secondary" data-reaction="favorite" aria-pressed="false"></button><button type="button" class="secondary" data-action="copy-link">复制链接 ↗</button></div><p class="reading-count" id="view-count"></p></div></article><section class="comments-section" aria-labelledby="comments-title"><div class="section-heading"><h2 id="comments-title">一起聊聊</h2><span class="small-note" id="comments-count"></span></div><div id="comment-compose"></div><div id="comments" aria-live="polite"></div><div class="comment-pagination" id="comment-pagination"></div></section></div><aside class="reader-aside"><h2>这篇文章的路标</h2><nav id="toc" class="toc" aria-label="文章目录"></nav></aside></div>';
+    const cover = safeImage(post.coverUrl);
+    $('#blog-reader').innerHTML = '<div class="reader-nav"><a class="text-button reader-back" href="' + escape(link(listReturn?.values || {})) + '" data-action="back-list">' + icon('back') + '文章列表</a><div class="reader-nav-tools"><button class="text-button icon-button" type="button" data-action="refresh-reader" aria-label="刷新文章与留言" title="刷新文章与留言">' + icon('refresh') + '</button>' + (result.canEdit ? '<a class="text-button" href="' + escape(link({ view: 'write', edit: post.id })) + '" data-edit="' + escape(post.id) + '">' + icon('edit') + '编辑</a>' : '') + '</div></div><div class="reader-wrap"><div><article><header class="article-header"><div class="post-topline"><span class="category-label">' + escape(post.category || '未分类') + '</span>' + (post.status === 'draft' ? '<span class="status-badge">草稿 · 仅管理员可见</span>' : '') + '<span>' + number(post.readingMinutes || 1) + ' 分钟阅读</span></div><div class="author-line">' + authorAvatar(post.author, 'author-avatar') + '<div class="author-detail"><span>' + escape(post.author?.displayName || 'Brclio') + '</span><time>' + escape(date(post.publishedAt || post.updatedAt)) + '</time></div></div><h1 id="post-title">' + escape(post.title) + '</h1>' + (post.excerpt ? '<p class="article-description">' + escape(post.excerpt) + '</p>' : '') + '</header>' + (cover ? '<img class="article-cover" alt="文章封面" src="' + escape(cover) + '" referrerpolicy="no-referrer">' : '') + '<div class="article-content" id="article-content"></div><div class="tag-list">' + (post.tags || []).map(tag => '<a class="tag" href="' + escape(link({ tag })) + '" data-tag="' + escape(tag) + '">#' + escape(tag) + '</a>').join('') + '</div><div class="reader-end"><div class="reaction-actions"><button type="button" class="secondary" data-reaction="like" aria-pressed="false"></button><button type="button" class="secondary" data-reaction="favorite" aria-pressed="false"></button><button type="button" class="secondary" data-action="copy-link">' + icon('share') + '分享</button></div><p class="reading-count" id="view-count"></p></div></article><section class="comments-section" aria-labelledby="comments-title"><div class="section-heading"><h2 id="comments-title">评论</h2><span class="small-note" id="comments-count"></span></div><div id="comment-compose"></div><div id="comments" aria-live="polite"></div><div class="comment-pagination" id="comment-pagination"></div></section></div><aside class="reader-aside"><h2>这篇文章的路标</h2><nav id="toc" class="toc" aria-label="文章目录"></nav></aside></div><nav class="reader-dock" aria-label="文章互动"><button class="dock-comment" type="button" data-action="jump-comments">' + icon('message') + '<span class="dock-comment-text">写下你的想法…</span><span id="dock-comments-count" class="dock-comment-count"></span></button><button class="dock-action" type="button" data-reaction="like" aria-pressed="false"></button><button class="dock-action" type="button" data-reaction="favorite" aria-pressed="false"></button><button class="dock-action" type="button" data-action="copy-link" aria-label="分享文章链接">' + icon('share') + '<span class="action-label">分享</span></button></nav>';
     $('#article-content').innerHTML = window.BrclioBlogContent.renderMarkdown(post.content || '');
     $('#article-content').querySelectorAll('h1,h2,h3').forEach((heading, index) => { heading.id = 'section-' + index; const anchor = document.createElement('a'); anchor.href = '#' + heading.id; anchor.textContent = heading.textContent; $('#toc').appendChild(anchor); });
     renderCounts();
@@ -139,12 +160,17 @@
   }
   function renderCounts() {
     if (!currentPost || !$('#view-count')) return;
-    $('[data-reaction="like"]').textContent = (interaction.liked ? '已赞' : '点赞') + ' · ' + number(currentPost.counts?.likes);
-    $('[data-reaction="like"]').setAttribute('aria-pressed', String(!!interaction.liked));
-    $('[data-reaction="favorite"]').textContent = (interaction.favorited ? '已收藏' : '收藏') + ' · ' + number(currentPost.counts?.favorites);
-    $('[data-reaction="favorite"]').setAttribute('aria-pressed', String(!!interaction.favorited));
+    for (const [kind, field, name, mark] of [['like', 'liked', '点赞', 'heart'], ['favorite', 'favorited', '收藏', 'bookmark']]) {
+      const active = !!interaction[field], label = active ? (kind === 'like' ? '已赞' : '已收藏') : name, value = number(currentPost.counts?.[kind === 'like' ? 'likes' : 'favorites']);
+      document.querySelectorAll('[data-reaction="' + kind + '"]').forEach(button => {
+        button.innerHTML = icon(mark) + '<span class="action-label">' + label + '</span><span class="action-count">' + value + '</span>';
+        button.setAttribute('aria-pressed', String(active)); button.setAttribute('aria-label', label + '，' + value);
+      });
+    }
     $('#view-count').textContent = number(currentPost.counts?.views) + ' 次阅读';
     $('#comments-count').textContent = number(currentPost.counts?.comments) + ' 条留言';
+    $('#dock-comments-count').textContent = number(currentPost.counts?.comments);
+    $('.dock-comment-text').textContent = currentPost.commentsEnabled === false ? '查看留言' : user ? '写下你的想法…' : '看看大家怎么说';
   }
   async function loadReader(id, epoch) {
     $('#blog-reader').innerHTML = empty('翻开这一篇…', '正在加载文章与留言。');
@@ -160,7 +186,7 @@
     try {
       const result = await api('/posts/' + encodeURIComponent(id) + '/comments?page=' + commentPage + '&pageSize=20', { fresh }, epoch);
       if (request !== commentsRequest || currentPost?.id !== id) return;
-      $('#comments').innerHTML = result.comments?.length ? result.comments.map(comment => '<article class="comment"><div class="comment-heading"><strong>' + escape(comment.author?.displayName || '悦创读者') + '</strong><time>' + escape(date(comment.createdAt)) + '</time>' + (comment.canDelete ? '<button type="button" class="text-button" data-delete-comment="' + escape(comment.id) + '">删除</button>' : '') + '</div><p class="comment-body">' + escape(comment.content) + '</p></article>').join('') : '<p class="small-note">还没有留言，第一份想法也许来自你。</p>';
+      $('#comments').innerHTML = result.comments?.length ? result.comments.map(commentRow).join('') : '<p class="small-note">还没有留言，第一份想法也许来自你。</p>';
       const pages = Math.max(1, Math.ceil((result.total || 0) / (result.pageSize || 20))); commentPage = result.page || commentPage;
       setReaderMutationPending(readerMutationPending);
       $('#comment-pagination').innerHTML = pages > 1 ? '<button class="text-button" data-comment-page="' + (commentPage - 1) + '" ' + (commentPage === 1 ? 'disabled' : '') + '>← 上一页</button><span>' + commentPage + ' / ' + pages + '</span><button class="text-button" data-comment-page="' + (commentPage + 1) + '" ' + (commentPage === pages ? 'disabled' : '') + '>下一页 →</button>' : '';
@@ -227,6 +253,8 @@
     closeConfirmation();
     const epoch = ++generation; commentsRequest += 1; notice(); currentPost = null; editor = null; commentPage = 1; readerMutationPending = false;
     const mode = view(); setTab(mode);
+    document.body.dataset.view = mode;
+    $('#channel-profile').hidden = !['list', 'saved', 'admin'].includes(mode);
     $('#refresh-blog').hidden = mode === 'write';
     $('#blog-list').hidden = !['list', 'saved', 'admin'].includes(mode); $('#blog-reader').hidden = mode !== 'post'; $('#blog-editor').hidden = mode !== 'write';
     if (mode === 'post') return loadReader(query.get('post'), epoch);
@@ -292,6 +320,12 @@
     switch (target.dataset.action) {
       case 'retry': cache?.reset(); void route(); break;
       case 'retry-comments': void loadComments(generation, true); break;
+      case 'refresh-reader': $('#refresh-blog').click(); break;
+      case 'jump-comments': {
+        const field = $('#comment-content'), section = $('.comments-section'), reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        (field || section)?.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+        if (field && !field.disabled) field.focus({ preventScroll: true }); break;
+      }
       case 'back-list': event.preventDefault(); navigate(listReturn?.values || {}, { scroll: listReturn?.scroll || 0 }); break;
       case 'back-admin': navigate({ view: 'admin' }); break;
       case 'copy-link':
@@ -320,9 +354,9 @@
   $('#clear-filters').addEventListener('click', () => navigate(view() === 'list' ? {} : { view: view() }));
   $('#refresh-blog').addEventListener('click', async () => {
     if (refreshing || busy || readerMutationPending || pendingConfirmation || view() === 'write') return;
-    refreshing = true; $('#refresh-blog').disabled = true; $('#refresh-blog').textContent = '正在刷新…'; cache?.reset();
+    refreshing = true; $('#refresh-blog').disabled = true; $('#refresh-blog').innerHTML = icon('refresh') + '<span>刷新中</span>'; cache?.reset();
     try { await initialize(); }
-    finally { refreshing = false; $('#refresh-blog').disabled = false; $('#refresh-blog').textContent = '刷新内容 ↻'; }
+    finally { refreshing = false; $('#refresh-blog').disabled = false; $('#refresh-blog').innerHTML = icon('refresh') + '<span>刷新</span>'; }
   });
   document.addEventListener('input', event => { if (event.target.closest('#editor-form')) inputChanged(); });
   document.addEventListener('change', event => { if (event.target.closest('#editor-form')) inputChanged(); });
