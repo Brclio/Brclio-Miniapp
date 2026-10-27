@@ -1,12 +1,12 @@
 # Brclio 悦创
 
-`0.1.7` 微信普通小程序，提供「摄影 / 放松 / 悦学 / 育儿 / 我的」五个原生入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
+`0.1.8` 微信普通小程序，提供「摄影 / 放松 / 悦学 / 育儿 / 我的」五个原生入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
 
 摄影、挑战与学习界面均使用小程序原生代码，不加载外部网页。摄影包含正确来源 [FirstSight_Online](https://github.com/AndersonHJB/FirstSight_Online) 的 8 组婚纱、1 组孕期影像，共 169 张实际照片；放松提供 ReadyGoDuel 同屏双人反应挑战；悦学接入 [LingoTiles「词了个词」](https://github.com/Brclio/brclio-lingotiles)，保留经典主题与 10 万词分级学习，重新设计手机界面。「我的」支持邮箱验证注册、邮箱验证码登录、邮箱或账号密码登录，小程序另外提供微信一键登录与注册，已有账号登录后可一键绑定微信，后续直接用微信进入同一账号。网页与小程序共用账号，挑战和学习记录先存本机，登录后自动同步。部署与微信发布分别验收。
 
 ## 当前实现
 
-`0.1.7` 将 1000 个内置头像全部替换为逐张使用 imagegen 生成的独立创意作品，按 20 个主题交错展示。本次核查与发布阶段见 [AVATAR_REDESIGN_RELEASE.md](docs/AVATAR_REDESIGN_RELEASE.md)。此前头像功能见 [AVATAR_RELEASE.md](docs/AVATAR_RELEASE.md)。此前 `0.1.5` 儿歌收藏同步和微信绑定见 [SONG_SYNC_RELEASE.md](docs/SONG_SYNC_RELEASE.md)。
+`0.1.8` 修复原生头像选择网格在小屏下溢出、选中边框过宽和关闭按钮占位问题，见 [布局修复与上传记录](docs/AVATAR_LAYOUT_RELEASE.md)。此前 `0.1.7` 将 1000 个内置头像全部替换为逐张使用 imagegen 生成的独立创意作品，按 20 个主题交错展示。本次核查与发布阶段见 [AVATAR_REDESIGN_RELEASE.md](docs/AVATAR_REDESIGN_RELEASE.md)。此前头像功能见 [AVATAR_RELEASE.md](docs/AVATAR_RELEASE.md)。此前 `0.1.5` 儿歌收藏同步和微信绑定见 [SONG_SYNC_RELEASE.md](docs/SONG_SYNC_RELEASE.md)。
 
 - 育儿（0.1.4）：原生儿歌播放器接入 [Erge-Duoduo](https://github.com/Brclio/Erge-Duoduo) 固定提交的 47 首现有 MP3，直接使用 `erge-duoduo.bornforthis.cn` 音频，不打包音乐或加载网页。每首配有独立生成的 256×256 插画封面，播放器与图片按需加载育儿分包。提供蹦跳／睡前筛选、搜索、收藏、进度拖动、顺序／随机／单曲循环和 15／30／60 分钟前台定时停止。收藏在登录后自动同步；播放模式和最近进度保存在各账号的本机缓存。域名配置建议、来源、后台播放限制与验收边界见 [育儿音乐说明](docs/NURSERY_MUSIC.md)。
 

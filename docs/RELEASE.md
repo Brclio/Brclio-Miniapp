@@ -1,3 +1,5 @@
+> **当前 0.1.8 头像布局修复**：修复小屏头像选择器，验证与开发版上传记录见 [AVATAR_LAYOUT_RELEASE.md](AVATAR_LAYOUT_RELEASE.md)。此前记录如下。
+
 > **当前 0.1.7 全新创意头像库**：1000 张内置头像的重制与发布证据见 [AVATAR_REDESIGN_RELEASE.md](AVATAR_REDESIGN_RELEASE.md)。以下保留历史版本。
 
 > **当前 0.1.6 用户头像设置**：本次全面核查与各阶段发布结果见 [AVATAR_RELEASE.md](AVATAR_RELEASE.md)。以下保留历史发布记录。
