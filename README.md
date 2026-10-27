@@ -6,6 +6,8 @@
 
 ## 当前实现
 
+`0.1.9` 博客网页已部署，微信开发版已上传；568 项测试、117 项发布检查、双域名 5,364 项公开资源核验及 44 项线上流程检查通过。微信审核与正式发布另行接续，详见 [博客发布记录](docs/BLOG_RELEASE.md)。
+
 - 博客（0.1.9）：网页提供 Markdown 写作、预览、本机草稿恢复、云端草稿、发布/撤回与文章管理；网页与原生小程序共用公开阅读、分类标签搜索、评论、点赞、收藏和每日去重阅读统计。使用现有账号；文章、互动和统计采用带版本与严格校验的结构化 JSON，独立保存到 `BrclioData/Brclio-Miniapp-Blog-Data` 私有仓库。管理员邮箱按本次指定配置为 `aiyuechuang@gmail.com`。入口、容量与数据说明见 [BLOG.md](docs/BLOG.md)，本轮上线状态见 [BLOG_RELEASE.md](docs/BLOG_RELEASE.md)。
 
 `0.1.8` 修复原生头像选择网格在小屏下溢出、选中边框过宽和关闭按钮占位问题，见 [布局修复与上传记录](docs/AVATAR_LAYOUT_RELEASE.md)。此前 `0.1.7` 将 1000 个内置头像全部替换为逐张使用 imagegen 生成的独立创意作品，按 20 个主题交错展示。本次核查与发布阶段见 [AVATAR_REDESIGN_RELEASE.md](docs/AVATAR_REDESIGN_RELEASE.md)。此前头像功能见 [AVATAR_RELEASE.md](docs/AVATAR_RELEASE.md)。此前 `0.1.5` 儿歌收藏同步和微信绑定见 [SONG_SYNC_RELEASE.md](docs/SONG_SYNC_RELEASE.md)。
