@@ -62,7 +62,7 @@ async function workerHarness() {
   let at = Date.now(), serial = 0;
   instance.buffers = new Map(); instance.pendingLobby = false; instance.nextAlarmAt = null;
   instance.ctx = { storage: { async setAlarm() {}, async deleteAlarm() {} } };
-  instance.sockets = new Map([A, B].map(user => [user.id, { send(data) { outbound.push({ id: user.id, value: JSON.parse(data) }); }, serializeAttachment(value) { attachments.push({ id: user.id, value }); } }]));
+  instance.sockets = new Map([A, B].map(user => [user.id, { send(data) { outbound.push({ id: user.id, value: JSON.parse(data) }); }, serializeAttachment(value) { attachments.push({ id: user.id, value }); }, deserializeAttachment() { return instance.hub.attachment(user.id); } }]));
   instance.hub = new DuelHub({ now: () => at, id: () => 'id-' + ++serial, code: () => 'ABCD2345', send(id, value) {
     if (value.type === 'lobby' && instance.buffers.size) { instance.pendingLobby = true; return; }
     if (instance.buffers.has(id) && value.type !== 'pong') instance.buffers.get(id).push(value);
@@ -86,6 +86,31 @@ test('uncommitted code is neither acknowledged nor attached, but heartbeat pongs
   finish(); await pending;
   assert.equal(h.outbound.some(event => event.id === A.id && event.value.shareInvite?.code === 'ABCD2345'), true);
   assert.equal(h.attachments.some(event => event.id === A.id && event.value.shareReservation?.code === 'ABCD2345'), true);
+});
+
+test('occupied plaza heartbeats survive lease checks without GitHub IO and the final departure clears its only alarm', async () => {
+  const h = await workerHarness(), alarms = [], githubCalls = [];
+  h.instance.ctx.storage = { async setAlarm(at) { alarms.push(['set', at]); }, async deleteAlarm() { alarms.push(['delete']); } };
+  for (const method of ['readUser', 'readCode', 'apply']) h.instance.invites[method] = async () => { githubCalls.push(method); throw Error('Heartbeats must not access GitHub'); };
+  for (let index = 0; index < 36; index++) {
+    h.advance(5000);
+    for (const user of [A, B]) {
+      const socket = h.instance.sockets.get(user.id);
+      await h.instance.webSocketMessage(socket, JSON.stringify({ type: 'ping', id: 'heartbeat-' + index, clientAt: h.at }));
+    }
+    if (h.instance.nextAlarmAt <= h.at) await h.instance.alarm();
+    assert.equal(h.instance.hub.users.size, 2);
+    assert.ok(h.instance.nextAlarmAt > h.at);
+  }
+  assert.equal(h.outbound.filter(event => event.value.type === 'pong').length, 72);
+  assert.deepEqual(githubCalls, []); assert.equal(h.writes.length, 0);
+  assert.ok(alarms.filter(call => call[0] === 'set').length <= 4, 'heartbeats do not postpone the alarm on every message');
+  const a = h.instance.sockets.get(A.id), b = h.instance.sockets.get(B.id);
+  await h.instance.drop(a, A.id);
+  assert.equal(h.instance.hub.users.size, 1); assert.notEqual(h.instance.nextAlarmAt, null);
+  await h.instance.drop(b, B.id);
+  assert.equal(h.instance.hub.users.size, 0); assert.equal(h.instance.nextAlarmAt, null);
+  assert.deepEqual(alarms.at(-1), ['delete']);
 });
 
 test('GitHub failure rolls a new share invitation back without broadcasting a phantom code', async () => {

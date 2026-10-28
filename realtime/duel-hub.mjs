@@ -1,6 +1,6 @@
 // Pure authoritative rules. Transport and Cloudflare lifetime handling live in
 // worker.mjs; tests drive this engine with two independent clients and a clock.
-export const LIMITS = Object.freeze({ capacity: 100, invitationMs: 30000, codeMs: 600000, codeCapacity: 500, staleMs: 35000, activeStaleMs: 3000, startBufferMs: 2000, armMarginMs: 300, reactionMs: 5000, settleMs: 500, tieMs: 20, probeAgeMs: 15000 });
+export const LIMITS = Object.freeze({ capacity: 100, invitationMs: 30000, codeMs: 600000, codeCapacity: 500, staleMs: 60000, activeStaleMs: 4500, startBufferMs: 2000, armMarginMs: 300, reactionMs: 5000, settleMs: 500, tieMs: 20, probeAgeMs: 15000 });
 const copy = value => value == null ? value : structuredClone(value);
 const message = (code, text) => ({ type: 'error', code, message: text });
 const CODE = /^[A-HJ-NP-Z2-9]{8}$/;
@@ -251,6 +251,10 @@ export class DuelHub {
         room.shareCode = null;
       }
       room.phase = 'arming'; room.roundId = this.id(); room.result = null; room.taps = {}; room.armed = [];
+      // Ready-screen presence is deliberately looser than an active round.
+      // Start a fresh round lease for both phones instead of applying the
+      // shorter lease to the first player's older lobby heartbeat.
+      room.activeSince = at;
       room.startAt = at + LIMITS.startBufferMs;
       room.signalAt = room.startAt + 2000 + Math.floor(this.random() * 4001);
     }
@@ -289,9 +293,13 @@ export class DuelHub {
     this.roomState(room);
   }
   presenceDeadline(entry) {
-    const room = this.rooms.get(entry.roomId);
-    const active = room && ['arming', 'scheduled'].includes(room.phase);
-    return entry.lastSeen + (active ? LIMITS.activeStaleMs : LIMITS.staleMs);
+    return entry.lastSeen + LIMITS.staleMs;
+  }
+  roundLivenessDeadline(room, entry) {
+    // startAt supports already connected rounds created before activeSince
+    // was introduced, including their hibernation attachments.
+    const beganAt = Number.isFinite(room.activeSince) ? room.activeSince : room.startAt - LIMITS.startBufferMs;
+    return Math.max(entry.lastSeen, beganAt) + LIMITS.activeStaleMs;
   }
   tick() {
     const at = this.now();
@@ -305,6 +313,10 @@ export class DuelHub {
       this.removeCode(invitation); this.codeStates(invitation); changed = true;
     }
     for (const room of this.rooms.values()) {
+      if (['arming', 'scheduled'].includes(room.phase) && room.players.some(player => {
+        const entry = this.users.get(player.id);
+        return !entry || at >= this.roundLivenessDeadline(room, entry);
+      })) this.abort(room, '一方连接暂时不稳定，本轮不计胜负，请重新准备。');
       if (room.phase === 'arming' && at >= room.startAt - LIMITS.armMarginMs) this.abort(room, '开局同步超时，请重新准备。');
       if (room.phase === 'scheduled' && at >= room.signalAt + LIMITS.reactionMs + LIMITS.settleMs) this.settle(room);
     }
@@ -318,6 +330,10 @@ export class DuelHub {
     // means no alarm or wakeup just to erase an unused ten-minute invitation.
     if (this.users.size) for (const invitation of this.codeInvites.values()) deadlines.push(invitation.expiresAt);
     for (const room of this.rooms.values()) {
+      if (['arming', 'scheduled'].includes(room.phase)) for (const player of room.players) {
+        const entry = this.users.get(player.id);
+        if (entry) deadlines.push(this.roundLivenessDeadline(room, entry));
+      }
       if (room.phase === 'arming') deadlines.push(room.startAt - LIMITS.armMarginMs);
       if (room.phase === 'scheduled') deadlines.push(room.signalAt + LIMITS.reactionMs + LIMITS.settleMs);
     }

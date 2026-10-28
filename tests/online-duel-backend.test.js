@@ -77,6 +77,22 @@ test('a missing/late arm aborts without a winner and both users may prepare agai
   h.ready(room); assert.equal(room.phase, 'arming'); assert.notEqual(room.roundId, previous);
 });
 
+test('a later second ready starts a fresh active lease for both phones instead of expiring the first player', async () => {
+  const h = await harness(), room = h.accept();
+  h.probe(A); h.probe(B);
+  h.receive(A, { type: 'ready', rtt: 100, uncertainty: 50 });
+  const firstSeen = h.hub.users.get(A.id).lastSeen;
+  h.silentSetTime(h.time + 8000);
+  h.receive(B, { type: 'ready', rtt: 100, uncertainty: 50 });
+  assert.equal(room.phase, 'arming'); assert.ok(h.time - firstSeen > h.LIMITS.activeStaleMs);
+  assert.equal(h.hub.users.has(A.id), true);
+  h.hub.tick(); assert.equal(room.phase, 'arming');
+  assert.equal(h.hub.roundLivenessDeadline(room, h.hub.users.get(A.id)), h.time + h.LIMITS.activeStaleMs);
+  h.receive(A, { type: 'armed', roundId: room.roundId });
+  h.receive(B, { type: 'armed', roundId: room.roundId });
+  assert.equal(room.phase, 'scheduled'); assert.equal(h.hub.users.size, 3);
+});
+
 test('reaction winner uses reconciled reaction time, not network arrival, with immutable first taps', async () => {
   const h = await harness(), room = h.scheduled();
   h.setTime(room.signalAt + 170); h.receive(A, { type: 'tap', roundId: room.roundId, reactionMs: 120 });
@@ -132,25 +148,60 @@ test('hibernation attachments preserve active room/taps and arm/timeout alarms, 
 });
 
 test('heartbeat expiry removes online presence and ends pending invitations without a win', async () => {
-  const h = await harness(); h.invite(); h.advance(35000);
+  const h = await harness(); h.invite(); h.advance(h.LIMITS.staleMs);
   assert.equal(h.hub.users.size, 0); assert.equal(h.hub.invitations.size, 0); assert.equal(h.hub.nextDeadline(), null);
 });
 
-test('silent active peer expires before one-tap timeout settlement and awards no win', async () => {
+test('silent active peer aborts before one-tap timeout settlement while retaining lobby presence', async () => {
   const h = await harness(), room = h.scheduled();
   h.setTime(room.signalAt + 150); h.receive(A, { type: 'tap', roundId: room.roundId, reactionMs: 100 });
   const peerLastSeen = h.hub.users.get(B.id).lastSeen;
   assert.equal(h.hub.nextDeadline(), peerLastSeen + h.LIMITS.activeStaleMs);
   // A keeps sending real messages; B silently loses its network without a
   // websocket close event. Check liveness before the later result deadline.
-  for (let at = h.time + 1000; at < peerLastSeen + 3000; at += 1000) {
+  for (let at = h.time + 1000; at < peerLastSeen + h.LIMITS.activeStaleMs; at += 1000) {
     h.silentSetTime(at); h.receive(A, { type: 'ping', id: at, clientAt: at });
   }
-  h.silentSetTime(peerLastSeen + 3000); h.hub.tick();
+  h.silentSetTime(peerLastSeen + h.LIMITS.activeStaleMs); h.hub.tick();
   assert.equal(room.phase, 'aborted'); assert.equal(room.result.winnerId, null);
-  assert.equal(h.hub.users.has(B.id), false);
+  assert.equal(h.hub.users.has(B.id), true, 'short round silence must not disconnect the player from the plaza');
   assert.ok(h.time < room.signalAt + 5500);
   h.silentSetTime(room.signalAt + 5500); h.hub.tick(); assert.equal(room.result.winnerId, null);
+});
+
+test('brief active jitter keeps both users and the round, while actual lobby silence still expires', async () => {
+  const h = await harness(), room = h.scheduled();
+  const beganAt = h.time;
+  h.silentSetTime(beganAt + 3500); h.hub.tick();
+  assert.equal(room.phase, 'scheduled'); assert.equal(h.hub.users.size, 3);
+  h.receive(A, { type: 'ping', id: 'recover-a', clientAt: h.time });
+  h.receive(B, { type: 'ping', id: 'recover-b', clientAt: h.time });
+  assert.equal(h.last(A, 'pong').id, 'recover-a'); assert.equal(room.phase, 'scheduled');
+  h.silentSetTime(h.time + h.LIMITS.staleMs); h.hub.tick();
+  assert.equal(h.hub.users.size, 0); assert.equal(room.result.winnerId, null); assert.equal(h.hub.nextDeadline(), null);
+});
+
+test('one remaining plaza user keeps a live lease with regular heartbeats until the final departure', async () => {
+  const h = await harness(); h.hub.disconnect(B.id); h.hub.disconnect(C.id);
+  for (let index = 0; index < 36; index++) {
+    h.silentSetTime(h.time + 5000); h.receive(A, { type: 'ping', id: index, clientAt: h.time }); h.hub.tick();
+    assert.equal(h.hub.users.size, 1); assert.equal(h.hub.nextDeadline(), h.time + h.LIMITS.staleMs);
+    assert.equal(h.last(A, 'pong').id, index);
+  }
+  h.hub.disconnect(A.id); assert.equal(h.hub.nextDeadline(), null);
+});
+
+test('restored active rounds preserve their new lease and tolerate attachments from the previous server version', async () => {
+  const h = await harness(), room = h.scheduled(), { DuelHub } = await loadHub;
+  const attachments = [A, B, C].map(who => h.hub.attachment(who.id));
+  for (const legacy of [false, true]) {
+    const values = structuredClone(attachments);
+    if (legacy) for (const value of values) if (value.room) delete value.room.activeSince;
+    const restored = new DuelHub(h.options); restored.restore(values);
+    const active = restored.rooms.get(room.id), entry = restored.users.get(A.id);
+    assert.equal(restored.roundLivenessDeadline(active, entry), Math.max(entry.lastSeen, room.startAt - h.LIMITS.startBufferMs) + h.LIMITS.activeStaleMs);
+    h.silentSetTime(h.time + 1000); restored.tick(); assert.equal(restored.users.size, 3); assert.equal(active.phase, 'scheduled');
+  }
 });
 
 test('signed tickets are private-purpose, short-lived and reject tampering, wrong secret and invalid URL', async () => {

@@ -5,12 +5,12 @@ const { createOnlineDuel } = require('../miniprogram/lib/online-duel');
 const { createAccountClient, STORAGE_KEY } = require('../miniprogram/lib/account');
 
 function host(options = {}) {
-  let time = 1800000000000, next = 0, listener, autoPong = false;
+  let time = 1800000000000, next = 0, listener, networkListener, autoPong = false;
   const tasks = new Map(), sent = [], sounds = [], changes = [], sockets = [];
   let user = options.guest ? null : { id: 'me', displayName: '自己', avatarUrl: '' };
   const auth = { getCachedUser: () => user, subscribe(fn) { listener = fn; return () => { listener = null; }; },
     createDuelTicket: options.ticket || (async () => ({ ticket: 'temporary-ticket', socketUrl: 'wss://duel.example.com/connect', expiresAt: time + 60000 })) };
-  const wx = { connectSocket(request) {
+  const wx = { onNetworkStatusChange(fn) { networkListener = fn; }, offNetworkStatusChange(fn) { if (networkListener === fn) networkListener = null; }, connectSocket(request) {
     const handlers = {};
     const socket = { request, handlers, onMessage(fn) { handlers.message = fn; }, onError(fn) { handlers.error = fn; }, onClose(fn) { handlers.close = fn; }, send({ data }) {
       const value = JSON.parse(data); sent.push(value);
@@ -20,7 +20,7 @@ function host(options = {}) {
   } };
   const client = createOnlineDuel({ wx, account: auth, now: () => time, monotonicNow: () => time,
     setTimeout(fn, delay) { const id = ++next; tasks.set(id, { fn, at: time + delay }); return id; }, clearTimeout(id) { tasks.delete(id); },
-    onChange(state) { changes.push(state); }, onSound(type) { sounds.push({ type, at: time }); } });
+    onChange(state) { changes.push(state); }, onSound(type) { sounds.push({ type, at: time }); if (options.onSound) return options.onSound(type); } });
   function advance(ms) {
     const target = time + ms;
     for (let n = 0; n < 10000; n++) {
@@ -44,6 +44,7 @@ function host(options = {}) {
   return { client, auth, wx, tasks, sent, sounds, sockets, changes, advance, receive, online, room, get time() { return time; },
     stall(ms) { time += ms; for (const [id, value] of [...tasks]) if (value.at <= time) { tasks.delete(id); value.fn(); } },
     silence() { autoPong = false; },
+    network(connected) { if (networkListener) networkListener({ isConnected: connected }); },
     changeUser(value) { user = value; listener({ user }); } };
 }
 
@@ -111,11 +112,11 @@ test('minor timer jitter is excluded from reaction time and a substantially late
   }
 });
 
-test('silent active connection loss cancels a scheduled cue without requiring a socket close event', async () => {
-  const h = host(); await h.online(); const room = h.room('arming');
+test('silent active connection loss cancels a scheduled cue while preserving the lobby connection for recovery', async () => {
+  const h = host(); await h.online(); const room = { ...h.room('arming'), signalAt: h.time + 9000 + 7000 };
   h.receive({ type: 'state', room }); h.receive({ type: 'state', room: { ...room, phase: 'scheduled' } });
   h.silence(); h.advance(5000);
-  assert.equal(h.client.snapshot().connection, 'error'); assert.equal(h.client.snapshot().room, null);
+  assert.equal(h.client.snapshot().connection, 'online'); assert.equal(h.client.snapshot().room, null);
   assert.equal(h.sounds.some(value => value.type === 'go'), false); h.client.dispose();
 });
 
@@ -141,7 +142,7 @@ test('hide, dispose, account switch and connection loss cancel the scheduled sig
     else if (action === 'error') h.sockets[0].handlers.error({});
     else h.client[action]();
     h.advance(10000); assert.equal(h.sounds.some(item => item.type === 'go'), false, action);
-    assert.equal(h.tasks.size, 0, action); assert.equal(h.sockets[0].closed, true);
+    assert.equal(h.tasks.size, action === 'error' ? 1 : 0, action); assert.equal(h.sockets[0].closed, true);
     if (action !== 'dispose') h.client.dispose();
   }
 });
@@ -182,8 +183,10 @@ test('native websocket failures distinguish domain, certificate and rejected han
       const event = { ...error, ...(error.errMsg ? { errMsg: error.errMsg + ' ' + privateUrl } : {}) };
       if (callback === 'fail') socket.request.fail(event); else socket.handlers.error(event);
       const state = h.client.snapshot();
-      assert.equal(state.connection, 'error'); assert.equal(state.errorCode, code, callback + ': ' + error.errMsg);
-      assert.match(state.error, text); assert.equal(socket.closed, true); assert.equal(h.tasks.size, 0);
+      const terminal = ['socket_domain_not_allowed', 'socket_tls_failed', 'socket_http_403'].includes(code);
+      assert.equal(state.connection, terminal ? 'error' : 'reconnecting'); assert.equal(state.errorCode, code, callback + ': ' + error.errMsg);
+      if (terminal) assert.match(state.error, text); else assert.match(state.notice, /自动重连/);
+      assert.equal(socket.closed, true); assert.equal(h.tasks.size, terminal ? 0 : 1);
       assert.equal(JSON.stringify(h.changes).includes('temporary-ticket'), false);
       assert.equal(JSON.stringify(h.changes).includes(privateUrl), false);
       h.client.dispose();
@@ -209,7 +212,7 @@ test('synchronous native socket throws and immediate failure callbacks do not ex
   await thrown.client.connect();
   assert.equal(thrown.client.snapshot().errorCode, 'socket_connection_failed');
   assert.equal(JSON.stringify(thrown.changes).includes('temporary-ticket'), false);
-  assert.equal(thrown.tasks.size, 0); thrown.client.dispose();
+  assert.equal(thrown.tasks.size, 1); thrown.client.dispose(); assert.equal(thrown.tasks.size, 0);
 
   const immediate = host(); let closed = false;
   immediate.wx.connectSocket = request => {
@@ -229,4 +232,72 @@ test('a send failure delivered by an old socket cannot close a newer connection'
   h.client.invite('other'); await h.client.connect(); fail();
   assert.equal(h.client.snapshot().connection, 'connecting'); assert.equal(h.sockets[1].closed, undefined);
   h.client.dispose();
+});
+
+test('one lost calibration reply cannot suppress the ongoing lobby heartbeat', async () => {
+  const h = host(); await h.client.connect(); h.receive({ type: 'hello', user: { id: 'me' }, serverAt: h.time + 9000 });
+  assert.equal(h.sent.filter(value => value.type === 'ping').length, 1);
+  h.advance(5000);
+  assert.equal(h.sent.filter(value => value.type === 'ping').length, 2);
+  let probe = h.sent.filter(value => value.type === 'ping').at(-1);
+  h.receive({ type: 'pong', id: probe.id, clientAt: probe.clientAt, serverAt: h.time + 9000 });
+  for (let i = 0; i < 4; i++) {
+    h.advance(100); probe = h.sent.filter(value => value.type === 'ping').at(-1);
+    h.receive({ type: 'pong', id: probe.id, clientAt: probe.clientAt, serverAt: h.time + 9000 });
+  }
+  assert.equal(h.client.snapshot().syncReady, true); assert.equal(h.client.snapshot().connection, 'online'); h.client.dispose();
+});
+
+test('busy state updates cannot postpone heartbeat and one remaining player stays connected for ten minutes', async () => {
+  const h = host(); await h.online();
+  const before = h.sent.filter(value => value.type === 'ping').length;
+  for (let n = 0; n < 600; n++) {
+    h.advance(1000); h.receive({ type: 'state', room: null, invitation: null });
+    if (n === 100) h.receive({ type: 'lobby', users: [{ id: 'me', status: 'available' }] });
+  }
+  assert.ok(h.sent.filter(value => value.type === 'ping').length - before >= 119);
+  assert.equal(h.client.snapshot().connection, 'online'); assert.equal(h.sockets.length, 1);
+  h.client.disconnect(); assert.equal(h.tasks.size, 0); h.advance(600000); assert.equal(h.sockets.length, 1); h.client.dispose();
+});
+
+test('temporary close obtains a fresh ticket and reconnects; old callbacks and explicit exit cannot revive it', async () => {
+  const h = host(); await h.online();
+  h.sockets[0].handlers.close({ code: 1006 });
+  assert.equal(h.client.snapshot().connection, 'reconnecting');
+  h.advance(999); assert.equal(h.sockets.length, 1);
+  h.advance(1); await Promise.resolve(); await Promise.resolve(); assert.equal(h.sockets.length, 2);
+  h.receive({ type: 'hello', user: { id: 'me' }, serverAt: h.time + 9000 }); h.advance(500);
+  assert.equal(h.client.snapshot().connection, 'online'); assert.equal(h.client.snapshot().syncReady, true);
+  h.sockets[0].handlers.close({ code: 1006 }); assert.equal(h.client.snapshot().connection, 'online');
+  h.sockets[1].handlers.close({ code: 1006 }); h.client.disconnect();
+  h.advance(60000); await Promise.resolve(); assert.equal(h.sockets.length, 2); assert.equal(h.tasks.size, 0); h.client.dispose();
+});
+
+test('network recovery retries immediately while duplicate-account closures never fight another device', async () => {
+  const h = host(); await h.online(); h.network(false);
+  assert.equal(h.client.snapshot().connection, 'reconnecting');
+  h.advance(1000); await Promise.resolve(); assert.equal(h.sockets.length, 1, 'offline retries must not issue sockets');
+  h.network(true); await Promise.resolve(); await Promise.resolve(); assert.equal(h.sockets.length, 2);
+  h.sockets[1].handlers.close({ code: 4001 }); assert.equal(h.client.snapshot().connection, 'error'); assert.equal(h.tasks.size, 0);
+  h.advance(60000); await Promise.resolve(); assert.equal(h.sockets.length, 2);
+  h.client.dispose(); h.network(true); assert.equal(h.tasks.size, 0);
+});
+
+test('a missing audio cue aborts the round instead of recording a silent match', async () => {
+  for (const failedCue of ['start', 'go']) {
+    const h = host({ onSound: type => type !== failedCue }); await h.online(); const room = h.room('arming');
+    h.receive({ type: 'state', room }); h.receive({ type: 'state', room: { ...room, phase: 'scheduled' } });
+    h.advance(4000);
+    assert.equal(h.client.snapshot().room, null); assert.match(h.client.snapshot().notice, /提示音未能播放/);
+    assert.equal(h.sent.some(value => value.type === 'leave'), true); assert.equal(h.client.tap(), false); h.client.dispose();
+  }
+});
+
+test('active liveness starts fresh instead of applying the game timeout to an older lobby pong', async () => {
+  const h = host(); await h.online(); h.silence(); h.advance(4400);
+  const room = h.room('arming'); h.receive({ type: 'state', room }); h.receive({ type: 'state', room: { ...room, phase: 'scheduled' } });
+  h.advance(1000); assert.ok(h.client.snapshot().room, 'a delayed first active pong still has the new round grace');
+  const probe = h.sent.filter(value => value.type === 'ping').at(-1);
+  h.receive({ type: 'pong', id: probe.id, clientAt: probe.clientAt, serverAt: h.time + 9000 });
+  h.advance(1000); assert.equal(h.client.snapshot().room.phase, 'waiting'); h.client.dispose();
 });

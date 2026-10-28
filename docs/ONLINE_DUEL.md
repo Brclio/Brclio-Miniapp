@@ -27,7 +27,11 @@
 
 现有 Cloudflare Pages 账号服务增加 `POST /api/account/duel-ticket`，复用已有账号会话，以只读方式检查私有 UserData 仓库中的账号和会话。接口返回一个 60 秒有效、仅用于建立对战连接的 HMAC 签名票据，不向 WebSocket 服务传送长期账号 token、邮箱、密码或微信身份。票据含随机用户 ID、展示名和展示头像 URL；头像访问方式沿用现有账号功能。
 
-新建的 `realtime/` Worker 提供 `/connect` 与 `/health`。一个 `DuelLobby` Durable Object 原子协调在线用户、邀请和房间，当前上限 100 位同时在线用户。每个账号只保留一个活动连接；其他设备重新进入会结束原连接。大厅心跳间隔 10 秒，35 秒无消息清理；正在同步开局或对局时改为每秒心跳，3 秒无消息即中止。这样能较早发现静默断网，结算前已确认的断线不会算成输赢；刚发生、尚未达到心跳截止时间的断网仍存在检测延迟。30 秒邀请、心跳清理与对局截止时间均通过 DO alarm 调度，空大厅删除 alarm。
+`realtime/` Worker 提供 `/connect` 与 `/health`。一个 `DuelLobby` Durable Object 原子协调在线用户、邀请和房间，当前上限 100 位同时在线用户。每个账号只保留一个活动连接；其他设备重新进入会结束原连接。大厅心跳间隔 5 秒，正在同步开局或对局时每秒心跳，独立于校准和房间消息，直到退出在线页面。60 秒无消息才清理在线状态；对局连续 4.5 秒失联则只中止本轮、保留广场连接，且先于超时结算判定。进入活动对局时为双方建立新的检测起点，避免复用大厅旧心跳将先准备者立即踢下线。30 秒邀请、心跳清理与对局截止时间均通过 DO alarm 调度，最后一人离开时删除 alarm。
+
+临时连接错误、远端关闭或心跳超时后，前台页面按 1／2／4／8／10 秒上限持续自动重连，每次申请新票据，网络恢复时立即重试；退出、切后台、账号变更或销毁页面后取消重试。域名／证书／403 配置错误、会话违规和同账号另一设备进入不自动争抢连接。中断的进行中对局不继续计分，重连后回广场重新邀请、校准并准备。
+
+在线声音有独立设置，未设置时默认开启，不继承同屏玩法的静音。每台手机点击准备后，先以音量 0 预热打包的 start／GO WAV 并等待本机播放确认，再发送准备；实际信号只在共同未来时间触发。音频预热失败不准备，播放失败或系统音频中断则中止本轮；显式在线静音仍可使用画面信号。普通原生播放器的静音开关选项仅在在线页面显示且声音开启时调整，隐藏、退出或在线静音后恢复原应用默认，不改原游戏设置。自动化验证能覆盖双端预热和播放调用，实体扬声器时延仍需双真机验收。
 
 Worker 使用 WebSocket Hibernation。活动连接附件只暂存当前房间、邀请快照、探测和在线状态，唤醒后恢复，不保存历史战绩。为了分享切后台、断开及冷启动恢复，邀请码与参与者展示资料持久保存在既有 GitHub 私有业务仓库，Cloudflare DO 不保存这些业务文件；仅保留 alarm 调度元数据。邀请码开局或取消时删除当前记录，过期后不能加入、后续相关访问惰性清理，Git 历史可能保留旧版本。心跳和点击不读写 GitHub，正式开局前完成必要的邀请写入，避免把仓库网络延迟带入对局。
 
@@ -35,11 +39,11 @@ Worker 使用 WebSocket Hibernation。活动连接附件只暂存当前房间、
 
 好友关系、申请和限流记录按账号目录写入既有私有业务仓库 `BrclioData/Brclio-Miniapp-Data` 的 `users/v1/<前缀>/<账号ID>/friends.json`。双方文件通过一次乐观并发事务共同更新。仅保留公开账号、随机账号 ID、昵称、头像和关系时间，不含邮箱、会话或微信标识；好友 100 位、待处理申请 50 条、每日最多 20 条新申请，申请 7 天过期。删除／撤回会更新当前关系，Git 历史仍可能保留旧记录。离线好友资料为上次互动时的展示快照，在线时合并实时大厅资料。
 
-WebSocket 不使用浏览器 cookie。允许无 Origin 的原生请求，以及现有两个 pocket 域名和 `https://servicewechat.com`；每次建立连接仍必须验证短期签名票据。不要在访问日志或错误报告中保存带票据的完整连接 URL。
+WebSocket 不使用浏览器 cookie。允许无 Origin 的原生请求，以及现有两个 pocket 域名、`https://servicewechat.com` 和桌面微信实际使用的 `https://pk.brclio-miniapp.bornforthis.cn` 精确来源；每次建立连接仍必须验证短期签名票据。不要在访问日志或错误报告中保存带票据的完整连接 URL。
 
 ## 配置与发布
 
-本轮由用户授权直接上线。准确的部署、域名证书、线上联测及微信开发版状态见 [0.1.11 发布记录](ONLINE_DUEL_RELEASE.md)。配置如下：
+本轮由用户授权直接上线。最新保活与声音变更见 [0.1.12 发布记录](ONLINE_DUEL_RELIABILITY_RELEASE.md)，初次部署、域名证书和配置见 [0.1.11 发布记录](ONLINE_DUEL_RELEASE.md)。配置如下：
 
 1. 实时自定义域名为 `pk.brclio-miniapp.bornforthis.cn`，使用 Worker Custom Domain 自动配置 DNS 和此多级域名的 TLS 证书，`workers_dev: false`。
 2. 为实时 Worker 配置 `DUEL_TICKET_SECRET`（至少 32 个随机字符），部署该 Worker 与 `DuelLobby` SQLite migration。该 secret 只在服务端保存。
@@ -84,7 +88,7 @@ WebSocket 消息为 JSON，输入单条上限 4096 字符，每用户每 5 秒�
 
 2026-10-28 最终本地结果：`npm run build` 成功；`npm test` 683 项全部通过；`npm run check:release` 130 项全部通过。在线分包 43.6 KiB，主包 1598.6 KiB，均低于 2 MiB。实时 Worker 构建 dry-run 与真实 workerd 双连接、GitHub 存储、冷启动、休眠和恢复测试通过。官方微信 CLI 已预览编译并上传；320 与 390 宽度的可视布局仍属 HTML 模拟检查，不能替代双真机声响验收。
 
-线上核查及各发布阶段见 [0.1.11 发布记录](ONLINE_DUEL_RELEASE.md)。
+线上核查及各发布阶段见 [0.1.12 发布记录](ONLINE_DUEL_RELIABILITY_RELEASE.md) 及 [0.1.11 发布记录](ONLINE_DUEL_RELEASE.md)。
 
 - `tests/online-duel-backend.test.js`：邀请权限／过期／占用、随机阵营、测时门槛、双确认、反应先后、抢跑／平局／超时、首击不可覆盖、异常延迟、断线、心跳、休眠附件重建、票据签名和账号只读鉴权。
 - `tests/online-duel-worker.test.js`：真实 Miniflare/workerd 中两条 WebSocket 完成邀请与准备，拒绝无效签名、错误 Origin 和普通 HTTP；强制两次 hibernate，验证确认和开局时间经附件恢复，断开连接后无胜者中止。
@@ -94,6 +98,6 @@ Cloudflare 生命周期与接口依据：[WebSocket Hibernation 文档](https://
 
 ## 免费额度与按需运行
 
-只有主动进入在线 PK 才连接 WebSocket。大厅每 10 秒心跳，开局和对局每秒心跳以尽快发现失联；退出页面立即断开。使用 WebSocket Hibernation，无常驻 setInterval 或 Cron，无用户时删除 alarm，离线邀请码按下一次访问惰性清理。好友列表不自动轮询，`/health` 不访问 DO。
+只有主动进入在线 PK 才连接 WebSocket。大厅每 5 秒心跳，开局和对局每秒心跳；校准丢包或普通状态广播不能暂停／延后心跳，只剩一人也持续保活。退出页面立即断开。使用 WebSocket Hibernation 保持连接，处理消息间隙可休眠，并不代表用户掉线；无常驻服务器 setInterval 或 Cron，无用户时删除 alarm，离线邀请码按下一次访问惰性清理。心跳不访问 GitHub，不逐次延期 alarm；好友列表不自动轮询，`/health` 不访问 DO。
 
 使用免费计划支持的 SQLite Durable Object，本轮不升级任何付费计划。免费额度按 Cloudflare 账号共享，并非无限量：DO 每日 100,000 计费请求、13,000 GB-s、100,000 写入行、5,000,000 读取行；超限的免费计划操作会失败，不能以空闲休眠保证任意访问量永远免费。[官方额度与休眠规则](https://developers.cloudflare.com/durable-objects/platform/pricing/)。多级 Custom Domain 会自动取得覆盖该主机的证书，无需另订 Advanced Certificate Manager：[官方证书说明](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/#certificates)。

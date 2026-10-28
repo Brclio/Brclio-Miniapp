@@ -1,8 +1,7 @@
 'use strict';
 
 const { createOnlineDuel } = require('../../../lib/online-duel');
-const { createDuelAudio } = require('../../../lib/duel');
-const accountSync = require('../../../lib/account-sync');
+const { createOnlineDuelAudio } = require('../../../lib/online-duel-audio');
 const SOUND_KEY = 'brclio.online-duel.sound.v1';
 const CODE_PATTERN = /^[A-HJ-NP-Z2-9]{8}$/;
 const cleanCode = value => String(value || '').replace(/[\s-]/g, '').toUpperCase();
@@ -16,7 +15,7 @@ Page({
     connection: 'idle', user: null, users: [], invitation: null, room: null,
     myColor: '', myReady: false, tapped: false, syncReady: false,
     rtt: 0, uncertainty: 0, error: '', notice: '', remainingSeconds: 0,
-    soundEnabled: true, working: false, players: [], invitationName: '',
+    soundEnabled: true, audioPreparing: false, working: false, players: [], invitationName: '',
     resultTitle: '', resultCopy: '', phaseTitle: '', phaseCopy: '',
     connectionLabel: '正在连接', userLabel: '', userInitial: '',
     canTap: false, activeRound: false, roomFinished: false, onlineCount: 0,
@@ -29,17 +28,28 @@ Page({
   onLoad(options) {
     this._alive = true;
     this._visible = false;
+    this._audioGeneration = 0;
     const code = cleanCode(options && options.code);
     this._pendingCode = CODE_PATTERN.test(code) ? code : '';
     this._joiningCode = false;
     if (code && !this._pendingCode) this._entryError = '邀请链接中的邀请码无效，请向好友确认。';
     this.setData({ inviteCodeInput: this._pendingCode, pendingEntryCode: this._pendingCode });
-    this._audio = createDuelAudio(wx, { enabled: true, assetBase: '/assets/duel-audio' });
+    this._audioError = '';
+    this._audio = createOnlineDuelAudio(wx, {
+      enabled: true, assetBase: '/assets/duel-audio',
+      onFailure: message => {
+        if (!this._alive || !this._visible) return;
+        this._audioError = message;
+        if (this.data.activeRound && this._client) this._client.leave();
+        this.setData({ error: message });
+      }
+    });
     this._client = createOnlineDuel({
       onChange: state => this.applyState(state),
       onSound: type => {
-        if (type === 'stop') { this._audio.stop(); return; }
-        if (this._alive && this._visible) this._audio.play(type, 'TOUCH');
+        if (type === 'stop') { this._audio.stop(false); return true; }
+        if (!this._alive || !this._visible) return false;
+        return this._audio.play(type);
       }
     });
     if (wx.showShareMenu) wx.showShareMenu({ menus: ['shareAppMessage'] });
@@ -47,27 +57,30 @@ Page({
 
   onShow() {
     if (!this._alive) return;
+    this._audioGeneration += 1;
     this._visible = true;
     let enabled = true;
     try {
       const saved = wx.getStorageSync(SOUND_KEY);
-      const value = typeof saved === 'boolean' ? saved : accountSync.storage.getStorageSync('RGD_SOUND_ENABLED');
-      if (typeof value === 'boolean') enabled = value;
+      if (typeof saved === 'boolean') enabled = saved;
     } catch (_) {}
-    this.setData({ soundEnabled: enabled, working: false });
+    this.setData({ soundEnabled: enabled, working: false, audioPreparing: false });
     this._audio.setEnabled(enabled);
+    this._audio.activate();
     if (wx.setKeepScreenOn) wx.setKeepScreenOn({ keepScreenOn: true });
     this.runAction('connect');
   },
 
   onHide() {
+    this._audioGeneration += 1;
     this._visible = false;
     if (this._client) this._client.disconnect();
-    if (this._audio) this._audio.stop();
+    if (this._audio) this._audio.deactivate();
     if (wx.setKeepScreenOn) wx.setKeepScreenOn({ keepScreenOn: false });
   },
 
   onUnload() {
+    this._audioGeneration += 1;
     this._alive = false;
     this._visible = false;
     if (this._client) this._client.dispose();
@@ -125,7 +138,7 @@ Page({
     const seconds = Math.max(0, Math.ceil(Number(state.shareRemainingSeconds) || 0));
     const shareCountdown = seconds ? Math.floor(seconds / 60) + ':' + ('0' + seconds % 60).slice(-2) : '';
     if (shareInvite && shareInvite.code === this._pendingCode && (shareIsOwner || shareInvite.guest && shareInvite.guest.id === myId)) this._pendingCode = '';
-    const connectionLabel = { idle: '未连接', connecting: '正在连接', syncing: '正在校准时间', online: state.syncReady ? '已连接' : '正在校准时间', error: '连接中断', login: '需要登录' }[state.connection] || '正在连接';
+    const connectionLabel = { idle: '未连接', connecting: '正在连接', reconnecting: '正在自动重连', syncing: '正在校准时间', online: state.syncReady ? '已连接' : '正在校准时间', error: '连接中断', login: '需要登录' }[state.connection] || '正在连接';
     this.setData(Object.assign({}, state, {
       users, players, invitationName: label(peer), resultTitle, resultCopy,
       shareInvite, shareIsOwner, sharePeerName: label(sharePeer), shareCountdown,
@@ -135,7 +148,7 @@ Page({
       }, friendCount: friends.length, incomingCount: incoming.length,
       canCreateCode: state.connection === 'online' && state.syncReady && !room && !invitation && !shareInvite,
       pendingEntryCode: this._pendingCode,
-      error: this._entryError || state.error || '',
+      error: this._entryError || this._audioError || state.error || '',
       phaseTitle: copy[0], phaseCopy: copy[1], connectionLabel,
       userLabel: label(state.user), userInitial: initial(state.user),
       canTap: !!room && !state.tapped && (phase === 'waiting' || phase === 'go'),
@@ -214,7 +227,26 @@ Page({
   accept() { this._audio.unlock(); return this.runAction('accept', this.data.invitation && this.data.invitation.id); },
   decline() { return this.runAction('decline', this.data.invitation && this.data.invitation.id); },
   cancel() { return this.runAction('cancel', this.data.invitation && this.data.invitation.id); },
-  ready() { this._audio.unlock(); return this.runAction('ready'); },
+  async ready() {
+    if (!this._alive || !this._visible || this.data.working || !this.data.room || !['ready', 'result', 'aborted'].includes(this.data.room.phase) || this.data.myReady) return;
+    const roomId = this.data.room.id;
+    const audioGeneration = this._audioGeneration;
+    this._audioError = '';
+    this.setData({ working: true, audioPreparing: this.data.soundEnabled, error: '' });
+    try {
+      const prepared = await this._audio.prepare();
+      if (!this._alive || !this._visible || audioGeneration !== this._audioGeneration || !this.data.room || this.data.room.id !== roomId || !['ready', 'result', 'aborted'].includes(this.data.room.phase) || this.data.connection !== 'online') return;
+      if (!prepared && this.data.soundEnabled) {
+        this._audioError = '提示音还没有准备好，请试听成功后再点准备。';
+        this.setData({ error: this._audioError }); return;
+      }
+      return await this._client.ready();
+    } catch (_) {
+      if (this._alive && this._visible && audioGeneration === this._audioGeneration) { this._audioError = '提示音准备失败，请试听后重试。'; this.setData({ error: this._audioError }); }
+    } finally {
+      if (this._alive && this._visible && audioGeneration === this._audioGeneration) this.setData({ working: false, audioPreparing: false });
+    }
+  },
   tap() {
     if (!this._alive || !this._visible || !this.data.canTap) return;
     // Capture on touchstart; waiting-phase taps deliberately reach the referee as false starts.
@@ -228,10 +260,19 @@ Page({
   },
   toggleSound() {
     const enabled = !this.data.soundEnabled;
+    this._audioError = '';
     this._audio.unlock(); this._audio.setEnabled(enabled);
     if (!enabled) this._audio.stop();
-    this.setData({ soundEnabled: enabled });
+    this.setData({ soundEnabled: enabled, error: '' });
     try { wx.setStorageSync(SOUND_KEY, enabled); } catch (_) {}
   },
-  testSound() { this._audio.unlock(); this._audio.play('test', 'TOUCH'); }
+  async testSound() {
+    if (!this._alive || !this._visible) return;
+    const audioGeneration = this._audioGeneration;
+    this._audioError = '';
+    const prepared = await this._audio.prepare();
+    if (!this._alive || !this._visible || audioGeneration !== this._audioGeneration) return;
+    if (!prepared || !this._audio.play('test')) { this._audioError = '手机提示音暂时无法播放，请检查媒体音量后重试。'; }
+    this.setData({ error: this._audioError });
+  }
 });

@@ -15,7 +15,7 @@ import { accountInternals } from '../web/account-api.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGINS = ['https://pocket.bornforthis.cn', 'https://pocket.brclio.com'];
 const SOCKET_URL = 'wss://pk.brclio-miniapp.bornforthis.cn/connect';
-const VERSION = '0.1.11';
+const VERSION = JSON.parse(await fs.readFile(path.join(ROOT, 'package.json'), 'utf8')).version;
 const KIND = 'online-duel-live-smoke-v1';
 const REPOS = { users: 'Brclio-Miniapp-UserData', data: 'Brclio-Miniapp-Data' };
 const runId = randomBytes(6).toString('hex'), startedAt = new Date().toISOString();
@@ -378,6 +378,15 @@ async function verifyRealtime() {
     await b.wait(message => message.type === 'state' && !message.room && !message.shareInvite, mark);
     await proveInviteRemoved('timed_invitation_finally_cleared', nextCode.code, bf, af);
   }
+  await c.close();
+  if (!b.closed) {
+    phase('keep the last fixture connected beyond the 60-second presence lease');
+    const before = b.mark();
+    await delay(65000);
+    checked('last_fixture_connected_after_presence_lease', !b.closed && b.ws.readyState === WebSocket.OPEN);
+    const pong = await b.wait(message => message.type === 'pong', before);
+    checked('last_fixture_heartbeats_continue', Number.isFinite(pong.serverAt));
+  }
 }
 async function cleanup() {
   for (const timer of timers) clearTimeout(timer); timers.clear();
@@ -481,5 +490,5 @@ async function main() {
 }
 if (process.argv.length === 2 || process.argv[2] === '--help') {
   console.log('Usage: node scripts/online-duel-live-smoke.mjs --run');
-  console.log('Explicitly verifies production friends and online PK on both pocket domains and pk.brclio-miniapp.bornforthis.cn. Creates three synthetic marker-owned accounts and exact username indexes, verifies their exact private GitHub invitation records/indices, then cleans only their current account/friend/invite files. Never reads credentials or emails users, and never scans an invitation registry. Ignored evidence: artifacts/online-duel/0.1.11/live-*/. A failed/unstable timed round is recorded as incomplete, never a pass.');
+  console.log('Explicitly verifies production friends and online PK on both pocket domains and pk.brclio-miniapp.bornforthis.cn. Creates three synthetic marker-owned accounts and exact username indexes, verifies their exact private GitHub invitation records/indices, then cleans only their current account/friend/invite files. Never reads credentials or emails users, and never scans an invitation registry. Ignored evidence: artifacts/online-duel/' + VERSION + '/live-*/. A failed/unstable timed round is recorded as incomplete, never a pass.');
 } else await main();

@@ -12,11 +12,13 @@ const peer = { id: 'peer', displayName: '对手', avatarUrl: '' };
 const online = { connection: 'online', user, users: [user, peer], room: null, invitation: null, syncReady: true, myReady: false, tapped: false, rtt: 42, error: '', notice: '' };
 
 function host(options = {}) {
-  let definition, bridge, pendingConnect;
+  let definition, bridge, pendingConnect, pendingAudio, audioOptions;
   const calls = [], sounds = [], wake = [], writes = [], navigations = [], clipboard = [];
   const audio = {
-    unlock() { sounds.push(['unlock']); }, play(type) { sounds.push(['play', type]); },
-    stop() { sounds.push(['stop']); }, dispose() { sounds.push(['dispose']); }, setEnabled(enabled) { sounds.push(['enabled', enabled]); }
+    unlock() { sounds.push(['unlock']); }, play(type) { sounds.push(['play', type]); return options.playFailure !== true; },
+    activate() { sounds.push(['activate']); }, deactivate() { sounds.push(['deactivate']); },
+    prepare() { sounds.push(['prepare']); return options.pendingAudio ? new Promise(resolve => { pendingAudio = resolve; }) : Promise.resolve(options.audioFailure !== true); },
+    stop(cancelPreparation) { sounds.push(['stop']); if (cancelPreparation !== false && pendingAudio) pendingAudio(false); }, dispose() { sounds.push(['dispose']); }, setEnabled(enabled) { sounds.push(['enabled', enabled]); }
   };
   const client = {};
   for (const method of ['connect', 'disconnect', 'dispose', 'calibrate', 'invite', 'accept', 'decline', 'cancel', 'ready', 'tap', 'leave', 'createCode', 'joinCode', 'cancelCode', 'refreshFriends', 'requestFriend', 'respondFriend', 'removeFriend']) {
@@ -31,12 +33,12 @@ function host(options = {}) {
     Page(value) { definition = value; },
     require(id) {
       if (id === '../../../lib/online-duel') return { createOnlineDuel(value) { bridge = value; return client; } };
-      if (id === '../../../lib/duel') return { createDuelAudio() { return audio; } };
+      if (id === '../../../lib/online-duel-audio') return { createOnlineDuelAudio(api, value) { audioOptions = value; return audio; } };
       if (id === '../../../lib/account-sync') return { storage: { getStorageSync() { return options.sound; }, setStorageSync(key, value) { writes.push([key, value]); } } };
       throw new Error('Unexpected import: ' + id);
     },
     wx: {
-      getStorageSync() {}, setStorageSync(key, value) { writes.push([key, value]); },
+      getStorageSync() { return options.onlineSound; }, setStorageSync(key, value) { writes.push([key, value]); },
       setClipboardData(value) { clipboard.push(value.data); }, showShareMenu() {},
       showModal(value) { value.success({ confirm: options.confirmRemove !== false }); },
       setKeepScreenOn(value) { wake.push(value.keepScreenOn); },
@@ -46,7 +48,7 @@ function host(options = {}) {
   }, { filename: pageFile });
   const page = Object.assign({}, definition, { data: structuredClone(definition.data), setData(value) { Object.assign(this.data, value); } });
   page.onLoad({ code: options.code });
-  return { page, calls, sounds, wake, writes, navigations, clipboard, emit: state => bridge.onChange(state), sound: type => bridge.onSound(type), resolveConnect() { pendingConnect(); } };
+  return { page, calls, sounds, wake, writes, navigations, clipboard, emit: state => bridge.onChange(state), sound: type => bridge.onSound(type), resolveConnect() { pendingConnect(); }, resolveAudio(value) { pendingAudio(value); }, audioFailure(message) { audioOptions.onFailure(message); } };
 }
 
 test('online page enters on show, leaves on hide and ignores late state/audio while hidden or unloaded', async () => {
@@ -183,7 +185,7 @@ test('results show each reaction and distinguish tie, timeout, false start and a
 });
 
 test('lobby invitations use peer ids, login returns to existing account screen, and online sound never changes the local game setting', async () => {
-  const h = host({ sound: false }), p = h.page; p.onShow(); await Promise.resolve();
+  const h = host({ onlineSound: false }), p = h.page; p.onShow(); await Promise.resolve();
   assert.equal(p.data.soundEnabled, false);
   assert.equal(h.writes.length, 0);
   assert.equal(p.data.onlineCount, 1);
@@ -200,4 +202,82 @@ test('lobby invitations use peer ids, login returns to existing account screen, 
   p.login(); assert.deepEqual(h.navigations, ['/pages/account/index']);
   await p.calibrate(); assert.equal(h.calls.at(-1)[0], 'calibrate');
   p.onUnload();
+});
+
+test('online audio starts enabled independently of a muted original game and respects its own saved mute', async () => {
+  const fresh = host({ sound: false }); fresh.page.onShow(); await Promise.resolve();
+  assert.equal(fresh.page.data.soundEnabled, true, 'the original game mute is not an online preference');
+  assert.equal(fresh.writes.length, 0);
+  fresh.page.onUnload();
+  const saved = host({ sound: true, onlineSound: false }); saved.page.onShow(); await Promise.resolve();
+  assert.equal(saved.page.data.soundEnabled, false); assert.equal(saved.writes.length, 0);
+  saved.page.onUnload();
+});
+
+test('each phone waits for its own audio readiness and peer state updates cannot cancel it', async () => {
+  const phones = [host({ pendingAudio: true }), host({ pendingAudio: true })];
+  const pending = [];
+  for (const h of phones) {
+    h.page.onShow(); await Promise.resolve();
+    h.emit({ ...online, room: { id: 'ready-room', phase: 'ready', players: [user, peer] } });
+    pending.push(h.page.ready());
+    assert.equal(h.page.data.audioPreparing, true);
+    assert.equal(h.calls.some(call => call[0] === 'ready'), false);
+    h.sound('stop');
+    assert.equal(h.calls.some(call => call[0] === 'ready'), false);
+    h.resolveAudio(true);
+  }
+  await Promise.all(pending);
+  for (const h of phones) {
+    assert.equal(h.calls.filter(call => call[0] === 'ready').length, 1);
+    assert.equal(h.page.data.audioPreparing, false);
+    assert.equal(h.sound('start'), true); assert.equal(h.sound('go'), true);
+    assert.deepEqual(h.sounds.filter(call => call[0] === 'play'), [['play', 'start'], ['play', 'go']]);
+    h.page.onUnload();
+  }
+});
+
+test('audio failure keeps the player unready with an actionable error that state refreshes cannot hide', async () => {
+  const h = host({ audioFailure: true }); h.page.onShow(); await Promise.resolve();
+  h.emit({ ...online, room: { id: 'r', phase: 'ready', players: [user, peer] } });
+  await h.page.ready();
+  assert.equal(h.calls.some(call => call[0] === 'ready'), false);
+  assert.match(h.page.data.error, /提示音.*准备好/); assert.equal(h.page.data.working, false);
+  h.emit({ ...online, room: { id: 'r', phase: 'ready', players: [user, peer] }, notice: '同步完成' });
+  assert.match(h.page.data.error, /提示音.*准备好/);
+  h.page.onUnload();
+});
+
+test('a preparation completed after hide, return or a room change cannot ready a new session', async () => {
+  const h = host({ pendingAudio: true }); h.page.onShow(); await Promise.resolve();
+  const room = { id: 'r', phase: 'ready', players: [user, peer] };
+  h.emit({ ...online, room }); const previous = h.page.ready();
+  h.page.onHide(); h.page.onShow(); await Promise.resolve();
+  h.emit({ ...online, room }); h.resolveAudio(true); await previous;
+  assert.equal(h.calls.some(call => call[0] === 'ready'), false);
+  const next = h.page.ready();
+  h.emit({ ...online, room: { ...room, id: 'other' } }); h.resolveAudio(true); await next;
+  assert.equal(h.calls.some(call => call[0] === 'ready'), false);
+  h.page.onUnload();
+});
+
+test('an asynchronous audio interruption aborts an active round while hidden errors are ignored', async () => {
+  const h = host(); h.page.onShow(); await Promise.resolve();
+  h.emit({ ...online, room: { id: 'r', phase: 'waiting', players: [user, peer] } });
+  h.audioFailure('手机提示音播放中断，请试听成功后重新准备。');
+  assert.equal(h.calls.filter(call => call[0] === 'leave').length, 1);
+  assert.match(h.page.data.error, /提示音播放中断/);
+  h.page.onHide(); const previous = h.page.data.error;
+  h.audioFailure('迟到的音频错误'); assert.equal(h.page.data.error, previous);
+  h.page.onUnload();
+});
+
+test('reconnecting state is visible and synchronous sound failure reaches the transport', async () => {
+  const h = host({ playFailure: true }); h.page.onShow(); await Promise.resolve();
+  h.emit({ ...online, connection: 'reconnecting', syncReady: false, users: [] });
+  assert.equal(h.page.data.connectionLabel, '正在自动重连');
+  assert.equal(h.page.data.canCreateCode, false);
+  assert.equal(h.sound('start'), false);
+  assert.equal(h.sound('stop'), true);
+  h.page.onUnload();
 });

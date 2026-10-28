@@ -46,12 +46,12 @@ async function world() {
   const a = await phone('alice', 300000, 120), b = await phone('bob', -420000, 15);
   advance(2200);
   return { a, b, hub, advance, get at() { return at; },
-    match() {
+    match(readyDelay = 0) {
       assert.equal(a.client.snapshot().syncReady, true); assert.equal(b.client.snapshot().syncReady, true);
       a.client.invite('bob'); advance(500);
       const invitation = b.client.snapshot().invitation; assert.equal(invitation.direction, 'incoming');
       b.client.accept(invitation.id); advance(500);
-      a.client.ready(); b.client.ready(); advance(500);
+      a.client.ready(); if (readyDelay) advance(readyDelay); b.client.ready(); advance(500);
       assert.equal(a.client.snapshot().room.phase, 'arming'); assert.equal(b.client.snapshot().room.phase, 'arming');
       return a.client.snapshot().room;
     }, dispose() { a.client.dispose(); b.client.dispose(); }
@@ -62,6 +62,8 @@ test('two phones with different epochs and network delays play at the same futur
   const w = await world(), room = w.match();
   assert.notEqual(w.a.client.snapshot().myColor, w.b.client.snapshot().myColor);
   w.advance(room.signalAt - w.at);
+  assert.deepEqual(w.a.sounds.filter(value => value.type === 'start'), [{ type: 'start', at: room.startAt }]);
+  assert.deepEqual(w.b.sounds.filter(value => value.type === 'start'), [{ type: 'start', at: room.startAt }]);
   assert.deepEqual(w.a.sounds.filter(value => value.type === 'go'), [{ type: 'go', at: room.signalAt }]);
   assert.deepEqual(w.b.sounds.filter(value => value.type === 'go'), [{ type: 'go', at: room.signalAt }]);
   w.advance(170); w.a.client.tap(); w.advance(60); w.b.client.tap(); w.advance(500);
@@ -72,6 +74,18 @@ test('two phones with different epochs and network delays play at the same futur
   assert.equal(w.hub.rooms.get(room.id).result.winnerId, 'alice');
   w.a.client.ready(); w.b.client.ready(); w.advance(500);
   assert.notEqual(w.a.client.snapshot().room.roundId, room.roundId);
+  w.dispose();
+});
+
+test('a player waiting eight seconds for the second ready keeps their connection and both future sound cues', async () => {
+  const w = await world(); w.advance(120000);
+  const room = w.match(8000);
+  w.advance(room.signalAt - w.at);
+  for (const phone of [w.a, w.b]) {
+    assert.equal(phone.client.snapshot().connection, 'online');
+    assert.deepEqual(phone.sounds.filter(value => value.type === 'start'), [{ type: 'start', at: room.startAt }]);
+    assert.deepEqual(phone.sounds.filter(value => value.type === 'go'), [{ type: 'go', at: room.signalAt }]);
+  }
   w.dispose();
 });
 

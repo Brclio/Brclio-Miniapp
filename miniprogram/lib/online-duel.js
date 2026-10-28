@@ -30,14 +30,15 @@ function createOnlineDuel(options) {
   const epoch = wallNow(), origin = monotonic(), now = () => epoch + monotonic() - origin;
   const later = opt.setTimeout || setTimeout, cancelTimer = opt.clearTimeout || clearTimeout;
   const timers = new Set(), probes = new Map();
-  let socket = null, generation = 0, roundTimers = [], heartbeat = null, deadline = null;
+  let socket = null, generation = 0, roundTimers = [], heartbeat = null, heartbeatDue = 0, deadline = null;
+  let wanted = false, disposed = false, reconnectAttempt = 0, reconnectTimer = null, networkOnline = true, lastPing = 0;
   let samples = [], offset = 0, sequence = 0, lastPong = 0, syncing = false, pendingReady = false;
   let friendSequence = 0;
-  let wireRoom = null, armedRound = '', scheduledRound = '', signalLocalAt = 0, actualSignalAt = null, shownStart = false;
+  let wireRoom = null, activeSince = 0, armedRound = '', scheduledRound = '', signalLocalAt = 0, actualSignalAt = null, shownStart = false;
   let state = { connection: 'idle', user: null, users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '', room: null, myColor: '', myReady: false, tapped: false, syncReady: false, rtt: 0, uncertainty: 0, error: '', errorCode: '', notice: '', remainingSeconds: 0 };
   const snapshot = () => copy(state);
   function emit() { if (opt.onChange) opt.onChange(snapshot()); }
-  function sound(type) { if (opt.onSound) opt.onSound(type); }
+  function sound(type) { if (opt.onSound) return opt.onSound(type); }
   function schedule(fn, delay) {
     const id = later(() => { timers.delete(id); fn(); }, Math.max(0, delay)); timers.add(id); return id;
   }
@@ -46,25 +47,39 @@ function createOnlineDuel(options) {
   function send(value) {
     if (!socket || !['online', 'syncing'].includes(state.connection)) return false;
     const expected = generation, current = socket;
-    const failed = () => { if (expected === generation && socket === current) fail('连接中断，请重新进入在线大厅。'); };
+    const failed = () => { if (expected === generation && socket === current) recover('连接短暂中断，正在自动重连。', 'socket_send_failed'); };
     try { current.send({ data: JSON.stringify(value), fail: failed }); return true; }
     catch (_) { failed(); return false; }
   }
   function stop() {
     generation += 1; pendingReady = false; syncing = false;
     timers.forEach(cancelTimer); timers.clear(); roundTimers = []; probes.clear();
-    heartbeat = null; deadline = null; samples = []; wireRoom = null; armedRound = ''; scheduledRound = ''; shownStart = false; actualSignalAt = null;
+    heartbeat = null; heartbeatDue = 0; lastPing = 0; reconnectTimer = null; deadline = null; samples = []; wireRoom = null; activeSince = 0; armedRound = ''; scheduledRound = ''; shownStart = false; actualSignalAt = null;
     sound('stop');
     const previous = socket; socket = null;
     if (previous) { try { previous.close({ code: 1000, reason: 'Leave online lobby' }); } catch (_) {} }
   }
   function fail(message, errorCode = '') {
+    wanted = false;
     stop(); state = { ...state, connection: 'error', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friendsLoading: false, room: null, syncReady: false, tapped: false, myColor: '', myReady: false, remainingSeconds: 0, error: message, errorCode }; annotateFriends(); emit();
+  }
+  function recover(message, errorCode = '') {
+    if (!wanted || disposed) return;
+    stop();
+    reconnectAttempt += 1;
+    state = { ...state, connection: 'reconnecting', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friendsLoading: false, room: null, syncReady: false, tapped: false, myColor: '', myReady: false, remainingSeconds: 0, error: '', errorCode, notice: message, reconnectAttempt };
+    annotateFriends(); emit();
+    const expected = generation;
+    reconnectTimer = schedule(() => {
+      reconnectTimer = null;
+      if (expected === generation && wanted && !disposed) open(true);
+    }, Math.min(10000, 1000 * Math.pow(2, Math.min(4, reconnectAttempt - 1))));
   }
   function ping() {
     const id = String(++sequence), clientAt = now();
     probes.set(id, clientAt);
     if (probes.size > 12) probes.delete(probes.keys().next().value);
+    lastPing = clientAt;
     send({ type: 'ping', id, clientAt });
   }
   function syncClock() {
@@ -87,7 +102,8 @@ function createOnlineDuel(options) {
     offset = best.offset;
     state.rtt = Math.round(best.rtt); state.uncertainty = Math.ceil(best.rtt / 2);
     state.syncReady = samples.length >= 3 && best.rtt <= 300;
-    state.connection = 'online';
+    state.connection = 'online'; reconnectAttempt = 0; state.reconnectAttempt = 0;
+    if (state.notice === '连接短暂中断，正在自动重连。' || state.notice === '网络已断开，恢复后会自动连接。') state.notice = '';
     countdown();
     if (syncing && samples.length < 5) schedule(ping, 100);
     else {
@@ -98,12 +114,24 @@ function createOnlineDuel(options) {
     emit();
   }
   function maintain() {
-    if (!socket) return;
+    if (!socket || !['online', 'syncing'].includes(state.connection)) return;
     const active = wireRoom && ['arming', 'scheduled'].includes(wireRoom.phase);
+    const due = Math.max(now(), lastPing + (active ? 1000 : 5000));
+    // State broadcasts must never postpone the next heartbeat. Calibration
+    // also cannot suppress it when a probe or its reply is lost.
+    if (heartbeat !== null && heartbeatDue <= due) return;
+    clear(heartbeat); heartbeatDue = due;
     heartbeat = schedule(() => {
-      if (now() - lastPong >= (active ? 3000 : 25000)) { fail('连接超时，请重新进入在线大厅。'); return; }
-      if (!syncing) ping(); maintain();
-    }, active ? 1000 : 10000);
+      heartbeat = null; heartbeatDue = 0;
+      if (now() - lastPong >= 60000) { recover('连接短暂中断，正在自动重连。', 'socket_heartbeat_timeout'); return; }
+      if (wireRoom && ['arming', 'scheduled'].includes(wireRoom.phase) && now() - Math.max(lastPong, activeSince) >= 4500) {
+        abortTiming('网络暂时不稳定，本局已中止，连接恢复后可重新准备。');
+        const before = sequence; syncClock();
+        if (sequence === before) ping();
+        maintain(); return;
+      }
+      ping(); maintain();
+    }, due - now());
   }
   function countdown() {
     clear(deadline); deadline = null;
@@ -111,7 +139,10 @@ function createOnlineDuel(options) {
     state.shareRemainingSeconds = state.shareInvite ? Math.max(0, Math.ceil((state.shareInvite.expiresAt - now() - offset) / 1000)) : 0;
     if (!state.remainingSeconds) state.invitation = null;
     if (!state.shareRemainingSeconds) state.shareInvite = null;
-    if (state.invitation || state.shareInvite) deadline = schedule(() => { countdown(); emit(); }, 500);
+    if (state.invitation || state.shareInvite) {
+      const expiresAt = Math.min(...[state.invitation, state.shareInvite].filter(Boolean).map(value => value.expiresAt));
+      deadline = schedule(() => { countdown(); emit(); }, Math.max(1, Math.min(500, expiresAt - now() - offset)));
+    }
   }
   function annotateFriends() {
     const online = new Map(state.users.map(user => [user.id, user]));
@@ -135,7 +166,7 @@ function createOnlineDuel(options) {
     } finally { if (expected === generation && request === friendSequence) { state.friendsLoading = false; emit(); } }
   }
   function abortTiming(message) {
-    send({ type: 'leave' }); clearRound(); wireRoom = null; armedRound = ''; scheduledRound = '';
+    send({ type: 'leave' }); clearRound(); wireRoom = null; activeSince = 0; armedRound = ''; scheduledRound = '';
     state.room = null; state.shareInvite = null; state.shareRemainingSeconds = 0; state.myColor = ''; state.myReady = false; state.tapped = false; state.notice = message; emit();
   }
   function arm(room) {
@@ -156,13 +187,17 @@ function createOnlineDuel(options) {
     roundTimers.push(schedule(() => {
       if (!wireRoom || wireRoom.roundId !== roundId) return;
       if (now() - (room.startAt - offset) > 120) { abortTiming('手机开局响应延迟，本轮已中止。'); return; }
-      shownStart = true; state.room.phase = 'waiting'; sound('start'); emit();
+      shownStart = true; state.room.phase = 'waiting';
+      if (sound('start') === false) { abortTiming('提示音未能播放，本轮已中止，请试听后重新准备。'); return; }
+      emit();
     }, room.startAt - offset - now()));
     roundTimers.push(schedule(() => {
       if (!wireRoom || wireRoom.roundId !== roundId) return;
       if (now() - signalLocalAt > 120) { abortTiming('手机提示响应延迟，本轮已中止。'); return; }
       actualSignalAt = now();
-      state.room.phase = state.tapped ? 'settling' : 'go'; sound('go'); emit();
+      state.room.phase = state.tapped ? 'settling' : 'go';
+      if (sound('go') === false) { abortTiming('提示音未能播放，本轮已中止，请试听后重新准备。'); return; }
+      emit();
     }, signalLocalAt - now()));
   }
   function applyState(message) {
@@ -171,8 +206,9 @@ function createOnlineDuel(options) {
     state.invitation = message.invitation ? { ...message.invitation, direction: message.invitation.from.id === state.user.id ? 'outgoing' : 'incoming' } : null;
     state.shareInvite = message.shareInvite || null;
     countdown(); wireRoom = message.room || null;
-    if (!wasActive && wireRoom && ['arming', 'scheduled'].includes(wireRoom.phase)) ping();
-    clear(heartbeat); maintain();
+    if (!wasActive && wireRoom && ['arming', 'scheduled'].includes(wireRoom.phase)) { activeSince = now(); ping(); }
+    else if (!wireRoom || !['arming', 'scheduled'].includes(wireRoom.phase)) activeSince = 0;
+    maintain();
     if (!wireRoom) {
       clearRound(); armedRound = ''; scheduledRound = ''; state.room = null; state.myReady = false; state.myColor = ''; state.tapped = false;
       emit(); return;
@@ -202,18 +238,25 @@ function createOnlineDuel(options) {
     else if (message.type === 'state') applyState(message);
     else if (message.type === 'error') { state.error = typeof message.message === 'string' ? message.message : '操作未完成，请重试。'; pendingReady = false; emit(); }
   }
-  async function connect() {
+  async function open(reconnecting) {
+    if (!wanted || disposed) return;
     stop(); const expected = generation, user = auth.getCachedUser();
-    state = { ...state, user, connection: user ? 'connecting' : 'login', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '', room: null, myColor: '', myReady: false, tapped: false, syncReady: false, rtt: 0, uncertainty: 0, error: '', errorCode: '', notice: '', remainingSeconds: 0 }; emit();
-    if (!user) return;
-    deadline = schedule(() => { if (expected === generation) fail('连接超时，请重试。'); }, 55000);
+    state = { ...state, user, connection: user ? reconnecting ? 'reconnecting' : 'connecting' : 'login', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '', room: null, myColor: '', myReady: false, tapped: false, syncReady: false, rtt: 0, uncertainty: 0, error: '', errorCode: '', notice: reconnecting ? '连接短暂中断，正在自动重连。' : '', remainingSeconds: 0 }; emit();
+    if (!user) { wanted = false; return; }
+    if (!networkOnline) { recover('网络已断开，恢复后会自动连接。', 'socket_offline'); return; }
+    deadline = schedule(() => { if (expected === generation) recover('连接短暂中断，正在自动重连。', 'socket_connect_timeout'); }, 55000);
     try {
       const result = await auth.createDuelTicket();
       if (expected !== generation) return;
       // The phone clock is not calibrated yet; only the server can decide
       // whether this server-issued expiry is current.
       if (!result || typeof result.ticket !== 'string' || !result.ticket || result.ticket.length > 4096 || !/^wss:\/\/(?:[a-z0-9-]+\.)+[a-z0-9-]+(?::443)?\/[A-Za-z0-9/_-]*$/i.test(result.socketUrl) || !Number.isSafeInteger(result.expiresAt)) throw new Error('在线服务配置暂不可用，请稍后重试。');
-      const failed = error => { if (expected === generation) { const diagnostic = socketFailure(error); fail(diagnostic.error, diagnostic.errorCode); } };
+      const failed = error => {
+        if (expected !== generation) return;
+        const diagnostic = socketFailure(error);
+        if (['socket_domain_not_allowed', 'socket_tls_failed', 'socket_http_403'].includes(diagnostic.errorCode)) fail(diagnostic.error, diagnostic.errorCode);
+        else recover('连接短暂中断，正在自动重连。', diagnostic.errorCode);
+      };
       let task;
       try { task = api.connectSocket({ url: result.socketUrl + '?ticket=' + encodeURIComponent(result.ticket), tcpNoDelay: true, fail: failed }); }
       catch (error) { failed(error); return; }
@@ -222,9 +265,28 @@ function createOnlineDuel(options) {
       socket = task;
       task.onMessage(event => { if (expected === generation) receive(event); });
       task.onError(failed);
-      task.onClose(() => { if (expected === generation) fail('在线连接已结束，请重新进入。'); });
-    } catch (error) { if (expected === generation) fail(error.message || '无法进入在线大厅，请稍后重试。'); }
+      task.onClose(event => {
+        if (expected !== generation) return;
+        if (event && event.code === 4001) fail('此账号已在另一台设备进入在线 PK，请使用不同账号对战。', 'socket_account_opened_elsewhere');
+        else if (event && [1008, 1009].includes(event.code)) fail('在线会话已结束，请重新进入。', 'socket_session_ended');
+        else recover('连接短暂中断，正在自动重连。', 'socket_closed');
+      });
+    } catch (error) {
+      if (expected !== generation) return;
+      if (!auth.getCachedUser()) { wanted = false; stop(); state = { ...state, user: null, connection: 'login', error: '', notice: '请登录后重新进入在线 PK。' }; emit(); }
+      else if (error && ['在线服务配置暂不可用，请稍后重试。', '请更新微信后重试。'].includes(error.message)) fail(error.message);
+      else recover('连接短暂中断，正在自动重连。', 'socket_ticket_unavailable');
+    }
   }
+  function connect() { if (disposed) return; wanted = true; reconnectAttempt = 0; return open(false); }
+  const networkChanged = info => {
+    if (disposed) return;
+    networkOnline = !info || info.isConnected !== false;
+    if (!wanted) return;
+    if (!networkOnline) recover('网络已断开，恢复后会自动连接。', 'socket_offline');
+    else if (state.connection === 'reconnecting') { clear(reconnectTimer); reconnectTimer = null; open(true); }
+  };
+  if (typeof api.onNetworkStatusChange === 'function') api.onNetworkStatusChange(networkChanged);
   function ready() {
     if (!state.room || !['ready', 'result', 'aborted'].includes(state.room.phase) || state.myReady) return false;
     state.error = '';
@@ -234,7 +296,7 @@ function createOnlineDuel(options) {
   }
   const unsubscribe = auth.subscribe(event => {
     if (!state.user || event.user && event.user.id === state.user.id) return;
-    stop(); state = { ...state, user: event.user || null, connection: event.user ? 'idle' : 'login', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '', room: null, syncReady: false, myColor: '', myReady: false, tapped: false, notice: '账号已变化，请重新进入在线大厅。' }; emit();
+    wanted = false; stop(); state = { ...state, user: event.user || null, connection: event.user ? 'idle' : 'login', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '', room: null, syncReady: false, myColor: '', myReady: false, tapped: false, notice: '账号已变化，请重新进入在线大厅。' }; emit();
   });
   return {
     connect, snapshot, ready,
@@ -263,8 +325,8 @@ function createOnlineDuel(options) {
       return send({ type: 'tap', roundId: wireRoom.roundId, reactionMs });
     },
     leave() { abortTiming('已离开对战，可以重新邀请对手。'); },
-    disconnect() { stop(); state = { ...state, connection: 'idle', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friendsLoading: false, room: null, syncReady: false, myColor: '', myReady: false, tapped: false, remainingSeconds: 0 }; annotateFriends(); emit(); },
-    dispose() { stop(); unsubscribe(); }
+    disconnect() { wanted = false; stop(); state = { ...state, connection: 'idle', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friendsLoading: false, room: null, syncReady: false, myColor: '', myReady: false, tapped: false, remainingSeconds: 0 }; annotateFriends(); emit(); },
+    dispose() { wanted = false; disposed = true; stop(); unsubscribe(); if (typeof api.offNetworkStatusChange === 'function') api.offNetworkStatusChange(networkChanged); }
   };
 }
 
