@@ -163,6 +163,66 @@ test('new connection rejects callbacks from a previous socket', async () => {
   assert.equal(h.client.snapshot().connection, 'connecting'); h.client.dispose();
 });
 
+test('native websocket failures distinguish domain, certificate and rejected handshakes without exposing tickets', async () => {
+  const cases = [
+    [{ errMsg: 'connectSocket:fail url not in domain list' }, 'socket_domain_not_allowed', /socket 合法域名.*PK-DOMAIN/],
+    [{ errMsg: 'createSocketTask:fail SSL certificate verify failed' }, 'socket_tls_failed', /安全连接验证失败.*PK-TLS/],
+    [{ errMsg: 'WebSocket connection failed: net::ERR_CERT_AUTHORITY_INVALID' }, 'socket_tls_failed', /PK-TLS/],
+    [{ errMsg: 'WebSocket handshake: Unexpected server response: 401' }, 'socket_http_401', /凭证已失效.*PK-401/],
+    [{ errMsg: 'WebSocket handshake: Unexpected response code: 403' }, 'socket_http_403', /拒绝了连接.*PK-403/],
+    [{ errMsg: 'WebSocket handshake failed: HTTP/1.1 503' }, 'socket_http_503', /暂时不可用.*PK-503/],
+    [{ statusCode: 403, errMsg: 'WebSocket handshake failed' }, 'socket_http_403', /PK-403/],
+    [{ errMsg: 'connectSocket:fail net::ERR_CONNECTION_RESET' }, 'socket_connection_failed', /PK-SOCKET/],
+    [{}, 'socket_connection_failed', /^实时连接失败，请检查网络后重试。$/]
+  ];
+  for (const callback of ['fail', 'error']) {
+    for (const [error, code, text] of cases) {
+      const h = host(); await h.client.connect(); const socket = h.sockets[0];
+      const privateUrl = socket.request.url;
+      const event = { ...error, ...(error.errMsg ? { errMsg: error.errMsg + ' ' + privateUrl } : {}) };
+      if (callback === 'fail') socket.request.fail(event); else socket.handlers.error(event);
+      const state = h.client.snapshot();
+      assert.equal(state.connection, 'error'); assert.equal(state.errorCode, code, callback + ': ' + error.errMsg);
+      assert.match(state.error, text); assert.equal(socket.closed, true); assert.equal(h.tasks.size, 0);
+      assert.equal(JSON.stringify(h.changes).includes('temporary-ticket'), false);
+      assert.equal(JSON.stringify(h.changes).includes(privateUrl), false);
+      h.client.dispose();
+    }
+  }
+});
+
+test('unknown native errors cannot turn numbers or words in signed URLs into a false diagnosis', async () => {
+  const h = host(); await h.client.connect();
+  h.sockets[0].handlers.error({ errMsg: 'connectSocket:fail wss://duel.example.com/certificate/status403?ticket=secret-value' });
+  assert.equal(h.client.snapshot().errorCode, 'socket_connection_failed');
+  assert.equal(JSON.stringify(h.changes).includes('secret-value'), false);
+  await h.client.connect();
+  assert.equal(h.client.snapshot().errorCode, ''); assert.equal(h.client.snapshot().error, '');
+  h.sockets[0].handlers.error({ errMsg: 'HTTP 403' });
+  assert.equal(h.client.snapshot().connection, 'connecting'); assert.equal(h.client.snapshot().errorCode, '');
+  h.client.dispose();
+});
+
+test('synchronous native socket throws and immediate failure callbacks do not expose tickets or retain tasks', async () => {
+  const thrown = host();
+  thrown.wx.connectSocket = request => { throw new Error('WebSocket failed: ' + request.url); };
+  await thrown.client.connect();
+  assert.equal(thrown.client.snapshot().errorCode, 'socket_connection_failed');
+  assert.equal(JSON.stringify(thrown.changes).includes('temporary-ticket'), false);
+  assert.equal(thrown.tasks.size, 0); thrown.client.dispose();
+
+  const immediate = host(); let closed = false;
+  immediate.wx.connectSocket = request => {
+    request.fail({ errMsg: 'connectSocket:fail url not in domain list ' + request.url });
+    return { close() { closed = true; }, onMessage() { assert.fail('failed task must not receive handlers'); } };
+  };
+  await immediate.client.connect();
+  assert.equal(immediate.client.snapshot().errorCode, 'socket_domain_not_allowed');
+  assert.equal(closed, true); assert.equal(immediate.tasks.size, 0);
+  assert.equal(JSON.stringify(immediate.changes).includes('temporary-ticket'), false);
+  immediate.client.dispose();
+});
+
 test('a send failure delivered by an old socket cannot close a newer connection', async () => {
   const h = host(); await h.online(); let fail;
   h.sockets[0].send = value => { fail = value.fail; };

@@ -7,7 +7,7 @@ const ROOT = path.resolve(__dirname, '..');
 const { duelGitHubFixture } = require('./helpers/duel-github.cjs');
 const SECRET = 'test-only-online-duel-secret-at-least-32-characters';
 
-test('real workerd validates websocket tickets/origins and connects two native clients through the DO', { timeout: 15000 }, async () => {
+test('real workerd validates websocket tickets/origins and connects two protocol clients through the DO', { timeout: 15000 }, async () => {
   const { issueDuelTicket } = await import('../web/duel-ticket.mjs');
   const modules = ['realtime/worker.mjs', 'realtime/duel-hub.mjs', 'realtime/invite-store.mjs', 'web/duel-ticket.mjs', 'web/account-store.mjs'].map(file => ({ type: 'ESModule', path: path.join(ROOT, file) }));
   const github = duelGitHubFixture();
@@ -17,11 +17,15 @@ test('real workerd validates websocket tickets/origins and connects two native c
     const A = { id: 'a'.repeat(32), displayName: '小红', avatarUrl: '' }, B = { id: 'b'.repeat(32), displayName: '小蓝', avatarUrl: '' };
     const tickets = await Promise.all([A, B].map(user => issueDuelTicket(user, SECRET, 'wss://duel.example/connect')));
     const connect = (ticket, Origin = 'https://servicewechat.com') => runtime.dispatchFetch('https://duel.example/connect?ticket=' + encodeURIComponent(ticket), { headers: { Upgrade: 'websocket', Origin } });
+    const desktopOrigin = 'https://pk.brclio-miniapp.bornforthis.cn';
+    assert.equal((await connect(tickets[0].ticket + '-invalid', desktopOrigin)).status, 401);
     assert.equal((await connect(tickets[0].ticket + '-invalid')).status, 401);
     assert.equal((await connect(tickets[0].ticket, 'https://untrusted.example')).status, 403);
+    assert.equal((await connect(tickets[0].ticket, desktopOrigin + '.untrusted.example')).status, 403);
+    assert.equal((await connect(tickets[0].ticket, 'http://pk.brclio-miniapp.bornforthis.cn')).status, 403);
     assert.equal((await runtime.dispatchFetch('https://duel.example/connect')).status, 426);
-    async function open(ticket) {
-      const response = await connect(ticket); assert.equal(response.status, 101);
+    async function open(ticket, origin) {
+      const response = await connect(ticket, origin); assert.equal(response.status, 101);
       const socket = response.webSocket; sockets.push(socket);
       const events = [], waiters = new Set();
       const client = {
@@ -43,7 +47,9 @@ test('real workerd validates websocket tickets/origins and connects two native c
       socket.accept(); await client.wait(value => value.type === 'hello');
       return client;
     }
-    const [a, b] = await Promise.all(tickets.map(ticket => open(ticket.ticket)));
+    // Match the Origin observed from the actual desktop WeChat client as well
+    // as the servicewechat.com runtime; neither bypasses ticket validation.
+    const [a, b] = await Promise.all([open(tickets[0].ticket, desktopOrigin), open(tickets[1].ticket, 'https://servicewechat.com')]);
     await a.wait(value => value.type === 'lobby' && value.users.length === 2);
     a.send({ type: 'invite', userId: B.id });
     const invited = await b.wait(value => value.type === 'state' && value.invitation);

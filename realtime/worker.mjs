@@ -3,7 +3,9 @@ import { verifyDuelTicket } from '../web/duel-ticket.mjs';
 import { DuelHub, LIMITS } from './duel-hub.mjs';
 import { createInviteStore } from './invite-store.mjs';
 
-const origins = new Set(['https://pocket.bornforthis.cn', 'https://pocket.brclio.com', 'https://servicewechat.com']);
+// Desktop WeChat sends the WebSocket endpoint's HTTPS origin. Mobile/runtime
+// variants can send servicewechat.com or omit Origin; tickets remain required.
+const origins = new Set(['https://pocket.bornforthis.cn', 'https://pocket.brclio.com', 'https://servicewechat.com', 'https://pk.brclio-miniapp.bornforthis.cn']);
 const response = (error, status) => Response.json({ error }, { status, headers: { 'Cache-Control': 'no-store' } });
 export default {
   async fetch(request, env) {

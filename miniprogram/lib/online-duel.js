@@ -3,6 +3,24 @@
 const account = require('./account');
 const copy = value => JSON.parse(JSON.stringify(value));
 
+function socketFailure(error) {
+  // Native errors can contain the signed websocket URL. Classify only known
+  // failure shapes and return fixed copy/codes; never display or retain it.
+  const raw = error && (typeof error.errMsg === 'string' ? error.errMsg : typeof error.message === 'string' ? error.message : '');
+  const message = String(raw || '').slice(0, 8000).replace(/(?:wss?|https?):\/\/\S+/gi, '').replace(/ticket\s*=\s*\S+/gi, '');
+  if (/not\s+in\s+(?:the\s+)?(?:domain|url)\s+list|(?:domain|url).*(?:not\s+allowed|not\s+configured)|域名.*(?:不合法|未配置|校验失败|不在.*(?:列表|白名单))|非法.*域名/i.test(message)) {
+    return { error: '实时连接被微信拦截，请核对 socket 合法域名配置。（PK-DOMAIN）', errorCode: 'socket_domain_not_allowed' };
+  }
+  if (/\b(?:tls|ssl|certificate|err_cert_[a-z_]+)\b|证书|安全连接/i.test(message)) {
+    return { error: '实时安全连接验证失败，请重试并反馈错误码 PK-TLS。', errorCode: 'socket_tls_failed' };
+  }
+  const status = error && [401, 403, 503].includes(error.statusCode) ? error.statusCode : Number((message.match(/(?:HTTP(?:\/[\d.]+)?(?:\s+status)?|status(?:\s*code)?|server\s+response|response\s+code|握手(?:失败)?(?:状态码)?)[^\d]{0,20}(401|403|503)\b/i) || [])[1]);
+  if (status === 401) return { error: '在线连接凭证已失效，请重新连接。（PK-401）', errorCode: 'socket_http_401' };
+  if (status === 403) return { error: '在线服务拒绝了连接，请重试并反馈错误码 PK-403。', errorCode: 'socket_http_403' };
+  if (status === 503) return { error: '在线服务暂时不可用，请稍后重试。（PK-503）', errorCode: 'socket_http_503' };
+  return { error: raw ? '实时连接失败，请重新连接并反馈错误码 PK-SOCKET。' : '实时连接失败，请检查网络后重试。', errorCode: 'socket_connection_failed' };
+}
+
 // Independent transport and clock for online play. Never writes the local game,
 // its settings, rewards, history or account sync storage.
 function createOnlineDuel(options) {
@@ -16,7 +34,7 @@ function createOnlineDuel(options) {
   let samples = [], offset = 0, sequence = 0, lastPong = 0, syncing = false, pendingReady = false;
   let friendSequence = 0;
   let wireRoom = null, armedRound = '', scheduledRound = '', signalLocalAt = 0, actualSignalAt = null, shownStart = false;
-  let state = { connection: 'idle', user: null, users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '', room: null, myColor: '', myReady: false, tapped: false, syncReady: false, rtt: 0, uncertainty: 0, error: '', notice: '', remainingSeconds: 0 };
+  let state = { connection: 'idle', user: null, users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '', room: null, myColor: '', myReady: false, tapped: false, syncReady: false, rtt: 0, uncertainty: 0, error: '', errorCode: '', notice: '', remainingSeconds: 0 };
   const snapshot = () => copy(state);
   function emit() { if (opt.onChange) opt.onChange(snapshot()); }
   function sound(type) { if (opt.onSound) opt.onSound(type); }
@@ -40,8 +58,8 @@ function createOnlineDuel(options) {
     const previous = socket; socket = null;
     if (previous) { try { previous.close({ code: 1000, reason: 'Leave online lobby' }); } catch (_) {} }
   }
-  function fail(message) {
-    stop(); state = { ...state, connection: 'error', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friendsLoading: false, room: null, syncReady: false, tapped: false, myColor: '', myReady: false, remainingSeconds: 0, error: message }; annotateFriends(); emit();
+  function fail(message, errorCode = '') {
+    stop(); state = { ...state, connection: 'error', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friendsLoading: false, room: null, syncReady: false, tapped: false, myColor: '', myReady: false, remainingSeconds: 0, error: message, errorCode }; annotateFriends(); emit();
   }
   function ping() {
     const id = String(++sequence), clientAt = now();
@@ -186,7 +204,7 @@ function createOnlineDuel(options) {
   }
   async function connect() {
     stop(); const expected = generation, user = auth.getCachedUser();
-    state = { ...state, user, connection: user ? 'connecting' : 'login', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '', room: null, myColor: '', myReady: false, tapped: false, syncReady: false, rtt: 0, uncertainty: 0, error: '', notice: '', remainingSeconds: 0 }; emit();
+    state = { ...state, user, connection: user ? 'connecting' : 'login', users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '', room: null, myColor: '', myReady: false, tapped: false, syncReady: false, rtt: 0, uncertainty: 0, error: '', errorCode: '', notice: '', remainingSeconds: 0 }; emit();
     if (!user) return;
     deadline = schedule(() => { if (expected === generation) fail('连接超时，请重试。'); }, 55000);
     try {
@@ -195,11 +213,15 @@ function createOnlineDuel(options) {
       // The phone clock is not calibrated yet; only the server can decide
       // whether this server-issued expiry is current.
       if (!result || typeof result.ticket !== 'string' || !result.ticket || result.ticket.length > 4096 || !/^wss:\/\/(?:[a-z0-9-]+\.)+[a-z0-9-]+(?::443)?\/[A-Za-z0-9/_-]*$/i.test(result.socketUrl) || !Number.isSafeInteger(result.expiresAt)) throw new Error('在线服务配置暂不可用，请稍后重试。');
-      const task = api.connectSocket({ url: result.socketUrl + '?ticket=' + encodeURIComponent(result.ticket), tcpNoDelay: true, fail: () => { if (expected === generation) fail('实时连接失败，请检查网络后重试。'); } });
+      const failed = error => { if (expected === generation) { const diagnostic = socketFailure(error); fail(diagnostic.error, diagnostic.errorCode); } };
+      let task;
+      try { task = api.connectSocket({ url: result.socketUrl + '?ticket=' + encodeURIComponent(result.ticket), tcpNoDelay: true, fail: failed }); }
+      catch (error) { failed(error); return; }
+      if (expected !== generation) { if (task) { try { task.close({ code: 1000, reason: 'Connection cancelled' }); } catch (_) {} } return; }
       if (!task || typeof task.onMessage !== 'function') throw new Error('请更新微信后重试。');
       socket = task;
       task.onMessage(event => { if (expected === generation) receive(event); });
-      task.onError(() => { if (expected === generation) fail('实时连接失败，请检查网络后重试。'); });
+      task.onError(failed);
       task.onClose(() => { if (expected === generation) fail('在线连接已结束，请重新进入。'); });
     } catch (error) { if (expected === generation) fail(error.message || '无法进入在线大厅，请稍后重试。'); }
   }

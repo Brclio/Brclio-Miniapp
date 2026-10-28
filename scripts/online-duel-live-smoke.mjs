@@ -228,7 +228,7 @@ async function ticket(fixture) {
 }
 async function open(fixture) {
   const value = await ticket(fixture);
-  const ws = new WebSocket(SOCKET_URL + '?ticket=' + encodeURIComponent(value), { ...(dispatcher ? { dispatcher } : {}), headers: { Origin: 'https://servicewechat.com' } });
+  const ws = new WebSocket(SOCKET_URL + '?ticket=' + encodeURIComponent(value), { ...(dispatcher ? { dispatcher } : {}), headers: { Origin: fixture.label === 'a' ? 'https://pk.brclio-miniapp.bornforthis.cn' : 'https://servicewechat.com' } });
   const events = [], waiters = new Set(), pending = new Map(); let serial = 0, pingId = 0, receivedProbes = 0, heartbeat, closed = false;
   const connection = { fixture, ws, samples: [], state: null, offset: 0, closed: false, mark: () => serial,
     send(message) { ensure(ws.readyState === WebSocket.OPEN, 'socket_not_open'); ws.send(JSON.stringify(message)); },
