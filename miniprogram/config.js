@@ -3,5 +3,5 @@
 module.exports = {
   webOrigin: 'https://pocket.bornforthis.cn',
   accountBase: 'https://pocket.bornforthis.cn/api/account',
-  version: '0.1.12'
+  version: '0.1.13'
 };

@@ -99,3 +99,24 @@ test('leaving during arming prevents either device from hearing an obsolete GO a
   assert.equal(w.a.sounds.some(value => value.type === 'go'), false);
   assert.equal(w.b.sounds.some(value => value.type === 'go'), false); w.dispose();
 });
+
+test('two phones agree custom and random rewards before playing; the winner keeps the round snapshot', async () => {
+  const w = await world();
+  w.a.client.invite('bob'); w.advance(500); w.b.client.accept(w.b.client.snapshot().invitation.id); w.advance(500);
+  const saved = [w.a.client.setReward('请喝一杯奶茶'), w.b.client.randomReward('FOOD')]; w.advance(500);
+  assert.deepEqual(await Promise.all(saved), [true, true]);
+  const agreed = w.a.client.snapshot().room;
+  assert.equal(agreed.rewardRevision, 2); assert.equal(agreed.rewards.alice.text, '请喝一杯奶茶'); assert.equal(agreed.rewards.bob.mode, 'random');
+  assert.deepEqual(agreed.rewards, w.b.client.snapshot().room.rewards);
+  assert.equal(w.a.client.ready(0), false);
+  w.a.client.ready(2); w.b.client.ready(2); w.advance(500);
+  const round = w.a.client.snapshot().room;
+  assert.equal(round.phase, 'arming'); assert.equal(w.b.client.setReward('开局后不能改'), false);
+  w.advance(round.signalAt - w.at); w.advance(170); w.a.client.tap(); w.advance(60); w.b.client.tap(); w.advance(500);
+  const result = w.a.client.snapshot().room.result;
+  assert.equal(result.winnerId, 'alice'); assert.equal(result.reward, '请喝一杯奶茶'); assert.equal(result.rewardOwnerId, 'alice');
+  const next = w.a.client.setReward('下一局请吃冰淇淋'); w.advance(500); assert.equal(await next, true);
+  assert.equal(w.a.client.snapshot().room.rewards.alice.text, '下一局请吃冰淇淋');
+  assert.equal(w.a.client.snapshot().room.result.reward, '请喝一杯奶茶'); assert.equal(w.b.client.snapshot().room.result.reward, '请喝一杯奶茶');
+  w.dispose();
+});

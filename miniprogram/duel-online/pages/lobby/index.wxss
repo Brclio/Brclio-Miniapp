@@ -62,6 +62,37 @@ page { background:#fefcf6; color:#1a1a2e; line-height:1.5; }
 .me-label { color:#8c8476; font-size:9px; font-weight:400; }
 .player-meta { display:block; margin-top:4px; font-size:10px; color:#2b7fd8; }
 .player-red .player-meta { color:#b74551; }
+.reward-panel { padding:14px 0; border-bottom:1px solid #e9e2d5; }
+.reward-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+.reward-heading .section-title { font-size:16px; margin:0; }
+.reward-optional { flex-shrink:0; color:#a09480; font-size:10px; }
+.reward-agreement { display:flex; flex-direction:column; gap:10px; }
+.reward-person { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.reward-person-label { display:flex; align-items:center; gap:7px; color:#2b7fd8; font-size:10px; }
+.reward-person-label>text:first-child { min-width:0; overflow-wrap:anywhere; word-break:break-all; }
+.reward-red .reward-person-label { color:#b74551; }
+.reward-mode { color:#a09583; font-size:9px; flex-shrink:0; }
+.reward-value { display:block; color:#655e51; font-size:12px; line-height:1.7; word-break:break-all; }
+.reward-empty { color:#aaa08e; font-size:11px; }
+.reward-editor { display:flex; gap:8px; align-items:center; margin-top:12px; }
+.reward-input { min-width:0; flex:1; width:0; height:46px; padding:0 10px; border:1px solid #e5dfd1; border-radius:9px; font-size:12px; background:#faf7ef; color:#1a1a2e; }
+.online-page .reward-save { min-height:46px; padding:0 13px; background:#e7eff4; color:#2b7fd8; flex-shrink:0; font-size:12px; }
+.reward-tools { display:flex; align-items:center; gap:8px; margin-top:5px; }
+.reward-category { flex:1; min-width:0; }
+.reward-category-label { display:flex; justify-content:space-between; align-items:center; min-height:44px; color:#8b806d; font-size:11px; padding-right:4px; }
+.reward-category-label>text { color:#b3a68e; font-size:16px; }
+.online-page .reward-random,.online-page .reward-clear { background:transparent; color:#8d7834; padding:0 8px; font-size:11px; gap:5px; }
+.reward-random image { width:15px; height:15px; }
+.online-page .reward-clear { color:#a09583; padding-right:0; }
+.online-page .reward-random[disabled],.online-page .reward-clear[disabled] { background:transparent; color:#b1a995; }
+.reward-note { display:block; color:#a09583; font-size:10px; line-height:1.7; margin-top:2px; }
+.reward-panel-locked { padding:10px 0; }
+.reward-panel-locked .reward-heading { margin-bottom:7px; }
+.reward-panel-locked .reward-heading .section-title { font-size:12px; color:#8d7834; }
+.reward-panel-locked .reward-agreement { gap:6px; }
+.reward-result { margin-top:18px; padding:12px 14px; background:#f4efd9; border-radius:10px; }
+.reward-result-label { display:block; color:#a18b43; font-size:10px; overflow-wrap:anywhere; word-break:break-all; }
+.reward-result-text { display:block; color:#73632e; font-size:16px; font-weight:600; line-height:1.7; margin-top:4px; word-break:break-all; }
 .round-signal { min-height:112px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:6px; padding:14px 0; }
 .signal-title { font-size:24px; font-weight:700; line-height:1.3; color:#817153; }
 .signal-copy { font-size:11px; color:#928879; line-height:1.7; }

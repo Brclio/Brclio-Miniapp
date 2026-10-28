@@ -301,3 +301,57 @@ test('active liveness starts fresh instead of applying the game timeout to an ol
   h.receive({ type: 'pong', id: probe.id, clientAt: probe.clientAt, serverAt: h.time + 9000 });
   h.advance(1000); assert.equal(h.client.snapshot().room.phase, 'waiting'); h.client.dispose();
 });
+
+test('reward commands await their own acknowledgement and block readiness until the shared revision arrives', async () => {
+  const h = host(); await h.online(); const room = { ...h.room(), rewardRevision: 0, rewards: {} };
+  h.receive({ type: 'state', room });
+  const saved = h.client.setReward('  一杯奶茶  '), request = h.sent.at(-1); let settled = false;
+  saved.then(() => { settled = true; });
+  assert.deepEqual({ ...request, requestId: 'request' }, { type: 'set_reward', mode: 'custom', roomId: room.id, text: '一杯奶茶', requestId: 'request' });
+  assert.equal(h.client.ready(0), false); assert.equal(h.sent.some(value => value.type === 'ready'), false);
+  h.receive({ type: 'reward_saved', roomId: room.id, requestId: request.requestId, rewardRevision: 1 });
+  await Promise.resolve(); assert.equal(settled, false, 'an early ack cannot consent to unseen shared terms');
+  h.receive({ type: 'state', room: { ...room, rewardRevision: 1, rewards: { me: { text: '一杯奶茶', mode: 'custom', category: '' } } } });
+  assert.equal(await saved, true); assert.equal(h.client.ready(0), false); assert.equal(h.client.ready(1), true);
+  assert.equal(h.sent.at(-1).roomId, room.id); assert.equal(h.sent.at(-1).rewardRevision, 1);
+  const same = h.client.setReward('一杯奶茶'), sameRequest = h.sent.at(-1);
+  h.receive({ type: 'reward_saved', roomId: room.id, requestId: sameRequest.requestId, rewardRevision: 1 });
+  assert.equal(await same, true, 'a no-op save is acknowledged without inventing a new revision'); h.client.dispose();
+});
+
+test('random, clear and invalid reward input remain scoped to the current pre-game room', async () => {
+  const h = host(); await h.online(); const room = { ...h.room(), rewardRevision: 2, rewards: {} }; h.receive({ type: 'state', room });
+  for (const value of ['x'.repeat(81), '含\n换行', {}, null]) assert.equal(h.client.setReward(value), false);
+  assert.equal(h.client.randomReward('__proto__'), false);
+  const random = h.client.randomReward('FOOD'), request = h.sent.at(-1);
+  assert.equal(request.mode, 'random'); assert.equal(request.category, 'FOOD'); assert.equal(Object.hasOwn(request, 'text'), false); assert.equal(Object.hasOwn(request, 'userId'), false);
+  h.receive({ type: 'state', room: { ...room, rewardRevision: 3 } }); h.receive({ type: 'reward_saved', roomId: room.id, requestId: request.requestId, rewardRevision: 3 }); assert.equal(await random, true);
+  const cleared = h.client.setReward(' '), clearing = h.sent.at(-1); assert.equal(clearing.mode, 'none');
+  h.receive({ type: 'error', code: 'reward_stale', message: '彩头已更新，请重试。' }); assert.equal(await cleared, false);
+  h.receive({ type: 'state', room: { ...room, phase: 'arming' } }); assert.equal(h.client.setReward('不能改'), false);
+  h.client.dispose();
+});
+
+test('reward acknowledgement timeout, a different room and explicit exit safely release pending saves', async () => {
+  for (const action of ['timeout', 'room', 'exit']) {
+    const h = host(); await h.online(); const room = { ...h.room(), rewardRevision: 0 }; h.receive({ type: 'state', room });
+    const saved = h.client.setReward('请吃冰淇淋');
+    if (action === 'timeout') h.advance(10000);
+    else if (action === 'room') h.receive({ type: 'state', room: { ...room, id: 'other-room' } });
+    else h.client.disconnect();
+    assert.equal(await saved, false); h.client.dispose(); assert.equal(h.tasks.size, 0);
+  }
+});
+
+test('a reward change during clock calibration cancels deferred consent to the old terms', async () => {
+  const h = host(); await h.online(); const room = { ...h.room(), rewardRevision: 3 };
+  h.receive({ type: 'state', room }); h.silence(); h.advance(11000);
+  assert.equal(h.client.ready(3), false);
+  h.receive({ type: 'state', room: { ...room, rewardRevision: 4 } });
+  for (let i = 0; i < 5; i++) {
+    const probe = h.sent.filter(value => value.type === 'ping').at(-1);
+    h.receive({ type: 'pong', id: probe.id, clientAt: probe.clientAt, serverAt: h.time + 9000 }); h.advance(100);
+  }
+  assert.equal(h.sent.some(value => value.type === 'ready'), false);
+  assert.equal(h.client.ready(3), false); assert.equal(h.client.ready(4), true); h.client.dispose();
+});

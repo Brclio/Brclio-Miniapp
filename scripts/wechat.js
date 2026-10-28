@@ -30,7 +30,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：修复在线 PK 心跳丢包及准备时间差导致的误掉线，进入广场持续保活、短暂断线自动重连；双方各自预热开始音和 GO 后准备，播放异常中止本局。最后一人离开后静默。保留原同屏玩法、分享邀请码、好友及其他栏目。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
+    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：在线 PK 双方各自随机或指定彩头，支持分类抽取、保存、清空及双方同步确认；改动后重新准备，开局锁定，结果展示赢家本轮彩头。保留持续心跳、自动重连、双端音频预热、原同屏玩法及其他栏目。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');

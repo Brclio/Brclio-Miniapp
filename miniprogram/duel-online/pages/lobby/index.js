@@ -2,6 +2,7 @@
 
 const { createOnlineDuel } = require('../../../lib/online-duel');
 const { createOnlineDuelAudio } = require('../../../lib/online-duel-audio');
+const { CATEGORY_LABELS } = require('../../../lib/ready-go-data');
 const SOUND_KEY = 'brclio.online-duel.sound.v1';
 const CODE_PATTERN = /^[A-HJ-NP-Z2-9]{8}$/;
 const cleanCode = value => String(value || '').replace(/[\s-]/g, '').toUpperCase();
@@ -9,6 +10,9 @@ const cleanCode = value => String(value || '').replace(/[\s-]/g, '').toUpperCase
 const ACTIVE_PHASES = ['arming', 'waiting', 'go', 'settling'];
 const label = user => user && (user.displayName || user.username) || '挑战玩家';
 const initial = user => label(user).slice(0, 1).toUpperCase();
+const REWARD_CATEGORIES = Object.keys(CATEGORY_LABELS).filter(key => key !== 'CUSTOM').map(key => ({ key, label: CATEGORY_LABELS[key] }));
+const rewardText = value => typeof value === 'string' ? value : value && typeof value.text === 'string' ? value.text : '';
+const rewardRevision = room => room && Number.isSafeInteger(room.rewardRevision) ? room.rewardRevision : 0;
 
 Page({
   data: {
@@ -22,13 +26,18 @@ Page({
     shareInvite: null, shareRemainingSeconds: 0, shareIsOwner: false, sharePeerName: '', shareCountdown: '',
     inviteCodeInput: '', pendingEntryCode: '', activeList: 'online', friendUsername: '',
     friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '',
-    friendCount: 0, incomingCount: 0, canCreateCode: false
+    friendCount: 0, incomingCount: 0, canCreateCode: false,
+    rewardCategories: REWARD_CATEGORIES, rewardCategoryIndex: 0, rewardCategoryLabel: REWARD_CATEGORIES[0].label,
+    rewardDraft: '', rewardDraftDirty: false, rewardPending: false, ownReward: '', canEditRewards: false,
+    rewardPlayers: [], winnerReward: '', winnerRewardLabel: ''
   },
 
   onLoad(options) {
     this._alive = true;
     this._visible = false;
     this._audioGeneration = 0;
+    this._rewardRoomId = ''; this._rewardOwnValue = ''; this._rewardDraftVersion = 0; this._rewardSubmission = null;
+    this._rewardError = '';
     const code = cleanCode(options && options.code);
     this._pendingCode = CODE_PATTERN.test(code) ? code : '';
     this._joiningCode = false;
@@ -73,6 +82,7 @@ Page({
 
   onHide() {
     this._audioGeneration += 1;
+    this._rewardSubmission = null;
     this._visible = false;
     if (this._client) this._client.disconnect();
     if (this._audio) this._audio.deactivate();
@@ -81,6 +91,7 @@ Page({
 
   onUnload() {
     this._audioGeneration += 1;
+    this._rewardSubmission = null;
     this._alive = false;
     this._visible = false;
     if (this._client) this._client.dispose();
@@ -109,6 +120,32 @@ Page({
       });
     }) : [];
     const phase = room && room.phase;
+    const editableRewardPhase = ['ready', 'result', 'aborted'].indexOf(phase) !== -1;
+    const ownReward = rewardText(room && room.rewards && room.rewards[myId]);
+    const ownValue = JSON.stringify(room && room.rewards && room.rewards[myId] || { text: '', mode: 'none', category: '' });
+    const roomId = room && room.id || '';
+    let rewardDraft = this.data.rewardDraft;
+    let rewardDraftDirty = this.data.rewardDraftDirty;
+    if (roomId !== this._rewardRoomId) {
+      this._rewardRoomId = roomId; this._rewardDraftVersion = 0; this._rewardSubmission = null; this._rewardError = '';
+      rewardDraft = ownReward; rewardDraftDirty = false;
+    } else if (ownValue !== this._rewardOwnValue) {
+      const submission = this._rewardSubmission;
+      if (!rewardDraftDirty || submission && submission.draftVersion === this._rewardDraftVersion) {
+        rewardDraft = ownReward; rewardDraftDirty = false;
+      }
+    }
+    this._rewardOwnValue = ownValue;
+    if (state.error || !editableRewardPhase || state.connection !== 'online') this._rewardSubmission = null;
+    const rewardPlayers = players.map(player => {
+      const descriptor = (ACTIVE_PHASES.indexOf(phase) !== -1 ? room.roundRewards || room.rewards : room.rewards) || {};
+      const reward = descriptor[player.id];
+      return { id: player.id, label: player.mine ? '我赢了想要' : player.label + '赢了想要', color: player.color,
+        text: rewardText(reward) || '这局不设彩头', empty: !rewardText(reward),
+        modeLabel: reward && reward.mode === 'random' ? '随机' : rewardText(reward) ? '指定' : '' };
+    });
+    const winnerReward = result && result.winnerId && ['reaction', 'false_start'].indexOf(result.reason) !== -1 ? rewardText(result.reward) : '';
+    const winningPlayer = result && players.find(player => player.id === result.winnerId);
     const copy = {
       ready: ['两个人，两部手机。', '红蓝已随机分好，各自准备后开始。'],
       arming: ['正在同步开局', '双方准备完成，请保持小程序在前台。'],
@@ -141,6 +178,9 @@ Page({
     const connectionLabel = { idle: '未连接', connecting: '正在连接', reconnecting: '正在自动重连', syncing: '正在校准时间', online: state.syncReady ? '已连接' : '正在校准时间', error: '连接中断', login: '需要登录' }[state.connection] || '正在连接';
     this.setData(Object.assign({}, state, {
       users, players, invitationName: label(peer), resultTitle, resultCopy,
+      rewardDraft, rewardDraftDirty, ownReward, rewardPlayers, rewardPending: !!this._rewardSubmission,
+      canEditRewards: state.connection === 'online' && editableRewardPhase,
+      winnerReward, winnerRewardLabel: winnerReward ? winningPlayer && winningPlayer.mine ? '你赢得的彩头' : label(winningPlayer) + '赢得的彩头' : '',
       shareInvite, shareIsOwner, sharePeerName: label(sharePeer), shareCountdown,
       friends: friends.map(decorate), friendRequests: {
         incoming: incoming.map(request => Object.assign({}, request, { from: decorate(request.from || {}) })),
@@ -148,7 +188,7 @@ Page({
       }, friendCount: friends.length, incomingCount: incoming.length,
       canCreateCode: state.connection === 'online' && state.syncReady && !room && !invitation && !shareInvite,
       pendingEntryCode: this._pendingCode,
-      error: this._entryError || this._audioError || state.error || '',
+      error: this._entryError || this._rewardError || this._audioError || state.error || '',
       phaseTitle: copy[0], phaseCopy: copy[1], connectionLabel,
       userLabel: label(state.user), userInitial: initial(state.user),
       canTap: !!room && !state.tapped && (phase === 'waiting' || phase === 'go'),
@@ -227,20 +267,74 @@ Page({
   accept() { this._audio.unlock(); return this.runAction('accept', this.data.invitation && this.data.invitation.id); },
   decline() { return this.runAction('decline', this.data.invitation && this.data.invitation.id); },
   cancel() { return this.runAction('cancel', this.data.invitation && this.data.invitation.id); },
+  rewardInput(event) {
+    if (!this._alive || !this._visible || !this.data.canEditRewards || this.data.working || this.data.rewardPending) return;
+    const value = Array.from(String(event.detail.value || '')).slice(0, 80).join('');
+    this._rewardDraftVersion += 1; this._rewardError = '';
+    this.setData({ rewardDraft: value, rewardDraftDirty: value.trim() !== this.data.ownReward, error: '' });
+  },
+  selectRewardCategory(event) {
+    if (this.data.working || this.data.rewardPending || !this.data.canEditRewards) return;
+    const index = Number(event.detail.value);
+    if (!Number.isInteger(index) || !REWARD_CATEGORIES[index]) return;
+    this.setData({ rewardCategoryIndex: index, rewardCategoryLabel: REWARD_CATEGORIES[index].label });
+  },
+  async submitReward(method, value) {
+    if (!this._alive || !this._visible || !this.data.canEditRewards || this.data.working || this.data.rewardPending) return;
+    this._rewardError = '';
+    const submission = { draftVersion: this._rewardDraftVersion, roomId: this.data.room.id };
+    this._rewardSubmission = submission;
+    this.setData({ rewardPending: true, error: '' });
+    try {
+      const result = await this.runAction(method, value);
+      if (result === true && this._alive && this._visible && this._rewardSubmission === submission && this.data.room && this.data.room.id === submission.roomId) {
+        this.setData({ rewardDraft: this.data.ownReward, rewardDraftDirty: false });
+      }
+      return result;
+    } finally {
+      if (this._rewardSubmission === submission) {
+        this._rewardSubmission = null;
+        if (this._alive && this._visible) this.setData({ rewardPending: false });
+      }
+    }
+  },
+  saveReward() {
+    if (!this.data.rewardDraftDirty) return;
+    return this.submitReward('setReward', this.data.rewardDraft.trim());
+  },
+  randomReward() { return this.submitReward('randomReward', REWARD_CATEGORIES[this.data.rewardCategoryIndex].key); },
+  clearReward() {
+    if (!this._alive || !this._visible || !this.data.canEditRewards || this.data.working || this.data.rewardPending) return;
+    if (!this.data.ownReward) {
+      this._rewardDraftVersion += 1; this._rewardError = '';
+      this.setData({ rewardDraft: '', rewardDraftDirty: false, error: '' }); return;
+    }
+    return this.submitReward('setReward', '');
+  },
   async ready() {
     if (!this._alive || !this._visible || this.data.working || !this.data.room || !['ready', 'result', 'aborted'].includes(this.data.room.phase) || this.data.myReady) return;
+    if (this.data.rewardDraftDirty || this.data.rewardPending) {
+      this._rewardError = this.data.rewardPending ? '彩头正在同步，稍等双方确认后再准备。' : '彩头还没保存，请先保存或清空后再准备。';
+      this.setData({ error: this._rewardError }); return;
+    }
     const roomId = this.data.room.id;
+    const expectedRewardRevision = rewardRevision(this.data.room);
     const audioGeneration = this._audioGeneration;
     this._audioError = '';
     this.setData({ working: true, audioPreparing: this.data.soundEnabled, error: '' });
     try {
       const prepared = await this._audio.prepare();
       if (!this._alive || !this._visible || audioGeneration !== this._audioGeneration || !this.data.room || this.data.room.id !== roomId || !['ready', 'result', 'aborted'].includes(this.data.room.phase) || this.data.connection !== 'online') return;
+      if (rewardRevision(this.data.room) !== expectedRewardRevision) {
+        this._rewardError = '彩头已更新，请看过双方的新约定后重新准备。';
+        this.setData({ error: this._rewardError }); return;
+      }
       if (!prepared && this.data.soundEnabled) {
         this._audioError = '提示音还没有准备好，请试听成功后再点准备。';
         this.setData({ error: this._audioError }); return;
       }
-      return await this._client.ready();
+      this._rewardError = '';
+      return await this._client.ready(expectedRewardRevision);
     } catch (_) {
       if (this._alive && this._visible && audioGeneration === this._audioGeneration) { this._audioError = '提示音准备失败，请试听后重试。'; this.setData({ error: this._audioError }); }
     } finally {

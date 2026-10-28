@@ -1,11 +1,16 @@
 // Pure authoritative rules. Transport and Cloudflare lifetime handling live in
 // worker.mjs; tests drive this engine with two independent clients and a clock.
+import rewardCatalog from '../miniprogram/lib/ready-go-data.js';
+
 export const LIMITS = Object.freeze({ capacity: 100, invitationMs: 30000, codeMs: 600000, codeCapacity: 500, staleMs: 60000, activeStaleMs: 4500, startBufferMs: 2000, armMarginMs: 300, reactionMs: 5000, settleMs: 500, tieMs: 20, probeAgeMs: 15000 });
 const copy = value => value == null ? value : structuredClone(value);
 const message = (code, text) => ({ type: 'error', code, message: text });
 const CODE = /^[A-HJ-NP-Z2-9]{8}$/;
 const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const randomCode = () => [...crypto.getRandomValues(new Uint8Array(8))].map(value => alphabet[value & 31]).join('');
+const noReward = () => ({ text: '', mode: 'none', category: '' });
+const rewardText = value => typeof value === 'string' ? value.normalize('NFC').trim() : null;
+const validRewardText = value => typeof value === 'string' && [...value].length <= 80 && !/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/u.test(value);
 
 export class DuelHub {
   constructor({ now = Date.now, random = Math.random, id = () => crypto.randomUUID(), code = randomCode, send = () => {} } = {}) {
@@ -27,7 +32,11 @@ export class DuelHub {
       const { invitation, room, shareReservation, ...entry } = copy(attachment);
       this.users.set(entry.user.id, entry);
       if (invitation) this.invitations.set(invitation.id, invitation);
-      if (room) this.rooms.set(room.id, room);
+      if (room) {
+        room.rewardRevision = Number.isSafeInteger(room.rewardRevision) ? room.rewardRevision : 0;
+        room.rewards ||= Object.fromEntries(room.players.map(player => [player.id, noReward()]));
+        this.rooms.set(room.id, room);
+      }
       if (shareReservation) this.codeInvites.set(shareReservation.code, shareReservation);
     }
     // Missing peers on reactivation invalidate the round instead of awarding a win.
@@ -57,7 +66,9 @@ export class DuelHub {
     const entry = this.users.get(userId), room = this.rooms.get(entry?.roomId);
     // Never expose another client's unreconciled touch or timing proofs.
     const publicRoom = room ? { id: room.id, players: room.players, phase: room.phase, ready: room.ready, roundId: room.roundId || null,
-      startAt: room.startAt || null, signalAt: room.signalAt || null, result: room.result || null } : null;
+      startAt: room.startAt || null, signalAt: room.signalAt || null, result: room.result || null,
+      rewards: room.rewards || Object.fromEntries(room.players.map(player => [player.id, noReward()])), rewardRevision: room.rewardRevision || 0,
+      roundRewards: room.roundRewards || null } : null;
     return { type: 'state', room: copy(publicRoom), invitation: copy(this.invitationFor(userId)), shareInvite: copy(this.codeState(this.codeFor(userId))) };
   }
   emitState(userId) { if (this.users.has(userId)) this.emit(userId, this.state(userId)); }
@@ -170,6 +181,7 @@ export class DuelHub {
     }
     const room = this.rooms.get(entry.roomId);
     if (!room) return this.error(userId, 'room_missing', '请先邀请一位在线用户。');
+    if (value.type === 'set_reward') { this.setReward(userId, room, value); return; }
     if (value.type === 'ready') { this.ready(userId, entry, room, value, at); return; }
     if (value.type === 'armed') {
       if (room.phase !== 'arming' || value.roundId !== room.roundId) return;
@@ -184,7 +196,8 @@ export class DuelHub {
   createRoom(owner, guest, shareCode = null) {
     const redFirst = this.random() < .5;
     const players = [owner, guest].map((player, i) => ({ ...player, color: (i === 0) === redFirst ? 'red' : 'blue' }));
-    const room = { id: this.id(), players, shareCode, phase: 'ready', ready: [], roundId: null, result: null, taps: {}, armed: [] };
+    const room = { id: this.id(), players, shareCode, phase: 'ready', ready: [], roundId: null, result: null, taps: {}, armed: [],
+      rewards: Object.fromEntries(players.map(player => [player.id, noReward()])), rewardRevision: 0, roundRewards: null };
     this.rooms.set(room.id, room);
     players.forEach(player => { this.users.get(player.id).roomId = room.id; });
     return room;
@@ -229,9 +242,55 @@ export class DuelHub {
     invitation.roomId = this.createRoom(owner.user, guest.user, invitation.code).id;
     this.markCode(invitation);
   }
+  matchesRewardRevision(room, revision) {
+    // Older clients may still play a room with no reward edits. Once either
+    // participant changes the agreement, an explicit matching revision is vital.
+    return revision === undefined ? (room.rewardRevision || 0) === 0 : Number.isSafeInteger(revision) && revision === (room.rewardRevision || 0);
+  }
+  confirmRewardRevision(userId, room, revision) {
+    if (this.matchesRewardRevision(room, revision)) return true;
+    this.error(userId, 'reward_changed', '彩头已更新，请确认双方约定后重新准备。'); this.emitState(userId); return false;
+  }
+  confirmRewardAgreement(userId, room, value) {
+    if (value.roomId !== undefined ? value.roomId !== room.id : (room.rewardRevision || 0) !== 0) {
+      this.error(userId, 'reward_room_changed', '对局已变化，请确认本局彩头后重新准备。'); this.emitState(userId); return false;
+    }
+    return this.confirmRewardRevision(userId, room, value.rewardRevision);
+  }
+  setReward(userId, room, value) {
+    if (value.requestId !== undefined && (typeof value.requestId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(value.requestId))) return this.error(userId, 'reward_request_invalid', '彩头保存请求无效，请重试。');
+    if (value.roomId !== room.id) return this.error(userId, 'reward_room_changed', '对局已变化，请重新设置本局彩头。');
+    if (!room.players.some(player => player.id === userId) || value.userId !== undefined && value.userId !== userId) return this.error(userId, 'reward_forbidden', '只能设置自己赢了想要的彩头。');
+    if (!['ready', 'finished', 'aborted'].includes(room.phase)) return this.error(userId, 'reward_locked', '本轮已经开始，结束后再修改彩头。');
+    let reward;
+    if (value.mode === 'none') reward = noReward();
+    else if (value.mode === 'custom') {
+      const text = rewardText(value.text);
+      if (!validRewardText(text) || !text) return this.error(userId, 'reward_invalid', '请填写 1～80 字的彩头，或选择不设彩头。');
+      reward = { text, mode: 'custom', category: '' };
+    } else if (value.mode === 'random') {
+      const category = value.category === undefined ? 'ALL' : value.category;
+      const pool = typeof category === 'string' && Object.hasOwn(rewardCatalog.REWARD_POOLS, category) ? rewardCatalog.REWARD_POOLS[category] : null;
+      if (!Array.isArray(pool) || !pool.length) return this.error(userId, 'reward_category_invalid', '请选择一个可用的随机彩头分类。');
+      const available = pool.filter(text => validRewardText(text) && text);
+      const different = available.filter(text => text !== room.rewards?.[userId]?.text);
+      const candidates = different.length ? different : available;
+      if (!candidates.length) return this.error(userId, 'reward_category_invalid', '这个分类暂时没有可用彩头。');
+      const index = Math.min(candidates.length - 1, Math.max(0, Math.floor(this.random() * candidates.length)));
+      reward = { text: candidates[index], mode: 'random', category };
+    } else return this.error(userId, 'reward_invalid', '请选择随机、指定或不设彩头。');
+    room.rewards ||= Object.fromEntries(room.players.map(player => [player.id, noReward()]));
+    if (JSON.stringify(room.rewards[userId]) !== JSON.stringify(reward)) {
+      room.rewards[userId] = reward; room.rewardRevision = (room.rewardRevision || 0) + 1; room.ready = [];
+    }
+    // Even a no-op save acknowledges the caller with an authoritative snapshot.
+    this.roomState(room);
+    if (value.requestId !== undefined) this.emit(userId, { type: 'reward_saved', roomId: room.id, requestId: value.requestId, rewardRevision: room.rewardRevision || 0 });
+  }
   ready(userId, entry, room, value, at) {
     if (!['ready', 'finished', 'aborted'].includes(room.phase)) return;
     if (room.players.some(player => this.users.get(player.id)?.roomId !== room.id)) return this.error(userId, 'user_unavailable', '对方已离开，请返回大厅。');
+    if (!this.confirmRewardAgreement(userId, room, value)) return;
     if (entry.probeAt === null || at - entry.probeAt > LIMITS.probeAgeMs || !Number.isFinite(entry.measuredRtt) || entry.measuredRtt > 400 ||
         !Number.isFinite(value.rtt) || value.rtt < 0 || value.rtt > 300 || !Number.isFinite(value.uncertainty) || value.uncertainty < 0 || value.uncertainty > 150) {
       return this.error(userId, 'clock_unsynced', '网络还没同步好，请稍等后重新准备。');
@@ -251,6 +310,7 @@ export class DuelHub {
         room.shareCode = null;
       }
       room.phase = 'arming'; room.roundId = this.id(); room.result = null; room.taps = {}; room.armed = [];
+      room.roundRewards = copy(room.rewards || Object.fromEntries(room.players.map(player => [player.id, noReward()])));
       // Ready-screen presence is deliberately looser than an active round.
       // Start a fresh round lease for both phones instead of applying the
       // shorter lease to the first player's older lobby heartbeat.
@@ -278,7 +338,8 @@ export class DuelHub {
   }
   finish(room, reason, winnerId, text) {
     room.phase = 'finished'; room.ready = [];
-    room.result = { reason, winnerId, reactions: copy(room.taps), message: text };
+    const reward = winnerId ? room.roundRewards?.[winnerId]?.text || '' : '';
+    room.result = { reason, winnerId, reactions: copy(room.taps), message: text, reward, rewardOwnerId: reward ? winnerId : null };
     this.roomState(room);
   }
   settle(room) {
@@ -289,7 +350,7 @@ export class DuelHub {
   }
   abort(room, text) {
     room.phase = 'aborted'; room.ready = [];
-    room.result = { reason: 'aborted', winnerId: null, reactions: {}, message: text };
+    room.result = { reason: 'aborted', winnerId: null, reactions: {}, message: text, reward: '', rewardOwnerId: null };
     this.roomState(room);
   }
   presenceDeadline(entry) {

@@ -12,7 +12,7 @@ const peer = { id: 'peer', displayName: '对手', avatarUrl: '' };
 const online = { connection: 'online', user, users: [user, peer], room: null, invitation: null, syncReady: true, myReady: false, tapped: false, rtt: 42, error: '', notice: '' };
 
 function host(options = {}) {
-  let definition, bridge, pendingConnect, pendingAudio, audioOptions;
+  let definition, bridge, pendingConnect, pendingAudio, pendingReward, audioOptions;
   const calls = [], sounds = [], wake = [], writes = [], navigations = [], clipboard = [];
   const audio = {
     unlock() { sounds.push(['unlock']); }, play(type) { sounds.push(['play', type]); return options.playFailure !== true; },
@@ -21,12 +21,13 @@ function host(options = {}) {
     stop(cancelPreparation) { sounds.push(['stop']); if (cancelPreparation !== false && pendingAudio) pendingAudio(false); }, dispose() { sounds.push(['dispose']); }, setEnabled(enabled) { sounds.push(['enabled', enabled]); }
   };
   const client = {};
-  for (const method of ['connect', 'disconnect', 'dispose', 'calibrate', 'invite', 'accept', 'decline', 'cancel', 'ready', 'tap', 'leave', 'createCode', 'joinCode', 'cancelCode', 'refreshFriends', 'requestFriend', 'respondFriend', 'removeFriend']) {
+  for (const method of ['connect', 'disconnect', 'dispose', 'calibrate', 'invite', 'accept', 'decline', 'cancel', 'ready', 'tap', 'leave', 'createCode', 'joinCode', 'cancelCode', 'refreshFriends', 'requestFriend', 'respondFriend', 'removeFriend', 'setReward', 'randomReward']) {
     client[method] = value => {
       calls.push([method, structuredClone(value)]);
       if (method === 'connect' && options.pendingConnect) return new Promise(resolve => { pendingConnect = resolve; });
       if (method === 'connect') bridge.onChange(options.state || online);
       if (method === 'disconnect') bridge.onSound('stop');
+      if (['setReward', 'randomReward'].includes(method) && options.pendingReward) return new Promise(resolve => { pendingReward = resolve; });
     };
   }
   vm.runInNewContext(fs.readFileSync(pageFile, 'utf8'), {
@@ -34,6 +35,7 @@ function host(options = {}) {
     require(id) {
       if (id === '../../../lib/online-duel') return { createOnlineDuel(value) { bridge = value; return client; } };
       if (id === '../../../lib/online-duel-audio') return { createOnlineDuelAudio(api, value) { audioOptions = value; return audio; } };
+      if (id === '../../../lib/ready-go-data') return require('../miniprogram/lib/ready-go-data');
       if (id === '../../../lib/account-sync') return { storage: { getStorageSync() { return options.sound; }, setStorageSync(key, value) { writes.push([key, value]); } } };
       throw new Error('Unexpected import: ' + id);
     },
@@ -48,7 +50,7 @@ function host(options = {}) {
   }, { filename: pageFile });
   const page = Object.assign({}, definition, { data: structuredClone(definition.data), setData(value) { Object.assign(this.data, value); } });
   page.onLoad({ code: options.code });
-  return { page, calls, sounds, wake, writes, navigations, clipboard, emit: state => bridge.onChange(state), sound: type => bridge.onSound(type), resolveConnect() { pendingConnect(); }, resolveAudio(value) { pendingAudio(value); }, audioFailure(message) { audioOptions.onFailure(message); } };
+  return { page, calls, sounds, wake, writes, navigations, clipboard, emit: state => bridge.onChange(state), sound: type => bridge.onSound(type), resolveConnect() { pendingConnect(); }, resolveAudio(value) { pendingAudio(value); }, resolveReward(value) { pendingReward(value); }, audioFailure(message) { audioOptions.onFailure(message); } };
 }
 
 test('online page enters on show, leaves on hide and ignores late state/audio while hidden or unloaded', async () => {
@@ -280,4 +282,85 @@ test('reconnecting state is visible and synchronous sound failure reaches the tr
   assert.equal(h.sound('start'), false);
   assert.equal(h.sound('stop'), true);
   h.page.onUnload();
+});
+
+const rewardRoom = (overrides = {}) => ({ id: 'reward-room', phase: 'ready', players: [{ ...user, color: 'blue' }, { ...peer, color: 'red' }],
+  rewards: { me: { text: '', mode: 'none', category: '' }, peer: { text: '请喝一杯奶茶', mode: 'custom', category: '' } }, rewardRevision: 1, ...overrides });
+
+test('both agreed rewards are visible, own draft survives peer updates and must be saved before ready', async () => {
+  const h = host({ pendingReward: true }), p = h.page; p.onShow(); await Promise.resolve();
+  let room = rewardRoom(); h.emit({ ...online, room });
+  assert.equal(p.data.canEditRewards, true);
+  assert.equal(p.data.rewardPlayers[0].text, '这局不设彩头'); assert.equal(p.data.rewardPlayers[1].text, '请喝一杯奶茶');
+  p.rewardInput({ detail: { value: '  免洗碗一天  ' } });
+  assert.equal(p.data.rewardDraftDirty, true); await p.ready();
+  assert.equal(h.calls.some(call => call[0] === 'ready'), false); assert.match(p.data.error, /还没保存/);
+  room = rewardRoom({ rewardRevision: 2, rewards: { ...room.rewards, peer: { text: '一起看一部电影', mode: 'random', category: 'LOVE' } } });
+  h.emit({ ...online, room });
+  assert.equal(p.data.rewardDraft, '  免洗碗一天  '); assert.equal(p.data.rewardPlayers[1].text, '一起看一部电影');
+  const saved = p.saveReward(); assert.deepEqual(h.calls.at(-1), ['setReward', '免洗碗一天']);
+  assert.equal(p.data.rewardPending, true); assert.equal(p.data.working, true); await p.ready();
+  assert.equal(h.calls.some(call => call[0] === 'ready'), false, 'server acknowledgement is required before ready');
+  room = rewardRoom({ rewardRevision: 3, rewards: { ...room.rewards, me: { text: '免洗碗一天', mode: 'custom', category: '' } } });
+  h.emit({ ...online, room }); h.resolveReward(true); await saved;
+  assert.equal(p.data.rewardPending, false); assert.equal(p.data.rewardDraft, '免洗碗一天'); assert.equal(p.data.rewardDraftDirty, false);
+  await p.ready(); assert.deepEqual(h.calls.at(-1), ['ready', 3]);
+  assert.deepEqual(h.writes, [], 'online rewards must not change original game preferences'); p.onUnload();
+});
+
+test('random categories reuse the original library; random and clear wait for the server without editing the peer', async () => {
+  const h = host({ pendingReward: true }), p = h.page; p.onShow(); await Promise.resolve();
+  let room = rewardRoom(); h.emit({ ...online, room });
+  assert.deepEqual(Array.from(p.data.rewardCategories, category => category.key), ['ALL', 'FOOD', 'CHORES', 'PRANK', 'LOVE', 'MONEY']);
+  p.selectRewardCategory({ detail: { value: '1' } });
+  const random = p.randomReward(); assert.deepEqual(h.calls.at(-1), ['randomReward', 'FOOD']);
+  room = rewardRoom({ rewardRevision: 2, rewards: { ...room.rewards, me: { text: '请喝超大杯奶茶', mode: 'random', category: 'FOOD' } } });
+  h.emit({ ...online, room }); h.resolveReward(true); await random;
+  assert.equal(p.data.ownReward, '请喝超大杯奶茶'); assert.equal(p.data.rewardDraft, '请喝超大杯奶茶');
+  const cleared = p.clearReward(); assert.deepEqual(h.calls.at(-1), ['setReward', '']);
+  h.emit({ ...online, room: rewardRoom({ rewardRevision: 3 }) }); h.resolveReward(true); await cleared;
+  assert.equal(p.data.ownReward, ''); assert.equal(p.data.rewardDraft, ''); assert.equal(p.data.rewardPlayers[1].text, '请喝一杯奶茶');
+  p.onUnload();
+});
+
+test('active rewards cannot be edited and failed reward acknowledgement keeps the draft for retry', async () => {
+  const h = host({ pendingReward: true }), p = h.page; p.onShow(); await Promise.resolve();
+  h.emit({ ...online, room: rewardRoom() }); p.rewardInput({ detail: { value: '指定彩头' } });
+  const saving = p.saveReward(); h.resolveReward(false); await saving;
+  assert.equal(p.data.rewardPending, false); assert.equal(p.data.rewardDraft, '指定彩头'); assert.equal(p.data.rewardDraftDirty, true);
+  h.emit({ ...online, room: rewardRoom({ phase: 'waiting' }) });
+  const count = h.calls.length; p.rewardInput({ detail: { value: '不能改' } }); await p.saveReward(); await p.randomReward(); await p.clearReward();
+  assert.equal(h.calls.length, count); assert.equal(p.data.canEditRewards, false); assert.equal(p.data.rewardDraft, '指定彩头');
+  p.onUnload();
+});
+
+test('a peer changing the agreement during audio preparation requires a fresh explicit ready', async () => {
+  const h = host({ pendingAudio: true }), p = h.page; p.onShow(); await Promise.resolve();
+  h.emit({ ...online, room: rewardRoom() }); const preparation = p.ready();
+  h.emit({ ...online, room: rewardRoom({ rewardRevision: 2 }) }); h.resolveAudio(true); await preparation;
+  assert.equal(h.calls.some(call => call[0] === 'ready'), false); assert.match(p.data.error, /彩头已更新/);
+  const renewed = p.ready(); h.resolveAudio(true); await renewed;
+  assert.deepEqual(h.calls.at(-1), ['ready', 2]); p.onUnload();
+});
+
+test('result reward uses the winning round snapshot and cannot change when next-round selections are edited', async () => {
+  const h = host(), p = h.page; p.onShow(); await Promise.resolve();
+  const result = { winnerId: user.id, reason: 'reaction', reward: '这一局约定的奶茶', rewardOwnerId: user.id, reactions: { me: 200, peer: 300 } };
+  const room = rewardRoom({ phase: 'result', result }); h.emit({ ...online, room });
+  assert.equal(p.data.winnerReward, result.reward); assert.equal(p.data.winnerRewardLabel, '你赢得的彩头');
+  h.emit({ ...online, room: { ...room, rewardRevision: 2, rewards: { ...room.rewards, me: { text: '下一局免洗碗', mode: 'custom', category: '' } } } });
+  assert.equal(p.data.winnerReward, result.reward);
+  for (const reason of ['tie', 'timeout', 'aborted']) {
+    h.emit({ ...online, room: { ...room, result: { ...result, reason } } }); assert.equal(p.data.winnerReward, '');
+  }
+  p.onUnload();
+});
+
+test('reward draft resets for a new room and late acknowledgement after leaving cannot change the page', async () => {
+  const h = host({ pendingReward: true }), p = h.page; p.onShow(); await Promise.resolve();
+  h.emit({ ...online, room: rewardRoom() }); p.rewardInput({ detail: { value: '临时草稿' } });
+  h.emit({ ...online, room: rewardRoom({ id: 'another-room' }) }); assert.equal(p.data.rewardDraft, '');
+  p.rewardInput({ detail: { value: '保存中的彩头' } }); const pending = p.saveReward(); p.onHide();
+  const before = JSON.stringify(p.data); h.resolveReward(true); await pending;
+  assert.equal(JSON.stringify(p.data), before); p.onUnload();
 });

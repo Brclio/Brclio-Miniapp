@@ -1,7 +1,9 @@
 'use strict';
 
 const account = require('./account');
+const { REWARD_POOLS } = require('./ready-go-data');
 const copy = value => JSON.parse(JSON.stringify(value));
+const rewardRevision = room => room && Number.isSafeInteger(room.rewardRevision) ? room.rewardRevision : 0;
 
 function socketFailure(error) {
   // Native errors can contain the signed websocket URL. Classify only known
@@ -32,8 +34,9 @@ function createOnlineDuel(options) {
   const timers = new Set(), probes = new Map();
   let socket = null, generation = 0, roundTimers = [], heartbeat = null, heartbeatDue = 0, deadline = null;
   let wanted = false, disposed = false, reconnectAttempt = 0, reconnectTimer = null, networkOnline = true, lastPing = 0;
-  let samples = [], offset = 0, sequence = 0, lastPong = 0, syncing = false, pendingReady = false;
+  let samples = [], offset = 0, sequence = 0, lastPong = 0, syncing = false, pendingReady = null;
   let friendSequence = 0;
+  let rewardSequence = 0, rewardRequest = null;
   let wireRoom = null, activeSince = 0, armedRound = '', scheduledRound = '', signalLocalAt = 0, actualSignalAt = null, shownStart = false;
   let state = { connection: 'idle', user: null, users: [], invitation: null, shareInvite: null, shareRemainingSeconds: 0, friends: [], friendRequests: { incoming: [], outgoing: [] }, friendsLoading: false, friendError: '', room: null, myColor: '', myReady: false, tapped: false, syncReady: false, rtt: 0, uncertainty: 0, error: '', errorCode: '', notice: '', remainingSeconds: 0 };
   const snapshot = () => copy(state);
@@ -52,7 +55,8 @@ function createOnlineDuel(options) {
     catch (_) { failed(); return false; }
   }
   function stop() {
-    generation += 1; pendingReady = false; syncing = false;
+    finishReward(false);
+    generation += 1; pendingReady = null; syncing = false;
     timers.forEach(cancelTimer); timers.clear(); roundTimers = []; probes.clear();
     heartbeat = null; heartbeatDue = 0; lastPing = 0; reconnectTimer = null; deadline = null; samples = []; wireRoom = null; activeSince = 0; armedRound = ''; scheduledRound = ''; shownStart = false; actualSignalAt = null;
     sound('stop');
@@ -109,7 +113,10 @@ function createOnlineDuel(options) {
     else {
       syncing = false;
       if (!state.syncReady) state.notice = '网络延迟较高，请改善网络后重新校准。';
-      if (pendingReady) { pendingReady = false; ready(); }
+      if (pendingReady) {
+        const pending = pendingReady; pendingReady = null;
+        if (state.room && state.room.id === pending.roomId) ready(pending.rewardRevision);
+      }
     }
     emit();
   }
@@ -206,16 +213,21 @@ function createOnlineDuel(options) {
     state.invitation = message.invitation ? { ...message.invitation, direction: message.invitation.from.id === state.user.id ? 'outgoing' : 'incoming' } : null;
     state.shareInvite = message.shareInvite || null;
     countdown(); wireRoom = message.room || null;
+    if (pendingReady && (!wireRoom || wireRoom.id !== pendingReady.roomId || rewardRevision(wireRoom) !== pendingReady.rewardRevision)) pendingReady = null;
+    if (previous && wireRoom && previous.id === wireRoom.id && rewardRevision(previous) !== rewardRevision(wireRoom)) state.notice = '彩头已更新，双方请重新准备。';
     if (!wasActive && wireRoom && ['arming', 'scheduled'].includes(wireRoom.phase)) { activeSince = now(); ping(); }
     else if (!wireRoom || !['arming', 'scheduled'].includes(wireRoom.phase)) activeSince = 0;
     maintain();
     if (!wireRoom) {
+      finishReward(false);
       clearRound(); armedRound = ''; scheduledRound = ''; state.room = null; state.myReady = false; state.myColor = ''; state.tapped = false;
       emit(); return;
     }
     const room = wireRoom, me = room.players.find(player => player.id === state.user.id);
+    if (rewardRequest && rewardRequest.roomId !== room.id) finishReward(false);
     if (!me) { fail('对战房间身份不匹配，请重新进入。'); return; }
     const phase = room.phase === 'scheduled' ? (now() < room.startAt - offset ? 'arming' : state.tapped ? 'settling' : now() >= room.signalAt - offset ? 'go' : 'waiting') : room.phase === 'finished' ? 'result' : room.phase;
+    if (['arming', 'scheduled'].includes(room.phase)) state.notice = '';
     state.myColor = me.color; state.myReady = (room.ready || []).includes(me.id);
     state.room = { ...room, phase, players: room.players.map(player => ({ ...player, ready: (room.ready || []).includes(player.id), reactionMs: room.result && room.result.reactions ? room.result.reactions[player.id] : null })) };
     if (room.phase === 'arming') arm(room);
@@ -224,6 +236,7 @@ function createOnlineDuel(options) {
       clearRound(); armedRound = ''; scheduledRound = '';
       if (previous && previous.phase !== 'result' && previous.phase !== 'aborted' && room.result && room.result.winnerId) sound(room.result.reason === 'false_start' ? 'false' : 'win');
     } else { clearRound(); state.tapped = false; }
+    acknowledgeReward();
     emit();
   }
   function receive(event) {
@@ -236,7 +249,10 @@ function createOnlineDuel(options) {
     } else if (message.type === 'pong') onPong(message);
     else if (message.type === 'lobby') { state.users = (message.users || []).filter(user => user.id !== state.user.id).map(user => ({ ...user, busy: user.status !== 'available' })); annotateFriends(); emit(); }
     else if (message.type === 'state') applyState(message);
-    else if (message.type === 'error') { state.error = typeof message.message === 'string' ? message.message : '操作未完成，请重试。'; pendingReady = false; emit(); }
+    else if (message.type === 'reward_saved') {
+      if (rewardRequest && message.requestId === rewardRequest.id && message.roomId === rewardRequest.roomId && Number.isSafeInteger(message.rewardRevision)) { rewardRequest.ackRevision = message.rewardRevision; acknowledgeReward(); }
+    }
+    else if (message.type === 'error') { state.error = typeof message.message === 'string' ? message.message : '操作未完成，请重试。'; pendingReady = null; finishReward(false); emit(); }
   }
   async function open(reconnecting) {
     if (!wanted || disposed) return;
@@ -287,12 +303,44 @@ function createOnlineDuel(options) {
     else if (state.connection === 'reconnecting') { clear(reconnectTimer); reconnectTimer = null; open(true); }
   };
   if (typeof api.onNetworkStatusChange === 'function') api.onNetworkStatusChange(networkChanged);
-  function ready() {
+  function ready(expectedRewardRevision) {
     if (!state.room || !['ready', 'result', 'aborted'].includes(state.room.phase) || state.myReady) return false;
+    const revision = rewardRevision(state.room);
+    if (expectedRewardRevision !== undefined && expectedRewardRevision !== revision) { state.notice = '彩头已更新，请确认后重新准备。'; emit(); return false; }
     state.error = '';
-    if (now() - lastPong > 10000 || samples.length < 3) { pendingReady = true; syncClock(); return false; }
+    if (rewardRequest) { state.notice = '彩头正在同步，请稍候再准备。'; emit(); return false; }
+    if (now() - lastPong > 10000 || samples.length < 3) { pendingReady = { roomId: state.room.id, rewardRevision: revision }; syncClock(); return false; }
     if (!state.syncReady) { state.notice = '网络延迟较高，请重新校准后准备。'; emit(); return false; }
-    return send({ type: 'ready', rtt: state.rtt, uncertainty: state.uncertainty });
+    return send({ type: 'ready', roomId: state.room.id, rtt: state.rtt, uncertainty: state.uncertainty, rewardRevision: revision });
+  }
+  function finishReward(ok) {
+    if (!rewardRequest) return;
+    const request = rewardRequest; rewardRequest = null; clear(request.timer); request.resolve(ok);
+  }
+  function acknowledgeReward() {
+    if (rewardRequest && state.room && state.room.id === rewardRequest.roomId && Number.isSafeInteger(rewardRequest.ackRevision) && rewardRevision(state.room) >= rewardRequest.ackRevision) finishReward(true);
+  }
+  function changeReward(mode, value) {
+    if (!wireRoom || !state.room || !['ready', 'finished', 'aborted'].includes(wireRoom.phase)) { state.error = '请在开局前设置彩头。'; emit(); return false; }
+    if (rewardRequest) { state.notice = '彩头正在同步，请稍候。'; emit(); return false; }
+    let payload;
+    if (mode === 'random') {
+      if (typeof value !== 'string' || !Object.prototype.hasOwnProperty.call(REWARD_POOLS, value)) { state.error = '请选择有效的彩头分类。'; emit(); return false; }
+      payload = { mode, category: value };
+    } else {
+      if (typeof value !== 'string' || Array.from(value).length > 80 || /[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/.test(value)) { state.error = '彩头最多 80 个字符，请使用普通文字。'; emit(); return false; }
+      const text = value.trim().normalize('NFC');
+      if (Array.from(text).length > 80) { state.error = '彩头最多 80 个字符。'; emit(); return false; }
+      payload = text ? { mode: 'custom', text } : { mode: 'none' };
+    }
+    pendingReady = null; state.error = '';
+    const id = 'reward-' + generation + '-' + ++rewardSequence, roomId = wireRoom.id;
+    return new Promise(resolve => {
+      rewardRequest = { id, roomId, resolve, ackRevision: null, timer: schedule(() => {
+        state.error = '彩头同步暂未确认，请重试。'; finishReward(false); emit();
+      }, 10000) };
+      if (!send({ type: 'set_reward', requestId: id, roomId, ...payload })) finishReward(false);
+    });
   }
   const unsubscribe = auth.subscribe(event => {
     if (!state.user || event.user && event.user.id === state.user.id) return;
@@ -300,6 +348,8 @@ function createOnlineDuel(options) {
   });
   return {
     connect, snapshot, ready,
+    setReward(value) { return changeReward('custom', value); },
+    randomReward(category = 'ALL') { return changeReward('random', category); },
     calibrate: syncClock,
     createCode() { state.error = ''; return send({ type: 'create_code' }); },
     joinCode(value) {

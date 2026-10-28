@@ -10,6 +10,7 @@ const SECRET = 'test-only-online-duel-secret-at-least-32-characters';
 test('real workerd validates websocket tickets/origins and connects two protocol clients through the DO', { timeout: 15000 }, async () => {
   const { issueDuelTicket } = await import('../web/duel-ticket.mjs');
   const modules = ['realtime/worker.mjs', 'realtime/duel-hub.mjs', 'realtime/invite-store.mjs', 'web/duel-ticket.mjs', 'web/account-store.mjs'].map(file => ({ type: 'ESModule', path: path.join(ROOT, file) }));
+  modules.push({ type: 'CommonJS', path: path.join(ROOT, 'miniprogram/lib/ready-go-data.js') });
   const github = duelGitHubFixture();
   const runtime = new Miniflare(convertV4MiniflareOptions({ name: 'brclio-duel-test', modules, modulesRoot: ROOT, compatibilityDate: '2026-10-01', durableObjects: { DUEL_HUB: { className: 'DuelLobby', useSQLite: true } }, bindings: { DUEL_TICKET_SECRET: SECRET, ...github.bindings }, serviceBindings: github.serviceBindings }));
   const sockets = [];
@@ -56,10 +57,22 @@ test('real workerd validates websocket tickets/origins and connects two protocol
     b.send({ type: 'accept', invitationId: invited.invitation.id });
     const joined = await a.wait(value => value.type === 'state' && value.room);
     assert.deepEqual(new Set(joined.room.players.map(player => player.color)), new Set(['red', 'blue']));
+    const catalog = require('../miniprogram/lib/ready-go-data');
+    const githubCalls = github.calls.length;
+    a.send({ type: 'set_reward', roomId: joined.room.id, mode: 'custom', text: '一起喝奶茶', requestId: 'a-custom' });
+    await a.wait(value => value.type === 'reward_saved' && value.requestId === 'a-custom');
+    await b.wait(value => value.type === 'state' && value.room?.rewards?.[A.id]?.text === '一起喝奶茶');
+    b.send({ type: 'set_reward', roomId: joined.room.id, mode: 'random', category: 'FOOD', requestId: 'b-random' });
+    const rewards = await a.wait(value => value.type === 'state' && value.room?.rewardRevision === 2);
+    await b.wait(value => value.type === 'reward_saved' && value.requestId === 'b-random');
+    assert.ok(catalog.REWARD_POOLS.FOOD.includes(rewards.room.rewards[B.id].text));
+    assert.equal(github.calls.length, githubCalls, 'live reward selection never accesses GitHub');
+    await runtime.unsafeEvictDurableObject('brclio-duel-test', 'DuelLobby', { name: 'lobby-v1', webSockets: 'hibernate' });
     a.send({ type: 'ping', id: 1, clientAt: Date.now() }); b.send({ type: 'ping', id: 2, clientAt: Date.now() });
     await Promise.all([a.wait(value => value.type === 'pong'), b.wait(value => value.type === 'pong')]);
-    a.send({ type: 'ready', rtt: 50, uncertainty: 25 }); b.send({ type: 'ready', rtt: 50, uncertainty: 25 });
+    a.send({ type: 'ready', roomId: joined.room.id, rewardRevision: 2, rtt: 50, uncertainty: 25 }); b.send({ type: 'ready', roomId: joined.room.id, rewardRevision: 2, rtt: 50, uncertainty: 25 });
     const arming = await a.wait(value => value.type === 'state' && value.room?.phase === 'arming');
+    assert.deepEqual(arming.room.roundRewards, rewards.room.rewards);
     a.send({ type: 'armed', roundId: arming.room.roundId });
     a.send({ type: 'ping', id: 3, clientAt: Date.now() }); await a.wait(value => value.type === 'pong' && value.id === 3);
     // Force the actual workerd isolate out of memory while keeping sockets.
@@ -75,6 +88,7 @@ test('real workerd validates websocket tickets/origins and connects two protocol
     const aborted = await b.wait(value => value.type === 'state' && value.room?.phase === 'aborted');
     assert.equal(aborted.room.result.winnerId, null);
     assert.equal(aborted.room.result.reason, 'aborted');
+    assert.equal(aborted.room.result.reward, ''); assert.equal(aborted.room.result.rewardOwnerId, null);
   } finally {
     for (const socket of sockets) { try { socket.close(); } catch {} }
     await runtime.dispose();

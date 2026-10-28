@@ -121,6 +121,7 @@ test('presence heartbeats do not rewrite invitation records or postpone the exis
 test('real workerd retains a share code after all sockets close and a cold isolate, then resumes its reserved guest', { timeout: 15000 }, async () => {
   const { issueDuelTicket } = await import('../web/duel-ticket.mjs');
   const modules = ['realtime/worker.mjs', 'realtime/duel-hub.mjs', 'realtime/invite-store.mjs', 'web/duel-ticket.mjs', 'web/account-store.mjs'].map(file => ({ type: 'ESModule', path: path.join(ROOT, file) }));
+  modules.push({ type: 'CommonJS', path: path.join(ROOT, 'miniprogram/lib/ready-go-data.js') });
   const github = duelGitHubFixture();
   const runtime = new Miniflare(convertV4MiniflareOptions({ name: 'brclio-share-test', modules, modulesRoot: ROOT, compatibilityDate: '2026-10-01', durableObjects: { DUEL_HUB: { className: 'DuelLobby', useSQLite: true } }, bindings: { DUEL_TICKET_SECRET: SECRET, ...github.bindings }, serviceBindings: github.serviceBindings }));
   const sockets = [];

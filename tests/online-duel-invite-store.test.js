@@ -133,3 +133,53 @@ test('second ready consumes the GitHub invitation before computing a new future 
   const room = hub.state(A.id).room;
   assert.equal(room.phase, 'arming'); assert.equal(room.startAt - h.at, 2000); assert.equal(hub.state(A.id).shareInvite, null);
 });
+
+test('a stale reward agreement or wrong room ready never reads or consumes its private invitation', async () => {
+  const h = await workerHarness(), hub = h.instance.hub, githubCalls = [];
+  hub.receive(A.id, { type: 'create_code' }); hub.receive(B.id, { type: 'join_code', code: 'ABCD2345' });
+  const room = hub.rooms.get(hub.users.get(A.id).roomId);
+  hub.receive(A.id, { type: 'set_reward', roomId: room.id, mode: 'custom', text: '一杯奶茶' });
+  hub.receive(B.id, { type: 'set_reward', roomId: room.id, mode: 'custom', text: '免洗碗一次' });
+  h.probe(A); h.probe(B);
+  hub.receive(A.id, { type: 'ready', roomId: room.id, rewardRevision: room.rewardRevision, rtt: 10, uncertainty: 5 });
+  assert.deepEqual(room.ready, [A.id]);
+  for (const method of ['readUser', 'readCode', 'apply']) h.instance.invites[method] = async () => {
+    githubCalls.push(method); throw Error('Obsolete agreements must be rejected before GitHub IO');
+  };
+  for (const [agreement, code] of [
+    [{ roomId: room.id, rewardRevision: 1 }, 'reward_changed'],
+    [{ roomId: 'old-room', rewardRevision: 2 }, 'reward_room_changed'],
+    [{ roomId: room.id }, 'reward_changed'],
+    [{ rewardRevision: 2 }, 'reward_room_changed']
+  ]) {
+    h.outbound.length = 0;
+    await h.instance.shareAction(B.id, { type: 'ready', ...agreement, rtt: 10, uncertainty: 5 });
+    assert.equal(h.outbound.find(event => event.id === B.id && event.value.type === 'error')?.value.code, code);
+    assert.equal(room.phase, 'ready'); assert.deepEqual(room.ready, [A.id]);
+    assert.equal(hub.codeFor(B.id)?.code, 'ABCD2345'); assert.equal(h.instance.buffers.size, 0);
+  }
+  assert.deepEqual(githubCalls, []); assert.deepEqual(h.writes, []);
+});
+
+test('buffered reward acknowledgements follow the authoritative state, including no-op saves, without GitHub IO', async () => {
+  const h = await workerHarness(), hub = h.instance.hub, githubCalls = [];
+  hub.receive(A.id, { type: 'invite', userId: B.id });
+  hub.receive(B.id, { type: 'accept', invitationId: hub.state(B.id).invitation.id });
+  const room = hub.rooms.get(hub.users.get(A.id).roomId);
+  for (const method of ['readUser', 'readCode', 'apply']) h.instance.invites[method] = async () => {
+    githubCalls.push(method); throw Error('A transient room reward must not create a business document');
+  };
+  for (const requestId of ['save-reward', 'save-same-reward']) {
+    h.outbound.length = 0;
+    await h.instance.shareAction(A.id, { type: 'set_reward', roomId: room.id, requestId, mode: 'custom', text: '请喝一杯咖啡' });
+    const own = h.outbound.filter(event => event.id === A.id).map(event => event.value);
+    const stateAt = own.findIndex(value => value.type === 'state' && value.room?.rewardRevision === 1);
+    const ackAt = own.findIndex(value => value.type === 'reward_saved' && value.requestId === requestId);
+    assert.ok(stateAt >= 0); assert.ok(ackAt > stateAt, 'the client must receive the agreed reward before its save promise resolves');
+    assert.equal(own[stateAt].room.rewards[A.id].text, '请喝一杯咖啡');
+    assert.equal(own[ackAt].roomId, room.id); assert.equal(own[ackAt].rewardRevision, 1);
+    assert.equal(h.outbound.some(event => event.id === B.id && event.value.type === 'reward_saved'), false);
+    assert.equal(hub.state(B.id).room.rewards[A.id].text, '请喝一杯咖啡');
+  }
+  assert.deepEqual(githubCalls, []); assert.deepEqual(h.writes, []);
+});

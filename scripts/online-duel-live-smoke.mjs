@@ -11,6 +11,7 @@ import { promisify } from 'node:util';
 import { fetch as undiciFetch, WebSocket, EnvHttpProxyAgent } from 'undici';
 import { createGitHubStore } from '../web/account-store.mjs';
 import { accountInternals } from '../web/account-api.mjs';
+import rewardCatalog from '../miniprogram/lib/ready-go-data.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGINS = ['https://pocket.bornforthis.cn', 'https://pocket.brclio.com'];
@@ -288,14 +289,19 @@ async function round(a, b, mode = 'reaction') {
   const measurements = await Promise.all([a.calibrate(), b.calibrate()]);
   const result = { mode, status: 'pending', rtt: measurements.map((value, i) => ({ player: i === 0 ? 'a' : 'b', ...value })) }; report.rounds.push(result);
   if (measurements.some(value => value.rtt > 300 || value.uncertainty > 150)) { result.status = 'blocked_by_live_latency'; failedRound = true; return false; }
-  const marks = [a.mark(), b.mark()]; a.send({ type: 'ready', ...measurements[0] }); b.send({ type: 'ready', ...measurements[1] });
+  const agreement = a.state?.room;
+  checked('common_reward_agreement_' + mode, agreement && agreement.id === b.state?.room?.id && agreement.rewardRevision === b.state?.room?.rewardRevision && same(agreement.rewards, b.state?.room?.rewards));
+  const marks = [a.mark(), b.mark()];
+  const consent = { roomId: agreement.id, rewardRevision: agreement.rewardRevision };
+  a.send({ type: 'ready', ...measurements[0], ...consent }); b.send({ type: 'ready', ...measurements[1], ...consent });
   const scheduled = await a.wait(message => message.type === 'state' && message.room?.phase === 'scheduled', marks[0]);
   const peer = await b.wait(message => message.type === 'state' && message.room?.phase === 'scheduled' && message.room.roundId === scheduled.room.roundId, marks[1]);
   checked('common_signal_time_' + mode, scheduled.room.signalAt === peer.room.signalAt);
   const room = scheduled.room;
+  checked('round_reward_snapshot_' + mode, same(room.roundRewards, agreement.rewards));
   if (mode === 'disconnect') {
     const mark = b.mark(); await a.close(); const state = await b.wait(message => message.type === 'state' && message.room?.phase === 'aborted', mark);
-    checked('disconnect_aborts_no_winner', state.room.result?.winnerId === null); result.status = 'passed'; return true;
+    checked('disconnect_aborts_no_winner', state.room.result?.winnerId === null && !state.room.result?.reward); result.status = 'passed'; return true;
   }
   const completion = a.wait(message => message.type === 'state' && message.room?.roundId === room.roundId && ['finished', 'aborted'].includes(message.room.phase), marks[0], 18000);
   if (mode === 'false_start') {
@@ -319,9 +325,17 @@ async function round(a, b, mode = 'reaction') {
   checked('result_' + mode, finished.room.result?.reason === mode && finished.room.result?.winnerId === expectedWinner);
   const other = await b.wait(message => message.type === 'state' && message.room?.phase === 'finished' && message.room.roundId === room.roundId, marks[1]);
   checked('same_result_' + mode, same(finished.room.result, other.room.result));
+  checked('winner_reward_' + mode, finished.room.result.reward === agreement.rewards[expectedWinner].text && finished.room.result.rewardOwnerId === expectedWinner);
   result.status = 'passed'; result.reason = finished.room.result.reason;
   result.reactions = Object.entries(finished.room.result.reactions).map(([id, ms]) => ({ player: id === a.fixture.id ? 'a' : 'b', ms }));
   return true;
+}
+async function setLiveReward(connection, payload) {
+  const room = connection.state?.room; ensure(room, 'reward_room_missing');
+  const requestId = 'smoke-' + randomBytes(6).toString('hex'), mark = connection.mark();
+  connection.send({ type: 'set_reward', roomId: room.id, requestId, ...payload });
+  const ack = await connection.wait(message => message.type === 'reward_saved' && message.requestId === requestId && message.roomId === room.id, mark);
+  return connection.wait(message => message.type === 'state' && message.room?.id === room.id && message.room.rewardRevision === ack.rewardRevision, mark);
 }
 async function verifyRealtime() {
   const [af, bf, cf] = fixtures; let a = await open(af); const b = await open(bf), c = await open(cf);
@@ -363,6 +377,15 @@ async function verifyRealtime() {
   const roomMark = a.mark(); a.send({ type: 'join_code', code: nextCode.code });
   await a.wait(message => message.type === 'state' && message.room?.phase === 'ready', roomMark);
   await proveInvite('timed_code_reserved', nextCode.code, bf, af); await recovery();
+  const custom = await setLiveReward(a, { mode: 'custom', text: '一起喝杯奶茶' });
+  checked('custom_reward_synchronized', custom.room.rewards[af.id]?.text === '一起喝杯奶茶');
+  await b.wait(message => message.type === 'state' && message.room?.rewardRevision === custom.room.rewardRevision);
+  const randomized = await setLiveReward(b, { mode: 'random', category: 'FOOD' });
+  checked('random_reward_from_existing_catalog', randomized.room.rewards[bf.id]?.mode === 'random' && rewardCatalog.REWARD_POOLS.FOOD.includes(randomized.room.rewards[bf.id]?.text));
+  await a.wait(message => message.type === 'state' && message.room?.rewardRevision === randomized.room.rewardRevision);
+  const staleMark = a.mark(); a.send({ type: 'ready', roomId: randomized.room.id, rewardRevision: randomized.room.rewardRevision - 1, rtt: 10, uncertainty: 5 });
+  checked('stale_reward_consent_rejected', (await a.wait(message => message.type === 'error', staleMark)).code === 'reward_changed');
+  checked('reward_change_keeps_invitation_until_valid_start', !!(await readCurrent(dataStore, codePath(nextCode.code))));
   if (await round(a, b, 'reaction')) {
     // Storage reads deliberately happen after the round. GitHub traffic is
     // never placed between scheduled GO and tap timers in this verifier.

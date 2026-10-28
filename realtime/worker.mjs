@@ -113,6 +113,9 @@ export class DuelLobby extends DurableObject {
   async shareAction(userId, value) {
     if (!this.hub.users.has(userId)) return;
     const activeRoom = this.hub.rooms.get(this.hub.users.get(userId)?.roomId);
+    // Reject obsolete agreements before reading or consuming a GitHub-backed
+    // invitation. Audio preparation and network transit can outlive an edit.
+    if (value.type === 'ready' && activeRoom && ['ready', 'finished', 'aborted'].includes(activeRoom.phase) && !this.hub.confirmRewardAgreement(userId, activeRoom, value)) return;
     if (['create_code', 'join_code', 'cancel_code'].includes(value.type) && activeRoom && ['arming', 'scheduled'].includes(activeRoom.phase)) {
       this.hub.error(userId, 'user_busy', '请先完成当前对局。'); return;
     }
@@ -168,10 +171,13 @@ export class DuelLobby extends DurableObject {
       for (const code of codes) this.hub.codeChanges.delete(code);
       const messages = [...this.buffers]; for (const id of ids) this.buffers.delete(id);
       for (const [id, pending] of messages) {
-        for (const message of pending) if (!['state', 'lobby'].includes(message.type)) {
+        for (const message of pending) if (!['state', 'lobby', 'reward_saved'].includes(message.type)) {
           try { this.sockets.get(id)?.send(JSON.stringify({ ...message, serverAt: Date.now() })); } catch {}
         }
         this.hub.emitState(id);
+        for (const message of pending) if (message.type === 'reward_saved') {
+          try { this.sockets.get(id)?.send(JSON.stringify({ ...message, serverAt: Date.now() })); } catch {}
+        }
       }
       if (this.pendingLobby) { this.pendingLobby = false; this.hub.lobby(); }
       await this.persist();
