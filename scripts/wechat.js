@@ -30,7 +30,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：重做博客列表与阅读布局，优化搜索、整宽文章卡、作者信息与底部评论分享收藏点赞栏；新增双端阅读缓存，返回保留筛选分页，支持主动刷新、互动同步及账号隔离。保留摄影、挑战、悦学、育儿和头像功能。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
+    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：新增双手机在线反应 PK、分享邀请和邀请码加入、好友申请与确认及在线好友快捷挑战；随机红蓝、同步信号、抢跑平局超时判定。实时服务按需连接和休眠。保留同屏、无限、计分、彩头、战报及原有摄影、悦学、育儿、博客和账号功能。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');

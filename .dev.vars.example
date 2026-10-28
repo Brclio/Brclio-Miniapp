@@ -20,6 +20,10 @@ WECHAT_APP_SECRET="replace-with-miniapp-appsecret"
 # Empty lists keep writing closed; reading and signed-in interactions stay available.
 BLOG_ADMIN_USER_IDS=""
 BLOG_ADMIN_EMAILS=""
+# Optional online PK: configure both Pages and realtime Worker with the same secret.
+# Keep unset to leave the new online service unavailable; local games still work.
+DUEL_SOCKET_URL=""
+DUEL_TICKET_SECRET=""
 # Alternative email provider: remove SMTP_* and use EMAIL_PROVIDER=resend.
 # RESEND_API_KEY="replace-with-resend-api-key"
 # EMAIL_FROM="Brclio <verified-sender@example.com>"

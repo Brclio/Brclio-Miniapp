@@ -1,0 +1,30 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "brclio-miniapp-duel",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DUEL_HUB",
+        "class_name": "DuelLobby"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "DuelLobby"
+      ]
+    }
+  ],
+  "account_id": "cacceff607775c81f667b7a951d4639f",
+  "routes": [
+    {
+      "pattern": "pk.brclio-miniapp.bornforthis.cn",
+      "custom_domain": true
+    }
+  ]
+}

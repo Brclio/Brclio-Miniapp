@@ -13,6 +13,8 @@
 
   <view class="round-heading"><view class="round-title serif">{{customTitle || '面对面，来一局。'}}</view><view class="round-caption">{{gameMode === 'INFINITE' ? '每轮都有新彩头，想玩几局都可以。' : '把手机放中间，看到 GO 再出手。'}}</view></view>
 
+  <button wx:if="{{gameState !== 'WAITING' && gameState !== 'GO'}}" class="online-entry" bindtap="openOnline" hover-class="control-pressed" aria-label="在线 PK，各用自己的手机对战"><text>在线 PK</text><text class="online-entry-copy">各用各的手机，约个对手 →</text></button>
+
   <view class="play-court {{gameState === 'GO' ? 'court-go' : ''}}">
     <view wx:for="{{players}}" wx:key="id" data-player="{{item.id}}" bindtouchstart="playerTouch" hover-class="zone-pressed" class="touch-zone {{item.id}} {{item.winner ? 'zone-winner' : ''}} {{item.loser ? 'zone-loser' : ''}}" aria-role="button" aria-label="{{item.name}}的点击区域">
       <view class="zone-content {{item.id === 'p1' ? 'opposed-player' : ''}}">

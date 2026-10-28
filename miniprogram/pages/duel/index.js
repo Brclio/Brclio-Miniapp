@@ -63,6 +63,10 @@ Page(Object.assign({}, legacy, {
   clearTimers() { if (this._timers) this._timers.forEach((id) => clearTimeout(id)); if (this._timers) this._timers.clear(); },
   notify(message) { if (wx.showToast) wx.showToast({ title: message, icon: 'none', duration: 2500 }); },
   noop() {},
+  openOnline() {
+    if (this.data.gameState === 'WAITING' || this.data.gameState === 'GO') return;
+    wx.navigateTo({ url: '/duel-online/pages/lobby/index' });
+  },
   onFormFocus(event) {
     const id = event.currentTarget.dataset.focus;
     if (typeof id !== 'string' || !/^(?:settings-(?:title|p1|p2)|reward-p[12]|password-check)$/.test(id)) return;

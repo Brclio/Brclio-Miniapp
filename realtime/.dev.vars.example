@@ -1,0 +1,2 @@
+# Development only. Configure the same secret on the account Pages service.
+DUEL_TICKET_SECRET="replace-with-at-least-32-random-characters"

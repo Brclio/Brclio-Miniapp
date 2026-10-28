@@ -237,6 +237,11 @@ function createAccountClient(options) {
     getSessionSnapshot() { const session = readSession(); return session ? { user: safeUser(session.user), expiresAt: session.expiresAt } : { user: null, expiresAt: null }; },
     subscribe(listener) { if (typeof listener !== 'function') return () => {}; subscribers.add(listener); return () => subscribers.delete(listener); },
     readSync() { return authedRequest('/sync', 'GET'); },
+    createDuelTicket() { return authedRequest('/duel-ticket', 'POST', {}); },
+    readFriends() { return authedRequest('/friends', 'GET'); },
+    requestFriend(target) { return authedRequest('/friends/request', 'POST', target); },
+    respondFriend(requestId, accept) { return authedRequest('/friends/respond', 'POST', { requestId, accept }); },
+    removeFriend(userId) { return authedRequest('/friends/remove', 'POST', { userId }); },
     writeSync(payload) { return authedRequest('/sync', 'PUT', payload); },
     async setBuiltinAvatar(id) {
       if (!Number.isInteger(id) || id < 1 || id > 1000) throw accountError('invalid_avatar', '请选择有效的内置头像。');

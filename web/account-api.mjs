@@ -2,6 +2,8 @@ import { createGitHubStore, AccountStoreError } from './account-store.mjs';
 import { AvatarError, MAX_AVATAR_REQUEST_BYTES, validateAvatar, imageDimensions, hasAvatar, randomBuiltinId, avatarDirectory, publicAvatar } from './account-avatar.mjs';
 import { sendAccountEmail } from './account-mail.mjs';
 import { SyncDataError, MAX_SYNC_REQUEST_BYTES, validateSyncPatch, readSyncDocument, mergeSyncPatch } from './account-sync.mjs';
+import { issueDuelTicket, duelSocketUrl } from './duel-ticket.mjs';
+import { handleFriends, FriendsError } from './account-friends.mjs';
 
 const encoder = new TextEncoder();
 const CODE_TTL = 10 * 60000;
@@ -11,7 +13,8 @@ const HEADERS = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosnif
 const ROUTES = new Map([
   ['/email/code', 'POST'], ['/register', 'POST'], ['/login/password', 'POST'],
   ['/login/email', 'POST'], ['/login/wechat', 'POST'], ['/session', 'GET'],
-  ['/logout', 'POST'], ['/bind/email', 'POST'], ['/bind/wechat', 'POST'], ['/data', 'GET,PUT'], ['/sync', 'GET,PUT'], ['/avatar', 'PUT']
+  ['/logout', 'POST'], ['/bind/email', 'POST'], ['/bind/wechat', 'POST'], ['/data', 'GET,PUT'], ['/sync', 'GET,PUT'], ['/avatar', 'PUT'], ['/duel-ticket', 'POST'],
+  ['/friends', 'GET'], ['/friends/request', 'POST'], ['/friends/respond', 'POST'], ['/friends/remove', 'POST']
 ]);
 
 class AccountError extends Error {
@@ -399,6 +402,21 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
             return issueSession(tx, profile, at, 'm1.' + profile.id + '.' + randomHex(32), url.origin);
           });
         }
+      } else if (route === '/friends' || route.startsWith('/friends/')) {
+        const user = await authenticateAccountUser(store, request, at, url.origin);
+        const dataStore = storeFactory(env, { repository: 'data', fetchImpl });
+        result = await handleFriends({ route, body, user, store: dataStore, at, origin: url.origin,
+          resolveUsername: async username => (await store.read(await indexPath(secret, 'username', username)))?.userId,
+          resolveUser: async id => { const profile = await store.read(userPath(id, 'profile')); return profile?.status === 'active' ? profile : null; }
+        });
+      } else if (route === '/duel-ticket') {
+        exactFields(body, []);
+        // Read-only authentication avoids a GitHub commit for every lobby visit.
+        const user = await authenticateAccountUser(store, request, at, url.origin);
+        if (typeof env.DUEL_TICKET_SECRET !== 'string' || env.DUEL_TICKET_SECRET.length < 32 || !duelSocketUrl(env.DUEL_SOCKET_URL)) {
+          throw fail(503, 'duel_unavailable', '在线 PK 尚未开放，请先体验同屏对决。');
+        }
+        result = await issueDuelTicket(user, env.DUEL_TICKET_SECRET, env.DUEL_SOCKET_URL, at);
       } else if (route === '/session') {
         result = await store.transaction(async tx => {
           const { profile } = await authenticate(tx, request, at);
@@ -453,6 +471,7 @@ export function createAccountApi({ storeFactory = createGitHubStore, fetchImpl =
       }
       return json(result || { ok: true }, route === '/register' ? 201 : 200, originHeaders);
     } catch (error) {
+      if (error instanceof FriendsError) return json({ error: error.code, message: error.message }, error.status, originHeaders);
       if (error instanceof AvatarError) return json({ error: error.code, message: error.message }, error.status, originHeaders);
       if (error instanceof SyncDataError) return json({ error: error.code, message: error.status === 503 ? '云端同步暂不可用，请稍后重试。' : error.status === 413 ? '同步数据较大，请减少单次同步内容。' : '同步数据格式错误或包含不支持的字段。' }, error.status, originHeaders);
       if (error instanceof AccountError) return json({ error: error.code, message: error.message, ...(error.retryAfter ? { retryAfter: error.retryAfter } : {}) }, error.status, originHeaders);

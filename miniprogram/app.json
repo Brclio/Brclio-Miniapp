@@ -46,6 +46,13 @@
       ]
     },
     {
+      "root": "duel-online",
+      "name": "duel-online",
+      "pages": [
+        "pages/lobby/index"
+      ]
+    },
+    {
       "root": "nursery",
       "name": "nursery",
       "pages": [

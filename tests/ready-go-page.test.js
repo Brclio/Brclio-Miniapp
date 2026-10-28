@@ -66,6 +66,14 @@ test('hide stops all round and confetti timers; show does not resurrect GO or sc
   h.page.onUnload(); assert.equal(h.tasks.size, 0); assert.equal(h.keeps.at(-1), false); assert.equal(h.sounds.at(-1), 'dispose');
 });
 
+test('online PK opens an isolated page and cannot interrupt an active local round', () => {
+  const h = host();
+  h.page.openOnline(); assert.deepEqual(h.navigations, ['/duel-online/pages/lobby/index']);
+  h.page.launchRound(); h.page.openOnline(); assert.equal(h.navigations.length, 1);
+  h.advance(2000); h.page.openOnline(); assert.equal(h.navigations.length, 1);
+  assert.equal(h.page.data.gameState, 'GO'); h.page.onUnload();
+});
+
 test('canceled report generation resets controls and stale exported images are deleted', async () => {
   const h = host(); h.page.generateReport(); assert.equal(h.page.data.isGeneratingReport, true);
   h.page.onHide(); await h.resolveQuery(); assert.equal(h.page.data.isGeneratingReport, false); assert.equal(h.api.pendingExport, undefined);

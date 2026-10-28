@@ -52,7 +52,7 @@ try {
     const file = path.join(appRoot, asset.url.slice(1));
     return /^\/photo-\d+\/assets\/photos\/[a-z0-9-]+\.jpg$/.test(asset.url) && fs.existsSync(file) && crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex') === asset.sha256;
   }), '9 本真实相册与 169 张本地展示素材随代码内置并校验哈希');
-  const scripts = files.concat(walk(path.join(root, 'minigame')), walk(path.join(root, 'web')), walk(path.join(root, 'worker'))).filter(function (file) { return /\.(?:js|mjs)$/.test(file); });
+  const scripts = files.concat(walk(path.join(root, 'minigame')), walk(path.join(root, 'web')), walk(path.join(root, 'worker')), walk(path.join(root, 'realtime'))).filter(function (file) { return /\.(?:js|mjs)$/.test(file); });
   scripts.forEach(function (file) {
     const result = child.spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
     check(result.status === 0, 'JS 语法 ' + path.relative(root, file));
