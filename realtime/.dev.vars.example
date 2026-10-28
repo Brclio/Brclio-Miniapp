@@ -1,2 +1,7 @@
 # Development only. Configure the same secret on the account Pages service.
 DUEL_TICKET_SECRET="replace-with-at-least-32-random-characters"
+# Use the existing GitHub App restricted to the existing private business repo.
+GITHUB_APP_ID="replace-with-existing-app-id"
+GITHUB_APP_CLIENT_ID="replace-with-existing-app-client-id"
+GITHUB_APP_PRIVATE_KEY="replace-with-existing-app-pem"
+GITHUB_DATA_BRANCH="main"

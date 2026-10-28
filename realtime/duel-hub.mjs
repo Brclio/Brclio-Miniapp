@@ -24,10 +24,11 @@ export class DuelHub {
   restore(attachments) {
     for (const attachment of attachments) {
       if (!attachment?.user?.id || !Number.isFinite(attachment.lastSeen)) continue;
-      const { invitation, room, ...entry } = copy(attachment);
+      const { invitation, room, shareReservation, ...entry } = copy(attachment);
       this.users.set(entry.user.id, entry);
       if (invitation) this.invitations.set(invitation.id, invitation);
       if (room) this.rooms.set(room.id, room);
+      if (shareReservation) this.codeInvites.set(shareReservation.code, shareReservation);
     }
     // Missing peers on reactivation invalidate the round instead of awarding a win.
     for (const room of this.rooms.values()) {
@@ -36,7 +37,7 @@ export class DuelHub {
   }
   attachment(userId) {
     const entry = this.users.get(userId); if (!entry) return null;
-    return copy({ ...entry, invitation: this.invitationFor(userId), room: this.rooms.get(entry.roomId) || null });
+    return copy({ ...entry, invitation: this.invitationFor(userId), shareReservation: this.codeFor(userId), room: this.rooms.get(entry.roomId) || null });
   }
   emit(userId, value) { this.send(userId, { ...copy(value), serverAt: this.now() }); }
   error(userId, code, text) { this.emit(userId, message(code, text)); }

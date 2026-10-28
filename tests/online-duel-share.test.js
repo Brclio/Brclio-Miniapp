@@ -6,6 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { Miniflare, convertV4MiniflareOptions } = require('miniflare');
 const ROOT = path.resolve(__dirname, '..');
+const { duelGitHubFixture } = require('./helpers/duel-github.cjs');
 const SECRET = 'test-only-online-duel-secret-at-least-32-characters';
 const A = { id: 'a'.repeat(32), displayName: '发起者', avatarUrl: '' };
 const B = { id: 'b'.repeat(32), displayName: '受邀者', avatarUrl: '' };
@@ -119,8 +120,9 @@ test('presence heartbeats do not rewrite invitation records or postpone the exis
 
 test('real workerd retains a share code after all sockets close and a cold isolate, then resumes its reserved guest', { timeout: 15000 }, async () => {
   const { issueDuelTicket } = await import('../web/duel-ticket.mjs');
-  const modules = ['realtime/worker.mjs', 'realtime/duel-hub.mjs', 'web/duel-ticket.mjs'].map(file => ({ type: 'ESModule', path: path.join(ROOT, file) }));
-  const runtime = new Miniflare(convertV4MiniflareOptions({ name: 'brclio-share-test', modules, modulesRoot: ROOT, compatibilityDate: '2026-10-01', durableObjects: { DUEL_HUB: { className: 'DuelLobby', useSQLite: true } }, bindings: { DUEL_TICKET_SECRET: SECRET } }));
+  const modules = ['realtime/worker.mjs', 'realtime/duel-hub.mjs', 'realtime/invite-store.mjs', 'web/duel-ticket.mjs', 'web/account-store.mjs'].map(file => ({ type: 'ESModule', path: path.join(ROOT, file) }));
+  const github = duelGitHubFixture();
+  const runtime = new Miniflare(convertV4MiniflareOptions({ name: 'brclio-share-test', modules, modulesRoot: ROOT, compatibilityDate: '2026-10-01', durableObjects: { DUEL_HUB: { className: 'DuelLobby', useSQLite: true } }, bindings: { DUEL_TICKET_SECRET: SECRET, ...github.bindings }, serviceBindings: github.serviceBindings }));
   const sockets = [];
   try {
     async function open(user) {

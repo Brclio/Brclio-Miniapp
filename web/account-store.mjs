@@ -162,10 +162,13 @@ export function createGitHubStore(env, { fetchImpl = fetch, repository = 'users'
     .then(value => base64url(new Uint8Array(value)));
 
   async function rawRequest(path, bearer, { method = 'GET', body } = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
     let response;
     try {
       response = await fetchImpl(API + path, {
-        method, redirect: 'manual', signal: AbortSignal.timeout(15000),
+        method, redirect: 'manual', signal: controller.signal,
         headers: {
           Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + bearer,
           'X-GitHub-Api-Version': '2026-03-10', 'User-Agent': 'Brclio-Miniapp-Account',
@@ -181,6 +184,7 @@ export function createGitHubStore(env, { fetchImpl = fetch, repository = 'users'
       return { status: response.status, value: null };
     }
     return { status: response.status, value: await responseJson(response) };
+    } finally { clearTimeout(timeout); }
   }
 
   async function mintToken() {

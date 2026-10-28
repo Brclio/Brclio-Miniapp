@@ -23,7 +23,8 @@ const relativeDirectory = 'artifacts/online-duel/' + VERSION + '/live-' + runId;
 const directory = path.join(ROOT, relativeDirectory);
 const marker = { kind: KIND, runId, nonce: randomBytes(16).toString('hex') };
 const fixtures = [], sockets = [], timers = new Set();
-const report = { schemaVersion: 1, kind: KIND, runId, version: VERSION, startedAt, passed: false, checks: [], requests: [], storage: [], cleanup: [], rounds: [] };
+const knownInvites = new Map();
+const report = { schemaVersion: 1, kind: KIND, runId, version: VERSION, startedAt, passed: false, checks: [], requests: [], storage: [], storageProof: [], cleanup: [], rounds: [] };
 const dispatcher = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy ? new EnvHttpProxyAgent() : undefined;
 const networkFetch = (input, init = {}) => undiciFetch(input, { ...init, ...(dispatcher ? { dispatcher } : {}) });
 let env, users, dataStore, outputReady = false, seedAttempted = false, failedRound = false;
@@ -60,6 +61,40 @@ function ownsFriendDocument(value) {
     Array.isArray(value.outgoing) && value.outgoing.every(item => ids.has(item?.to?.id)) &&
     Array.isArray(value.handled) && value.handled.every(item => ids.has(item?.userId));
 }
+function codePath(code) {
+  ensure(/^[A-HJ-NP-Z2-9]{8}$/.test(code), 'invite_code_invalid');
+  return 'realtime/v1/invites/' + code + '.json';
+}
+function ownsInvite(value, code) {
+  const known = knownInvites.get(code), ids = new Set(fixtures.map(fixture => fixture.id));
+  return !!known && value?.schemaVersion === 1 && value.code === code && ids.has(value.owner?.id) &&
+    (!known.ownerId || value.owner.id === known.ownerId) && (value.guest === null || ids.has(value.guest?.id)) &&
+    (value.guest === null || value.guest.id !== value.owner.id) && Number.isSafeInteger(value.expiresAt) && value.roomId === null;
+}
+async function rememberInvite(invitation, owner, guest = null) {
+  ensure(/^[A-HJ-NP-Z2-9]{8}$/.test(invitation?.code || ''), 'invite_code_invalid');
+  knownInvites.set(invitation.code, { code: invitation.code, path: codePath(invitation.code), ownerId: owner.id, guestId: guest?.id || null, expiresAt: invitation.expiresAt, learnedFrom: 'authenticated_websocket_state' });
+  await recovery();
+}
+async function proveInvite(stage, code, owner, guest = null) {
+  const known = knownInvites.get(code), record = await dataStore.read(codePath(code));
+  ensure(ownsInvite(record, code), 'invite_storage_ownership_unverified'); publicFields(record);
+  checked(stage + '_private_record', record.owner.id === owner.id && (guest ? record.guest?.id === guest.id : record.guest === null) && record.expiresAt === known.expiresAt);
+  const ownerIndex = await dataStore.read(owner.duelInvitePath);
+  checked(stage + '_owner_index', ownerIndex?.schemaVersion === 1 && ownerIndex.code === code && ownerIndex.expiresAt === record.expiresAt);
+  if (guest) {
+    const guestIndex = await dataStore.read(guest.duelInvitePath);
+    checked(stage + '_guest_index', guestIndex?.schemaVersion === 1 && guestIndex.code === code && guestIndex.expiresAt === record.expiresAt);
+    known.guestId = guest.id;
+  }
+  report.storageProof.push({ stage, repository: REPOS.data, codePath: known.path, ownerIndex: owner.duelInvitePath, guestIndex: guest?.duelInvitePath || null, codePresent: true });
+  return record;
+}
+async function proveInviteRemoved(stage, code, owner, guest) {
+  checked(stage + '_record_removed', await dataStore.read(codePath(code)) === null);
+  for (const fixture of [owner, guest].filter(Boolean)) checked(stage + '_index_removed_' + fixture.label, await dataStore.read(fixture.duelInvitePath) === null);
+  report.storageProof.push({ stage, repository: REPOS.data, codePath: codePath(code), ownerIndex: owner.duelInvitePath, guestIndex: guest?.duelInvitePath || null, codePresent: false });
+}
 async function loadEnvironment() {
   for (const item of ['.dev.vars', relativeDirectory + '/report.json']) {
     try { await promisify(execFile)('git', ['check-ignore', '--quiet', '--', item], { cwd: ROOT }); }
@@ -78,10 +113,11 @@ async function loadEnvironment() {
 async function recovery() {
   if (!outputReady) return;
   const value = { schemaVersion: 1, kind: KIND, runId, startedAt, origins: ORIGINS, socketUrl: SOCKET_URL,
-    note: 'No bearer, websocket ticket, password, or ordinary account details are recorded. Remove only exact smokeFixture marker-owned profile/session/index records below; friend documents may be deleted only while all referenced user IDs belong to this fixture set. Shared Git history remains. A code left by an interrupted run expires within ten minutes.',
+    note: 'No bearer, websocket ticket, password, or ordinary account details are recorded. Remove only exact smokeFixture marker-owned profile/session/index records below; friend and invite records may be deleted only while all referenced user IDs belong to this fixture set. Known short-lived invitation codes are inventoried for exact recovery. No full registry is read. Shared Git history remains.',
     seedAttempted, fixtures: fixtures.map(fixture => ({ userId: fixture.id, username: fixture.username, marker: fixture.marker,
       profilePath: fixture.profilePath, sessionsPath: fixture.sessionsPath, usernameIndexPath: fixture.usernameIndexPath,
-      friendsPath: fixture.friendsPath, temporarySessionHash: fixture.sessionHash, createdAt: fixture.createdAt })) };
+      friendsPath: fixture.friendsPath, duelInvitePath: fixture.duelInvitePath, temporarySessionHash: fixture.sessionHash, createdAt: fixture.createdAt })),
+    invitations: [...knownInvites.values()] };
   await fs.writeFile(path.join(directory, 'recovery.json'), JSON.stringify(value, null, 2) + '\n', { mode: 0o600 });
 }
 async function observedFetch(input, init = {}) {
@@ -90,7 +126,8 @@ async function observedFetch(input, init = {}) {
   const match = /^\/repos\/BrclioData\/([^/]+)(?:\/|$)/.exec(url.pathname);
   if (match) {
     ensure(Object.values(REPOS).includes(match[1]), 'storage_repository_invalid');
-    const allowed = new Set(fixtures.flatMap(fixture => match[1] === REPOS.users ? [fixture.profilePath, fixture.sessionsPath, fixture.usernameIndexPath] : [fixture.friendsPath]));
+    const allowed = new Set(fixtures.flatMap(fixture => match[1] === REPOS.users ? [fixture.profilePath, fixture.sessionsPath, fixture.usernameIndexPath] : [fixture.friendsPath, fixture.duelInvitePath]));
+    if (match[1] === REPOS.data) for (const invitation of knownInvites.values()) allowed.add(invitation.path);
     const content = /\/contents\/(.+)$/.exec(url.pathname);
     if (content) ensure(allowed.has(content[1].split('/').map(decodeURIComponent).join('/')), 'storage_read_scope_invalid');
     if (method === 'POST' && url.pathname.endsWith('/git/trees')) {
@@ -139,7 +176,8 @@ async function seedFixtures() {
     fixtures.push({ label, id, token, sessionHash: hash(token), username: 'qapk_' + runId + label, createdAt: Date.now(), marker: { ...marker, label },
       profilePath: accountInternals.userPath(id, 'profile'), sessionsPath: accountInternals.userPath(id, 'sessions'),
       usernameIndexPath: await accountInternals.indexPath(env.ACCOUNT_HMAC_SECRET, 'username', 'qapk_' + runId + label),
-      friendsPath: 'users/v1/' + id.slice(0, 2) + '/' + id + '/friends.json' });
+      friendsPath: 'users/v1/' + id.slice(0, 2) + '/' + id + '/friends.json',
+      duelInvitePath: 'users/v1/' + id.slice(0, 2) + '/' + id + '/duel-invite.json' });
   }
   seedAttempted = true; await recovery();
   await users.transaction(async tx => {
@@ -178,7 +216,7 @@ async function open(fixture) {
   const events = [], waiters = new Set(), pending = new Map(); let serial = 0, pingId = 0, heartbeat, closed = false;
   const connection = { fixture, ws, samples: [], state: null, offset: 0, closed: false, mark: () => serial,
     send(message) { ensure(ws.readyState === WebSocket.OPEN, 'socket_not_open'); ws.send(JSON.stringify(message)); },
-    wait(predicate, after = 0, timeout = 15000) {
+    wait(predicate, after = 0, timeout = 60000) {
       const found = events.find(event => event.serial > after && predicate(event.value)); if (found) return Promise.resolve(found.value);
       return new Promise((resolve, reject) => {
         const id = later(() => { waiters.delete(check); reject(Object.assign(new Error('socket_event_timeout'), { safeCode: 'socket_event_timeout' })); }, timeout);
@@ -274,10 +312,14 @@ async function verifyRealtime() {
   let mark = a.mark(); a.send({ type: 'create_code' });
   const invitation = (await a.wait(message => message.type === 'state' && message.shareInvite, mark)).shareInvite;
   checked('share_code_created', /^[A-HJ-NP-Z2-9]{8}$/.test(invitation.code));
+  await rememberInvite(invitation, af);
+  const createdRecord = await proveInvite('share_created', invitation.code, af);
   await a.close(); await delay(200);
+  checked('host_close_preserves_private_invitation', same(await proveInvite('host_closed', invitation.code, af), createdRecord));
   mark = b.mark(); b.send({ type: 'join_code', code: invitation.code });
   const waiting = await b.wait(message => message.type === 'state' && message.shareInvite?.guest?.id === bf.id, mark);
   checked('guest_waits_for_shared_host_return', waiting.shareInvite.ownerOnline === false && waiting.shareInvite.status === 'waiting' && waiting.room === null);
+  await proveInvite('guest_reserved', invitation.code, af, bf); await recovery();
   mark = c.mark(); c.send({ type: 'join_code', code: invitation.code });
   checked('third_cannot_take_reserved_code', (await c.wait(message => message.type === 'error', mark)).code === 'code_full');
   const bmark = b.mark(); a = await open(af);
@@ -285,8 +327,10 @@ async function verifyRealtime() {
   const bpaired = await b.wait(message => message.type === 'state' && message.room?.phase === 'ready', bmark);
   checked('shared_host_reconnect_pairs_same_room', paired.room.id === bpaired.room.id);
   checked('random_opposite_colors', new Set(paired.room.players.map(player => player.color)).size === 2);
+  await proveInvite('host_reconnected', invitation.code, af, bf);
   mark = a.mark(); a.send({ type: 'leave' }); await a.wait(message => message.type === 'state' && !message.room && !message.shareInvite, mark);
   mark = b.mark(); b.send({ type: 'leave' }); await b.wait(message => message.type === 'state' && !message.room && !message.shareInvite, mark);
+  await proveInviteRemoved('share_cancelled', invitation.code, af, bf);
   await delay(2100); mark = c.mark(); c.send({ type: 'join_code', code: invitation.code });
   checked('cancelled_share_code_rejected', (await c.wait(message => message.type === 'error', mark)).code === 'code_expired');
   mark = a.mark(); const mb = b.mark(); a.send({ type: 'invite', userId: bf.id });
@@ -295,24 +339,76 @@ async function verifyRealtime() {
   checked('third_cannot_accept_direct_invitation', (await c.wait(message => message.type === 'error', thirdMark)).code === 'invitation_expired');
   a.send({ type: 'cancel', invitationId: invite.id });
   checked('direct_invitation_cancelled', !(await a.wait(message => message.type === 'state' && !message.invitation, mark)).invitation);
-  mark = a.mark(); b.send({ type: 'invite', userId: af.id });
-  const next = (await a.wait(message => message.type === 'state' && message.invitation?.from?.id === bf.id, mark)).invitation;
-  const roomMark = a.mark(); a.send({ type: 'accept', invitationId: next.id });
+  // The timed round uses a fresh share code so successful play also proves
+  // consumption of the exact GitHub record and both per-user indices.
+  mark = b.mark(); b.send({ type: 'create_code' });
+  const nextCode = (await b.wait(message => message.type === 'state' && message.shareInvite, mark)).shareInvite;
+  await rememberInvite(nextCode, bf); await proveInvite('timed_code_created', nextCode.code, bf);
+  const roomMark = a.mark(); a.send({ type: 'join_code', code: nextCode.code });
   await a.wait(message => message.type === 'state' && message.room?.phase === 'ready', roomMark);
+  await proveInvite('timed_code_reserved', nextCode.code, bf, af); await recovery();
   if (await round(a, b, 'reaction')) {
+    // Storage reads deliberately happen after the round. GitHub traffic is
+    // never placed between scheduled GO and tap timers in this verifier.
+    await proveInviteRemoved('both_ready_consumed', nextCode.code, bf, af);
     await round(a, b, 'false_start');
     if (!a.closed && a.state?.room?.phase === 'finished') await round(a, b, 'disconnect');
   }
   // A pre-game room still provides an honest transport-abort check when RTT
   // gates prevent timed play. Never manufacture a successful timed result.
   if (!a.closed) { mark = b.mark(); await a.close(); const state = await b.wait(message => message.type === 'state' && message.room?.phase === 'aborted', mark); checked('transport_close_aborts_without_win', state.room.result?.winnerId === null); }
-  if (!b.closed) b.send({ type: 'leave' });
+  if (!b.closed) {
+    mark = b.mark(); b.send({ type: 'leave' });
+    await b.wait(message => message.type === 'state' && !message.room && !message.shareInvite, mark);
+    await proveInviteRemoved('timed_invitation_finally_cleared', nextCode.code, bf, af);
+  }
 }
 async function cleanup() {
   for (const timer of timers) clearTimeout(timer); timers.clear();
   for (const connection of sockets) { try { await connection.close(); } catch {} }
   if (!seedAttempted || !users || !dataStore) return;
   let graphSafe = true;
+  const invitations = { scope: 'owned_invite_records_and_indices', passed: false }; report.cleanup.push(invitations);
+  try {
+    // An acknowledged code is normally known already. If the process lost a
+    // websocket acknowledgement after a successful commit, an exact owned
+    // fixture index can reveal its code without scanning a shared registry.
+    for (const fixture of fixtures) {
+      const index = await dataStore.read(fixture.duelInvitePath);
+      if (index === null) continue;
+      ensure(ownsProfile(await users.read(fixture.profilePath), fixture), 'invite_cleanup_profile_unverified');
+      ensure(index.schemaVersion === 1 && /^[A-HJ-NP-Z2-9]{8}$/.test(index.code) && Number.isSafeInteger(index.expiresAt), 'invite_cleanup_index_invalid');
+      if (!knownInvites.has(index.code)) knownInvites.set(index.code, { code: index.code, path: codePath(index.code), ownerId: null, guestId: null, expiresAt: index.expiresAt, learnedFrom: 'exact_marker_owned_fixture_index' });
+    }
+    await recovery();
+    await dataStore.transaction(async tx => {
+      for (const fixture of fixtures) {
+        const index = await tx.get(fixture.duelInvitePath);
+        if (index !== null) {
+          ensure(ownsProfile(await users.read(fixture.profilePath), fixture), 'invite_cleanup_profile_unverified');
+          ensure(index.schemaVersion === 1 && knownInvites.has(index.code), 'invite_cleanup_index_unowned');
+        }
+      }
+      for (const known of knownInvites.values()) {
+        const value = await tx.get(known.path);
+        if (value !== null) {
+          ensure(ownsInvite(value, known.code), 'invite_cleanup_ownership_unverified');
+          for (const user of [value.owner, value.guest].filter(Boolean)) {
+            const fixture = fixtures.find(item => item.id === user.id);
+            ensure(fixture && ownsProfile(await users.read(fixture.profilePath), fixture), 'invite_cleanup_peer_profile_unverified');
+          }
+          tx.delete(known.path);
+        }
+      }
+      for (const fixture of fixtures) {
+        const index = await tx.get(fixture.duelInvitePath);
+        if (index !== null) tx.delete(fixture.duelInvitePath);
+      }
+    });
+    for (const known of knownInvites.values()) ensure(await dataStore.read(known.path) === null, 'invite_cleanup_record_remaining');
+    for (const fixture of fixtures) ensure(await dataStore.read(fixture.duelInvitePath) === null, 'invite_cleanup_index_remaining');
+    invitations.passed = true;
+  } catch (error) { invitations.error = safeError(error); graphSafe = false; }
   const graph = { scope: 'owned_friend_documents', passed: false }; report.cleanup.push(graph);
   try {
     await dataStore.transaction(async tx => {
@@ -326,7 +422,7 @@ async function cleanup() {
     graph.passed = true;
   } catch (error) { graph.error = safeError(error); graphSafe = false; }
   const accounts = { scope: 'owned_profile_session_username_indexes', passed: false }; report.cleanup.push(accounts);
-  if (!graphSafe) { accounts.error = 'friend_cleanup_requires_recovery'; return; }
+  if (!graphSafe) { accounts.error = 'data_cleanup_requires_recovery'; return; }
   try {
     await users.transaction(async tx => {
       for (const fixture of fixtures) {
@@ -357,9 +453,9 @@ async function main() {
   finally {
     phase('clean only this run marker-owned current records');
     try { await cleanup(); } catch (error) { report.cleanup.push({ scope: 'cleanup_runtime', passed: false, error: safeError(error) }); }
-    if (seedAttempted && (report.cleanup.length !== 2 || report.cleanup.some(value => !value.passed))) report.passed = false;
+    if (seedAttempted && (report.cleanup.length !== 3 || report.cleanup.some(value => !value.passed))) report.passed = false;
     report.finishedAt = new Date().toISOString();
-    report.note = 'Synthetic production API/WebSocket verification only. No owner password, owner session, email delivery, or real profile writes. Fixtures removed only after marker and graph ownership checks; Git history remains. Timed results are reported only when live latency gates and actual timer callbacks pass. This does not prove physical two-phone sound synchronization or WeChat domain configuration.';
+    report.note = 'Synthetic production API/WebSocket verification only. No owner password, owner session, email delivery, or real profile writes. Exact known invitation records and per-fixture indices are verified in the existing private GitHub Data repository; no full invite registry is read. Current fixture records are removed only after marker, participant and graph ownership checks; Git history remains. Timed results are reported only when live latency gates and actual timer callbacks pass. This does not prove physical two-phone sound synchronization or WeChat domain configuration.';
     if (outputReady) {
       try { await recovery(); await fs.writeFile(path.join(directory, 'report.json'), JSON.stringify(report, null, 2) + '\n', { mode: 0o600 }); console.log('[online PK smoke] ' + (report.passed ? 'PASS' : 'FAIL') + ' · ' + relativeDirectory + '/report.json'); }
       catch { report.passed = false; console.log('[online PK smoke] FAIL · artifact_write_failed'); }
@@ -369,5 +465,5 @@ async function main() {
 }
 if (process.argv.length === 2 || process.argv[2] === '--help') {
   console.log('Usage: node scripts/online-duel-live-smoke.mjs --run');
-  console.log('Explicitly verifies production friends and online PK on both pocket domains and pk.brclio-miniapp.bornforthis.cn. Creates three synthetic marker-owned accounts and exact username indexes, then cleans only their current account/friend files. Never reads credentials or emails users. Ignored evidence: artifacts/online-duel/0.1.11/live-*/. A failed/unstable timed round is recorded as incomplete, never a pass.');
+  console.log('Explicitly verifies production friends and online PK on both pocket domains and pk.brclio-miniapp.bornforthis.cn. Creates three synthetic marker-owned accounts and exact username indexes, verifies their exact private GitHub invitation records/indices, then cleans only their current account/friend/invite files. Never reads credentials or emails users, and never scans an invitation registry. Ignored evidence: artifacts/online-duel/0.1.11/live-*/. A failed/unstable timed round is recorded as incomplete, never a pass.');
 } else await main();

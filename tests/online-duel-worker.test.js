@@ -4,12 +4,14 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { Miniflare, convertV4MiniflareOptions } = require('miniflare');
 const ROOT = path.resolve(__dirname, '..');
+const { duelGitHubFixture } = require('./helpers/duel-github.cjs');
 const SECRET = 'test-only-online-duel-secret-at-least-32-characters';
 
 test('real workerd validates websocket tickets/origins and connects two native clients through the DO', { timeout: 15000 }, async () => {
   const { issueDuelTicket } = await import('../web/duel-ticket.mjs');
-  const modules = ['realtime/worker.mjs', 'realtime/duel-hub.mjs', 'web/duel-ticket.mjs'].map(file => ({ type: 'ESModule', path: path.join(ROOT, file) }));
-  const runtime = new Miniflare(convertV4MiniflareOptions({ name: 'brclio-duel-test', modules, modulesRoot: ROOT, compatibilityDate: '2026-10-01', durableObjects: { DUEL_HUB: { className: 'DuelLobby', useSQLite: true } }, bindings: { DUEL_TICKET_SECRET: SECRET } }));
+  const modules = ['realtime/worker.mjs', 'realtime/duel-hub.mjs', 'realtime/invite-store.mjs', 'web/duel-ticket.mjs', 'web/account-store.mjs'].map(file => ({ type: 'ESModule', path: path.join(ROOT, file) }));
+  const github = duelGitHubFixture();
+  const runtime = new Miniflare(convertV4MiniflareOptions({ name: 'brclio-duel-test', modules, modulesRoot: ROOT, compatibilityDate: '2026-10-01', durableObjects: { DUEL_HUB: { className: 'DuelLobby', useSQLite: true } }, bindings: { DUEL_TICKET_SECRET: SECRET, ...github.bindings }, serviceBindings: github.serviceBindings }));
   const sockets = [];
   try {
     const A = { id: 'a'.repeat(32), displayName: '小红', avatarUrl: '' }, B = { id: 'b'.repeat(32), displayName: '小蓝', avatarUrl: '' };
