@@ -11,12 +11,18 @@
 
 ## 核查与发布阶段
 
-发布前核查已通过：`npm run build` 成功，683 项全量测试与 130 项发布检查全部通过；Worker dry-run 61.28 KiB（gzip 15.44 KiB）。官方微信 CLI 预览编译成功；最终上传与线上联测结果在后续记录中分别确认。
+发布前核查已通过：`npm run build` 成功，683 项全量测试与 130 项发布检查全部通过；Worker dry-run 61.28 KiB（gzip 15.44 KiB）。发布源码为 `caf546f`，已推送 GitHub `main`。
 
 - 本地：构建、全量测试、发布检查、Worker dry-run；真实 workerd 双端／休眠／冷启动／空闲 alarm 与原生分享、好友测试。
-- Cloudflare：独立 Worker 与 SQLite DO 已部署；Custom Domain 已启用，DNS 返回 Cloudflare 地址，`/health` HTTPS 200、证书验证结果 0。Worker 及 Pages 的 `DUEL_TICKET_SECRET`、Pages 的 `DUEL_SOCKET_URL` 已加密配置，尚待本轮 Pages 部署及实际 WSS 对局验证。
-- 线上：使用本轮独占的临时测试账号验证好友全流程、分享／邀请码、双端对局及异常中止；核查后精确清理当前测试文件，Git 历史保留。公开资源与账号保护分别验证。
-- 微信：官方 CLI 预览与上传开发版，记录源码指纹与包体。微信 socket 合法域名由用户配置，双真机声响、体验版、审核和正式版状态分别记录。
+- Cloudflare：最终 Worker 版本 `2311282e-5e3d-46d2-8fdf-5eba80438d8d` 已部署；Pages Production 部署 `cfe31f47` 对应上述源码。Custom Domain 已启用，DNS 返回 Cloudflare 地址，`/health` HTTPS 200、证书验证结果 0。Worker 及 Pages 的 `DUEL_TICKET_SECRET`、Pages 的 `DUEL_SOCKET_URL` 已加密配置；Worker 仅复用原 GitHub App 的加密配置访问固定私有 Data 仓库。
+- 线上：使用本轮独占的三个临时测试账号完成 **65 项生产检查**：好友申请、跨域读取、第三人拒绝、双方确认与删除；邀请码在指定 GitHub 私有 Data 仓库的记录及双方索引读回、房主离线保留、访客占位、重连配对、第三人禁止加入、取消删除和双方准备后消耗。真实 WSS 正常对局、抢跑与断线中止均通过：本轮正常反应为 182／342ms，双方计划信号时间相同，验证程序回调各晚 3ms；这不代表实体手机扬声器声响偏差为 3ms。测试邀请、好友、账号／会话／用户名索引三个清理范围全部通过并读回确认；Git 历史保留。
+- 微信：官方 CLI 预览成功；最终 `0.1.11` 开发版于 **13:52:44（Asia/Shanghai）** 上传成功，`✔ upload`、退出码 0。主包 1,494,090 字节、在线分包 41,709 字节、总包 8,493,475 字节，均满足项目包体限制。上传前后 469 个原生文件字节长度与 SHA256 一致，源码清单摘要 `4359bc7881338da5d722fb920eb37bb28b63fb86bc9e40306ad11ab615bc33b1`。这是源码指纹，不是上传二进制指纹。微信 socket 合法域名由用户配置，双真机声响、体验版、审核和正式发布尚未验收／执行。
+
+公开资源先对两个域名各 2,674 个文件执行 SHA256 与长度比对，5,348 项全部匹配；最终部署仅修改公开 `index.html`，已重新比对两个域名，2 项通过，其余 2,673 个文件与初次清单相同。服务端 `_worker.js` 不经公开资源下载验证，通过接口与工作流另验。报告位于 `artifacts/online-duel/0.1.11/public-assets-initial.json` 和 `public-assets-final.json`。
+
+完整生产工作流报告：`artifacts/online-duel/0.1.11/live-54926f876e47/report.json`。此前两轮分别遇到验证脚本采样队列封顶后的计数错误及验证端 GitHub 读取瞬时失败，未记为完整通过；两轮测试记录均已清理。脚本已改为累计探测计数，并只对验证端只读网络观察进行有界重试，不重试或掩盖应用写入失败。最终完整一轮通过且无需此类重试。
+
+最终源码上传清单、部署日志、测试／发布检查日志和 Cloudflare 域名／加密配置名称清单均保存在 `artifacts/online-duel/0.1.11/`。正式使用需由用户完成下方微信 socket 域名配置；未声称已完成双真机声响验收、设置体验版、提交审核或发布微信正式版。
 
 ## 微信后台需填写
 

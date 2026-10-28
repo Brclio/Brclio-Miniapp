@@ -77,13 +77,13 @@ async function rememberInvite(invitation, owner, guest = null) {
   await recovery();
 }
 async function proveInvite(stage, code, owner, guest = null) {
-  const known = knownInvites.get(code), record = await dataStore.read(codePath(code));
+  const known = knownInvites.get(code), record = await readCurrent(dataStore, codePath(code));
   ensure(ownsInvite(record, code), 'invite_storage_ownership_unverified'); publicFields(record);
   checked(stage + '_private_record', record.owner.id === owner.id && (guest ? record.guest?.id === guest.id : record.guest === null) && record.expiresAt === known.expiresAt);
-  const ownerIndex = await dataStore.read(owner.duelInvitePath);
+  const ownerIndex = await readCurrent(dataStore, owner.duelInvitePath);
   checked(stage + '_owner_index', ownerIndex?.schemaVersion === 1 && ownerIndex.code === code && ownerIndex.expiresAt === record.expiresAt);
   if (guest) {
-    const guestIndex = await dataStore.read(guest.duelInvitePath);
+    const guestIndex = await readCurrent(dataStore, guest.duelInvitePath);
     checked(stage + '_guest_index', guestIndex?.schemaVersion === 1 && guestIndex.code === code && guestIndex.expiresAt === record.expiresAt);
     known.guestId = guest.id;
   }
@@ -91,9 +91,21 @@ async function proveInvite(stage, code, owner, guest = null) {
   return record;
 }
 async function proveInviteRemoved(stage, code, owner, guest) {
-  checked(stage + '_record_removed', await dataStore.read(codePath(code)) === null);
-  for (const fixture of [owner, guest].filter(Boolean)) checked(stage + '_index_removed_' + fixture.label, await dataStore.read(fixture.duelInvitePath) === null);
+  checked(stage + '_record_removed', await readCurrent(dataStore, codePath(code)) === null);
+  for (const fixture of [owner, guest].filter(Boolean)) checked(stage + '_index_removed_' + fixture.label, await readCurrent(dataStore, fixture.duelInvitePath) === null);
   report.storageProof.push({ stage, repository: REPOS.data, codePath: codePath(code), ownerIndex: owner.duelInvitePath, guestIndex: guest?.duelInvitePath || null, codePresent: false });
+}
+// Retry only this verifier's read-only GitHub observations. Application writes
+// and their status checks are never retried or reclassified as successful.
+async function readCurrent(backend, target) {
+  for (let attempt = 0; ; attempt++) {
+    try { return await backend.read(target); }
+    catch (error) {
+      if (error?.safeCode !== 'store_upstream_unavailable' || attempt >= 2) throw error;
+      (report.verifierReadRetries ||= []).push({ path: target, attempt: attempt + 1, code: error.safeCode });
+      await delay(500 * (attempt + 1));
+    }
+  }
 }
 async function loadEnvironment() {
   for (const item of ['.dev.vars', relativeDirectory + '/report.json']) {
@@ -140,9 +152,13 @@ async function observedFetch(input, init = {}) {
     const value = JSON.parse(init.body);
     ensure(Array.isArray(value.repositories) && value.repositories.length === 1 && Object.values(REPOS).includes(value.repositories[0]), 'token_repository_scope_invalid');
   }
-  const response = await networkFetch(input, init);
-  if (match && !['GET', 'HEAD'].includes(method)) report.storage.push({ repository: match[1], method, path: url.pathname, status: response.status });
-  return response;
+  const observation = { repository: match?.[1] || 'github-app', method, path: url.pathname, status: null };
+  report.storage.push(observation);
+  const begin = performance.now();
+  try {
+    const response = await networkFetch(input, init); observation.status = response.status; return response;
+  } catch (error) { observation.failure = 'transport_failed'; throw error; }
+  finally { observation.durationMs = Math.round(performance.now() - begin); }
 }
 async function call(origin, route, { fixture, data, expected = 200, method = data === undefined ? 'GET' : 'POST' } = {}) {
   ensure(ORIGINS.includes(origin), 'request_origin_invalid');
@@ -189,7 +205,7 @@ async function seedFixtures() {
       tx.put(fixture.usernameIndexPath, { userId: fixture.id, smokeFixture: fixture.marker });
     }
   });
-  for (const fixture of fixtures) checked('fixture_seed_readback_' + fixture.label, ownsProfile(await users.read(fixture.profilePath), fixture) && ownsSessions(await users.read(fixture.sessionsPath), fixture));
+  for (const fixture of fixtures) checked('fixture_seed_readback_' + fixture.label, ownsProfile(await readCurrent(users, fixture.profilePath), fixture) && ownsSessions(await readCurrent(users, fixture.sessionsPath), fixture));
 }
 async function verifyFriends() {
   const [a, b, c] = fixtures;
@@ -213,7 +229,7 @@ async function ticket(fixture) {
 async function open(fixture) {
   const value = await ticket(fixture);
   const ws = new WebSocket(SOCKET_URL + '?ticket=' + encodeURIComponent(value), { ...(dispatcher ? { dispatcher } : {}), headers: { Origin: 'https://servicewechat.com' } });
-  const events = [], waiters = new Set(), pending = new Map(); let serial = 0, pingId = 0, heartbeat, closed = false;
+  const events = [], waiters = new Set(), pending = new Map(); let serial = 0, pingId = 0, receivedProbes = 0, heartbeat, closed = false;
   const connection = { fixture, ws, samples: [], state: null, offset: 0, closed: false, mark: () => serial,
     send(message) { ensure(ws.readyState === WebSocket.OPEN, 'socket_not_open'); ws.send(JSON.stringify(message)); },
     wait(predicate, after = 0, timeout = 60000) {
@@ -226,10 +242,10 @@ async function open(fixture) {
     },
     ping() { const id = String(++pingId), clientAt = Date.now(); pending.set(id, clientAt); this.send({ type: 'ping', id, clientAt }); },
     async calibrate() {
-      const before = this.samples.length;
+      const before = receivedProbes;
       for (let n = 0; n < 5; n++) { this.ping(); await delay(130); }
-      const until = Date.now() + 10000; while (this.samples.length < before + 3 && Date.now() < until && !closed) await delay(100);
-      ensure(this.samples.length >= before + 3, 'clock_probe_timeout');
+      const until = Date.now() + 10000; while (receivedProbes < before + 3 && Date.now() < until && !closed) await delay(100);
+      ensure(receivedProbes >= before + 3, 'clock_probe_timeout');
       const sample = this.samples.slice(-8).reduce((a, b) => a.rtt <= b.rtt ? a : b); this.offset = sample.offset;
       return { rtt: Math.round(sample.rtt), uncertainty: Math.ceil(sample.rtt / 2) };
     },
@@ -248,7 +264,7 @@ async function open(fixture) {
     if (message.type === 'hello' && Number.isFinite(message.serverAt)) connection.offset = message.serverAt - Date.now();
     if (message.type === 'pong') {
       const clientAt = pending.get(message.id); pending.delete(message.id);
-      if (clientAt !== undefined) { const at = Date.now(); connection.samples.push({ rtt: at - clientAt, offset: message.serverAt - (at + clientAt) / 2 }); if (connection.samples.length > 30) connection.samples.shift(); }
+      if (clientAt !== undefined) { receivedProbes += 1; const at = Date.now(); connection.samples.push({ rtt: at - clientAt, offset: message.serverAt - (at + clientAt) / 2 }); if (connection.samples.length > 30) connection.samples.shift(); }
       if (message.probeId && ws.readyState === WebSocket.OPEN) connection.send({ type: 'probe_ack', probeId: message.probeId });
     }
     if (message.type === 'state') {
@@ -374,9 +390,9 @@ async function cleanup() {
     // websocket acknowledgement after a successful commit, an exact owned
     // fixture index can reveal its code without scanning a shared registry.
     for (const fixture of fixtures) {
-      const index = await dataStore.read(fixture.duelInvitePath);
+      const index = await readCurrent(dataStore, fixture.duelInvitePath);
       if (index === null) continue;
-      ensure(ownsProfile(await users.read(fixture.profilePath), fixture), 'invite_cleanup_profile_unverified');
+      ensure(ownsProfile(await readCurrent(users, fixture.profilePath), fixture), 'invite_cleanup_profile_unverified');
       ensure(index.schemaVersion === 1 && /^[A-HJ-NP-Z2-9]{8}$/.test(index.code) && Number.isSafeInteger(index.expiresAt), 'invite_cleanup_index_invalid');
       if (!knownInvites.has(index.code)) knownInvites.set(index.code, { code: index.code, path: codePath(index.code), ownerId: null, guestId: null, expiresAt: index.expiresAt, learnedFrom: 'exact_marker_owned_fixture_index' });
     }
@@ -385,7 +401,7 @@ async function cleanup() {
       for (const fixture of fixtures) {
         const index = await tx.get(fixture.duelInvitePath);
         if (index !== null) {
-          ensure(ownsProfile(await users.read(fixture.profilePath), fixture), 'invite_cleanup_profile_unverified');
+          ensure(ownsProfile(await readCurrent(users, fixture.profilePath), fixture), 'invite_cleanup_profile_unverified');
           ensure(index.schemaVersion === 1 && knownInvites.has(index.code), 'invite_cleanup_index_unowned');
         }
       }
@@ -395,7 +411,7 @@ async function cleanup() {
           ensure(ownsInvite(value, known.code), 'invite_cleanup_ownership_unverified');
           for (const user of [value.owner, value.guest].filter(Boolean)) {
             const fixture = fixtures.find(item => item.id === user.id);
-            ensure(fixture && ownsProfile(await users.read(fixture.profilePath), fixture), 'invite_cleanup_peer_profile_unverified');
+            ensure(fixture && ownsProfile(await readCurrent(users, fixture.profilePath), fixture), 'invite_cleanup_peer_profile_unverified');
           }
           tx.delete(known.path);
         }
@@ -405,20 +421,20 @@ async function cleanup() {
         if (index !== null) tx.delete(fixture.duelInvitePath);
       }
     });
-    for (const known of knownInvites.values()) ensure(await dataStore.read(known.path) === null, 'invite_cleanup_record_remaining');
-    for (const fixture of fixtures) ensure(await dataStore.read(fixture.duelInvitePath) === null, 'invite_cleanup_index_remaining');
+    for (const known of knownInvites.values()) ensure(await readCurrent(dataStore, known.path) === null, 'invite_cleanup_record_remaining');
+    for (const fixture of fixtures) ensure(await readCurrent(dataStore, fixture.duelInvitePath) === null, 'invite_cleanup_index_remaining');
     invitations.passed = true;
   } catch (error) { invitations.error = safeError(error); graphSafe = false; }
   const graph = { scope: 'owned_friend_documents', passed: false }; report.cleanup.push(graph);
   try {
     await dataStore.transaction(async tx => {
       for (const fixture of fixtures) {
-        const profile = await users.read(fixture.profilePath), value = await tx.get(fixture.friendsPath);
+        const profile = await readCurrent(users, fixture.profilePath), value = await tx.get(fixture.friendsPath);
         if (value === null) continue;
         ensure(ownsProfile(profile, fixture) && ownsFriendDocument(value), 'friend_cleanup_ownership_unverified'); tx.delete(fixture.friendsPath);
       }
     });
-    for (const fixture of fixtures) ensure(await dataStore.read(fixture.friendsPath) === null, 'friend_cleanup_readback_failed');
+    for (const fixture of fixtures) ensure(await readCurrent(dataStore, fixture.friendsPath) === null, 'friend_cleanup_readback_failed');
     graph.passed = true;
   } catch (error) { graph.error = safeError(error); graphSafe = false; }
   const accounts = { scope: 'owned_profile_session_username_indexes', passed: false }; report.cleanup.push(accounts);
@@ -433,7 +449,7 @@ async function cleanup() {
         for (const key of ['profilePath', 'sessionsPath', 'usernameIndexPath']) tx.delete(fixture[key]);
       }
     });
-    for (const fixture of fixtures) for (const key of ['profilePath', 'sessionsPath', 'usernameIndexPath']) ensure(await users.read(fixture[key]) === null, 'account_cleanup_readback_failed');
+    for (const fixture of fixtures) for (const key of ['profilePath', 'sessionsPath', 'usernameIndexPath']) ensure(await readCurrent(users, fixture[key]) === null, 'account_cleanup_readback_failed');
     for (const fixture of fixtures) await call(ORIGINS[0], '/friends', { fixture, expected: 401 });
     accounts.passed = true;
   } catch (error) { accounts.error = safeError(error); }

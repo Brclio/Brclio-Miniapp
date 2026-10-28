@@ -82,9 +82,9 @@ WebSocket 消息为 JSON，输入单条上限 4096 字符，每用户每 5 秒�
 
 ## 本地验证
 
-2026-10-28 本地结果：`npm run build` 成功；`npm test` 647 项全部通过；`npm run check:release` 128 项全部通过。在线分包 25.3 KiB，主包 1593.4 KiB，均低于 2 MiB。实时 Worker 构建 dry-run 与真实 workerd 双连接测试通过。320 与 390 宽度页面仅做 HTML 布局模拟检查，不能替代微信原生或真机验收。
+2026-10-28 最终本地结果：`npm run build` 成功；`npm test` 683 项全部通过；`npm run check:release` 130 项全部通过。在线分包 43.6 KiB，主包 1598.6 KiB，均低于 2 MiB。实时 Worker 构建 dry-run 与真实 workerd 双连接、GitHub 存储、冷启动、休眠和恢复测试通过。官方微信 CLI 已预览编译并上传；320 与 390 宽度的可视布局仍属 HTML 模拟检查，不能替代双真机声响验收。
 
-以上为第一阶段本地结果，本轮扩展后的最终验证与发布阶段见 [0.1.11 发布记录](ONLINE_DUEL_RELEASE.md)。
+线上核查及各发布阶段见 [0.1.11 发布记录](ONLINE_DUEL_RELEASE.md)。
 
 - `tests/online-duel-backend.test.js`：邀请权限／过期／占用、随机阵营、测时门槛、双确认、反应先后、抢跑／平局／超时、首击不可覆盖、异常延迟、断线、心跳、休眠附件重建、票据签名和账号只读鉴权。
 - `tests/online-duel-worker.test.js`：真实 Miniflare/workerd 中两条 WebSocket 完成邀请与准备，拒绝无效签名、错误 Origin 和普通 HTTP；强制两次 hibernate，验证确认和开局时间经附件恢复，断开连接后无胜者中止。
