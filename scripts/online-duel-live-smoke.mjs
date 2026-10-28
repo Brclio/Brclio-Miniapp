@@ -370,9 +370,22 @@ async function verifyRealtime() {
     await round(a, b, 'false_start');
     if (!a.closed && a.state?.room?.phase === 'finished') await round(a, b, 'disconnect');
   }
-  // A pre-game room still provides an honest transport-abort check when RTT
-  // gates prevent timed play. Never manufacture a successful timed result.
-  if (!a.closed) { mark = b.mark(); await a.close(); const state = await b.wait(message => message.type === 'state' && message.room?.phase === 'aborted', mark); checked('transport_close_aborts_without_win', state.room.result?.winnerId === null); }
+  // A completed round correctly keeps its result when somebody later leaves.
+  // If an RTT gate blocks the timed disconnect test, use a new ready room for
+  // this separate transport check; keep the blocked timed result incomplete.
+  if (!a.closed) {
+    for (const connection of [a, b]) {
+      mark = connection.mark(); connection.send({ type: 'leave' });
+      await connection.wait(message => message.type === 'state' && !message.room && !message.shareInvite, mark);
+    }
+    mark = b.mark(); a.send({ type: 'invite', userId: bf.id });
+    const fallbackInvitation = (await b.wait(message => message.type === 'state' && message.invitation, mark)).invitation;
+    mark = b.mark(); b.send({ type: 'accept', invitationId: fallbackInvitation.id });
+    await b.wait(message => message.type === 'state' && message.room?.phase === 'ready', mark);
+    mark = b.mark(); await a.close();
+    const state = await b.wait(message => message.type === 'state' && message.room?.phase === 'aborted', mark);
+    checked('transport_close_aborts_without_win', state.room.result?.winnerId === null);
+  }
   if (!b.closed) {
     mark = b.mark(); b.send({ type: 'leave' });
     await b.wait(message => message.type === 'state' && !message.room && !message.shareInvite, mark);
