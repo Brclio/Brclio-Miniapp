@@ -29,6 +29,7 @@ const routes = [
   ['learn', '/pages/home/index?tab=learn'],
   ['lingotiles', '/pages/lingotiles/index'],
   ['nursery-music', '/nursery/pages/player/index'],
+  ['parenting-guide', '/parenting/pages/list/index'],
   ['ready-go-duel', '/pages/duel/index'],
   ['wedding-inspiration', require('../miniprogram/data/photos').collections.find(item => item.id === 'pregnancy').nativePath]
 ];

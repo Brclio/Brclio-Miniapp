@@ -1,0 +1,31 @@
+<view class="page-shell guide-list-shell">
+  <view class="guide-heading">
+    <view class="guide-heading-topline"><view class="guide-title serif">{{course.title}}</view><text class="guide-total">{{course.total}} 篇</text></view>
+    <view class="guide-intro">{{sections.length}} 个主题 · 读懂孩子，也读懂成长。</view>
+  </view>
+
+  <view class="guide-search">
+    <input class="guide-search-input" value="{{query}}" bindinput="inputSearch" maxlength="80" placeholder="搜索文章标题" placeholder-class="guide-placeholder" confirm-type="search" aria-label="搜索文章标题" />
+    <button wx:if="{{query}}" class="guide-clear" style="width: auto; display: flex; margin: 0;" bindtap="clearSearch" hover-class="button-pressed" aria-label="清空搜索">清空</button>
+  </view>
+  <view class="guide-sections" aria-label="按主题筛选文章">
+    <button class="guide-section {{!sectionId ? 'guide-section-active' : ''}}" style="width: 20%; display: flex; margin: 0;" data-id="" bindtap="selectSection" hover-class="button-pressed" aria-label="全部主题{{!sectionId ? '，已选中' : ''}}"><text class="guide-section-label">全部</text></button>
+    <button wx:for="{{sections}}" wx:key="id" class="guide-section {{sectionId === item.id ? 'guide-section-active' : ''}}" style="width: 20%; display: flex; margin: 0;" data-id="{{item.id}}" bindtap="selectSection" hover-class="button-pressed" aria-label="{{item.title}}，{{item.count}}篇{{sectionId === item.id ? '，已选中' : ''}}"><text class="guide-section-label">{{item.title}}</text></button>
+  </view>
+  <view class="guide-result-count">{{query || sectionId ? '找到' : '全部'}} {{total}} 篇</view>
+  <view wx:if="{{error}}" class="guide-error" role="alert">{{error}}</view>
+  <view wx:if="{{!articles.length}}" class="guide-empty"><view class="serif">还没找到这篇文章</view><text>试试更短的关键词，或换一个主题。</text><button class="guide-reset" style="width: auto; display: flex; margin: 0;" bindtap="clearFilters" hover-class="button-pressed">查看全部文章 →</button></view>
+  <view class="guide-contents">
+    <block wx:for="{{articles}}" wx:key="id">
+      <view wx:if="{{item.sectionStart}}" class="guide-section-heading serif">{{item.sectionTitle}}</view>
+      <button class="guide-article-row" style="width: 100%; display: flex; margin: 0;" data-id="{{item.id}}" bindtap="openArticle" hover-class="guide-row-pressed" aria-label="阅读 {{item.title}}">
+        <text class="guide-article-number">{{item.order}}</text>
+        <view class="guide-article-info"><view class="guide-article-title">{{item.title}}</view><view class="guide-article-meta">约 {{item.readingMinutes}} 分钟阅读</view></view>
+        <text class="guide-article-arrow" aria-hidden="true">→</text>
+      </button>
+    </block>
+  </view>
+  <button wx:if="{{hasMore}}" class="guide-more" style="width: 100%; display: block; margin: 0;" bindtap="loadMore" hover-class="button-pressed">继续浏览 ↓</button>
+  <view wx:elif="{{articles.length}}" class="guide-end">已显示全部 {{total}} 篇</view>
+  <view class="guide-footer">本专栏为文字整理版，文中部分名称已替换。<view>Brclio 悦创 · 文字阅读</view></view>
+</view>

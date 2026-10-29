@@ -1,3 +1,5 @@
+> **当前 0.1.14 育儿宝典**：本轮完整核查和 GitHub / 微信各阶段状态见 [PARENTING_GUIDE_RELEASE.md](PARENTING_GUIDE_RELEASE.md)。下方保留历史记录。
+
 > **0.1.9 博客**：独立结构化博客仓库、核查与各阶段上线证据见 [BLOG_RELEASE.md](BLOG_RELEASE.md)。以下保留此前版本记录。
 
 > 当前 `0.1.5` 儿歌收藏同步与微信绑定：481 项测试、构建及发布检查通过，源码已推送 GitHub，正式后端已部署，微信开发版已上传；审核和正式发布因公众平台自动操作限制需所有者接续。线上验证和各阶段证据见 [SONG_SYNC_RELEASE.md](SONG_SYNC_RELEASE.md)。

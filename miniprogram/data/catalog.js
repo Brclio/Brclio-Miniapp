@@ -59,6 +59,14 @@ const features = Object.freeze([
     path: '/projects/ready-go-duel/?entry=wechat'
   }),
   Object.freeze({
+    id: 'parenting-guide',
+    title: '悦创育儿宝典',
+    subtitle: '读懂孩子，一起成长',
+    category: 'parenting',
+    description: '阅读悦创育儿宝典文字专栏，了解智力发展、情绪管理与亲子沟通。',
+    nativeOnly: true
+  }),
+  Object.freeze({
     id: 'nursery-music',
     title: '儿歌多多',
     subtitle: '小小音乐盒，陪伴每一天',
@@ -101,6 +109,7 @@ function getFeatureRoute(id) {
     learn: '/pages/home/index?tab=learn',
     lingotiles: '/pages/lingotiles/index',
     'nursery-music': '/nursery/pages/player/index',
+    'parenting-guide': '/parenting/pages/list/index',
     'ready-go-duel': '/pages/duel/index',
     'wedding-inspiration': (photos.collections.find(function (album) { return album.id === 'pregnancy'; }) || {}).nativePath || '/pages/gallery/index'
   };

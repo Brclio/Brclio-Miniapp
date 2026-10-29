@@ -79,40 +79,17 @@
 .learning-steps > view { display: flex; align-items: flex-start; gap: 24rpx; padding: 25rpx 0; border-bottom: 1rpx solid #dedbd2; }
 .learning-step-number { font-family: 'Songti SC', 'STSong', serif; font-size: 25rpx; line-height: 1.7; color: #2b7fd8; }
 .learning-steps .entry-copy { margin-top: 3rpx; }
-.parenting-entry { padding: 0; text-align: left; background: transparent; }
-.music-poster { overflow: hidden; padding: 27rpx 26rpx 24rpx; background: #f5efdc; border-radius: 8rpx; }
-.music-poster-top { display: flex; align-items: center; justify-content: space-between; gap: 15rpx; color: #577183; font-size: 16rpx; letter-spacing: 2rpx; }
-.music-poster-top text:first-child { color: #2b7fd8; font-weight: 700; }
-.music-drawing { position: relative; display: flex; align-items: center; justify-content: center; min-height: 356rpx; padding: 43rpx 37rpx 34rpx; }
-.music-note { position: absolute; z-index: 1; color: #2b7fd8; font-family: 'Songti SC', 'STSong', serif; line-height: 1; }
-.music-note-one { top: 30rpx; left: 18rpx; font-size: 76rpx; transform: rotate(-15deg); }
-.music-note-two { right: 10rpx; bottom: 39rpx; font-size: 66rpx; transform: rotate(14deg); }
-.music-spark { position: absolute; right: 38rpx; top: 22rpx; font-size: 43rpx; line-height: 1; color: #aa8630; transform: rotate(8deg); }
-.cassette { width: 426rpx; max-width: 100%; padding: 17rpx 21rpx 12rpx; background: #2b7fd8; color: #fefcf6; border: 4rpx solid #246bb4; border-radius: 19rpx 14rpx 17rpx 12rpx; transform: rotate(-6deg); }
-.cassette-label { display: flex; flex-direction: column; align-items: center; padding: 12rpx 15rpx 18rpx; background: #fefcf6; color: #225f9c; border-radius: 4rpx 8rpx 3rpx 6rpx; }
-.cassette-caption { font-size: 17rpx; letter-spacing: 3rpx; }
-.cassette-title { margin-top: 3rpx; font-size: 40rpx; line-height: 1.4; font-weight: 700; background: linear-gradient(transparent 73%, rgba(244,215,88,.8) 73%, rgba(244,215,88,.8) 94%, transparent 94%); }
-.cassette-window { position: relative; display: flex; align-items: center; justify-content: space-between; margin: -3rpx 28rpx 0; min-height: 64rpx; padding: 4rpx 6rpx; border: 4rpx solid #205d96; border-radius: 42rpx; background: #f4d758; }
-.cassette-reel { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: 48rpx; height: 48rpx; border: 8rpx solid #fefcf6; border-radius: 50%; background: #2b7fd8; }
-.cassette-reel > view { width: 11rpx; height: 11rpx; border-radius: 50%; background: #fefcf6; }
-.cassette-tape { position: absolute; left: 46rpx; right: 46rpx; height: 17rpx; border-top: 3rpx solid #a7842b; border-bottom: 3rpx solid #a7842b; }
-.cassette-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 15rpx; font-size: 11rpx; letter-spacing: 2rpx; }
-.cassette-bottom > view { width: 7rpx; height: 7rpx; border: 2rpx solid #fefcf6; border-radius: 50%; }
-.music-poster-bottom { display: flex; align-items: center; justify-content: space-between; gap: 15rpx; color: #7b735e; font-size: 18rpx; }
-.music-poster-bottom text:last-child { color: #2b7fd8; font-size: 14rpx; letter-spacing: 1rpx; white-space: nowrap; }
-.music-details { padding-top: 25rpx; }
-.music-open { display: flex; align-items: center; justify-content: space-between; margin-top: 25rpx; min-height: 92rpx; padding: 17rpx 28rpx; border-radius: 8rpx; background: #2b7fd8; color: #fefcf6; font-size: 26rpx; font-weight: 600; }
-.music-open text:last-child { font-size: 35rpx; font-weight: 400; }
-.music-scenes { display: flex; margin-top: 28rpx; padding: 12rpx 0; border-top: 1rpx solid #dedbd2; border-bottom: 1rpx solid #dedbd2; }
-.music-scene { flex: 1; min-width: 0; display: flex; align-items: center; gap: 13rpx; min-height: 122rpx; padding: 15rpx 17rpx 15rpx 0; text-align: left; background: transparent; }
-.music-scene-sleep { border-left: 1rpx solid #dedbd2; padding-left: 21rpx; padding-right: 0; }
-.scene-symbol { color: #2b7fd8; font-size: 49rpx; line-height: 1; flex-shrink: 0; }
-.scene-title { color: #333c45; font-size: 26rpx; font-weight: 600; }
-.scene-copy { color: #817d76; font-size: 19rpx; margin-top: 4rpx; }
-.scene-arrow { margin-left: auto; font-size: 22rpx; color: #2b7fd8; flex-shrink: 0; }
-.parenting-note { display: flex; align-items: center; gap: 20rpx; padding: 33rpx 0 42rpx; }
-.parenting-note-title { font-size: 26rpx; color: #4a4a5a; }
-.parenting-note .entry-copy { margin-top: 2rpx; font-size: 21rpx; }
+.parenting-content .parenting-guide-entry { padding: 30rpx; text-align: left; background: #faf6eb; border-radius: 8rpx; }
+.guide-entry-topline { display: flex; justify-content: space-between; align-items: center; gap: 16rpx; }
+.guide-entry-label { color: #2b7fd8; font-size: 17rpx; letter-spacing: 2rpx; }
+.guide-entry-format { color: #75716a; font-size: 20rpx; }
+.guide-entry-title { margin-top: 28rpx; font-size: 39rpx; font-weight: 700; line-height: 1.5; }
+.guide-entry-copy { margin-top: 16rpx; color: #4a4a5a; font-size: 25rpx; line-height: 1.85; }
+.guide-entry-topics { margin-top: 22rpx; color: #75716a; font-size: 21rpx; line-height: 1.8; }
+.guide-entry-bottom { margin-top: 30rpx; padding-top: 22rpx; display: flex; align-items: center; justify-content: space-between; border-top: 1rpx solid #dedbd2; color: #2b7fd8; font-size: 24rpx; }
+.parenting-source { margin-top: 16rpx; color: #75716a; font-size: 20rpx; line-height: 1.8; }
+.parenting-links { margin: 32rpx 0 30rpx; border-top: 1rpx solid #dedbd2; }
+.parenting-links .nursery-text-link { display: flex; align-items: center; min-height: 44px; width: auto; padding: 16rpx 0; background: transparent; color: #68645e; font-size: 23rpx; text-align: left; }
 .visitor-section { padding: 8rpx 0 32rpx; }
 .visitor-topline { display: flex; align-items: center; gap: 20rpx; }
 .visitor-icon { position: relative; width: 102rpx; height: 102rpx; background: #f0e9d9; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
@@ -140,14 +117,6 @@
   .inspiration-entry { gap: 17rpx; }
   .inspiration-mark { width: 100rpx; }
   .duel-player { width: 200rpx; height: 200rpx; }
-  .music-poster { padding-left: 22rpx; padding-right: 22rpx; }
-  .music-poster-top { font-size: 15rpx; letter-spacing: 1rpx; }
-  .music-drawing { padding-left: 22rpx; padding-right: 22rpx; }
-  .music-scene { gap: 10rpx; }
-  .music-scene-sleep { padding-left: 17rpx; }
-  .scene-title { font-size: 25rpx; }
-  .scene-copy { font-size: 18rpx; }
-  .scene-arrow { display: none; }
 }
 @media (min-width: 900px) {
   .photo-cover { height: 640rpx; }

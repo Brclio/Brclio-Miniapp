@@ -1,0 +1,37 @@
+/* Native reading layout adapted from Brclio Design System. */
+.guide-list-shell { padding-top: 24rpx; }
+/* style v2 sets button:not([size=mini]) to 184px with auto margins.
+   Scope the reset and use two-class component rules to beat native selectors. */
+.guide-list-shell button { box-sizing: border-box; width: auto; min-width: 0; max-width: none; height: auto; min-height: 44px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font-size: inherit; font-weight: 400; line-height: 1.5; }
+.guide-list-shell button::after { border: 0; }
+.guide-heading { margin-bottom: 24rpx; }
+.guide-heading-topline { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; }
+.guide-title { min-width: 0; font-size: 36rpx; font-weight: 700; line-height: 1.5; }
+.guide-total { flex-shrink: 0; color: #776631; background: #f8edbc; padding: 2rpx 10rpx; font-size: 21rpx; }
+.guide-intro { margin-top: 8rpx; color: #68645e; font-size: 23rpx; line-height: 1.8; }
+.guide-search { display: flex; align-items: center; gap: 16rpx; min-height: 44px; padding: 0 20rpx; background: #faf6eb; border: 1rpx solid #dedbd2; border-radius: 6rpx; }
+.guide-search-input { flex: 1; min-width: 0; height: 44px; font-size: 26rpx; }
+.guide-placeholder { color: #827c70; }
+.guide-list-shell .guide-clear { flex: none; align-items: center; justify-content: center; min-width: 44px; padding: 0 0 0 10rpx; color: #68645e; font-size: 22rpx; }
+.guide-sections { display: flex; flex-wrap: wrap; margin: 16rpx -4rpx 0; }
+.guide-list-shell .guide-section { flex: 0 0 20%; align-items: center; justify-content: center; padding: 0 4rpx; color: #68645e; font-size: 24rpx; text-align: center; }
+.guide-section-label { display: block; width: 100%; padding: 10rpx 0; border-radius: 4rpx; white-space: nowrap; }
+.guide-list-shell .guide-section-active { color: #2b7fd8; font-weight: 600; }
+.guide-section-active .guide-section-label { background: #edf3f9; }
+.guide-result-count { margin: 18rpx 0 0; color: #75716a; font-size: 21rpx; }
+.guide-section-heading { padding: 24rpx 0 4rpx; font-size: 29rpx; font-weight: 600; }
+.guide-list-shell .guide-article-row { align-items: flex-start; gap: 16rpx; padding: 24rpx 0; border-bottom: 1rpx solid #dedbd2; text-align: left; }
+.guide-article-number { width: 40rpx; flex-shrink: 0; font-size: 20rpx; line-height: 2.3; color: #817d76; }
+.guide-article-info { flex: 1; min-width: 0; }
+.guide-article-title { color: #1a1a2e; font-size: 28rpx; line-height: 1.7; overflow-wrap: anywhere; }
+.guide-article-meta { color: #75716a; font-size: 21rpx; margin-top: 8rpx; }
+.guide-article-arrow { color: #2b7fd8; flex-shrink: 0; font-size: 25rpx; line-height: 1.9; }
+.guide-list-shell .guide-row-pressed { background: #faf6eb; }
+.guide-error { color: #9f3947; padding: 20rpx 0; font-size: 24rpx; }
+.guide-empty { padding: 36rpx 0; color: #75716a; font-size: 24rpx; }
+.guide-empty > view { color: #4a4a5a; font-size: 30rpx; margin-bottom: 12rpx; }
+.guide-list-shell .guide-reset { align-items: center; color: #2b7fd8; font-size: 25rpx; text-align: left; padding: 14rpx 0; }
+.guide-list-shell .guide-more { padding: 22rpx 0; color: #2b7fd8; font-size: 24rpx; text-align: center; }
+.guide-end { padding: 26rpx 0; text-align: center; color: #817d76; font-size: 22rpx; }
+.guide-footer { margin-top: 20rpx; padding-top: 24rpx; border-top: 1rpx solid #dedbd2; font-size: 20rpx; color: #817d76; line-height: 1.9; }
+@media (min-width: 900px) { .guide-title { font-size: 30px; } .guide-article-title { font-size: 20px; } }

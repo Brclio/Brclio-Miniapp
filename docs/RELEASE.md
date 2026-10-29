@@ -1,3 +1,5 @@
+> **当前 0.1.14 育儿宝典**：本轮完整核查和 GitHub / 微信各阶段状态见 [PARENTING_GUIDE_RELEASE.md](PARENTING_GUIDE_RELEASE.md)。下方保留历史记录。
+
 > **0.1.9 博客**：本轮功能、结构化数据和发布结果见 [BLOG_RELEASE.md](BLOG_RELEASE.md)。以下保留此前发布记录。
 
 > **当前 0.1.8 头像布局修复**：修复小屏头像选择器，验证与开发版上传记录见 [AVATAR_LAYOUT_RELEASE.md](AVATAR_LAYOUT_RELEASE.md)。此前记录如下。

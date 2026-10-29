@@ -67,23 +67,16 @@
   </view>
 
   <view wx:elif="{{activeTab === 'parenting'}}" class="tab-content parenting-content">
-    <view class="section-intro"><view class="intro-topline"><text class="eyebrow">GROW WITH A LITTLE JOY</text><text class="issue-number">04 / 育儿</text></view><view class="intro-title serif">小小耳朵，<view><text class="word-highlight">大大世界。</text></view></view><view class="intro-copy">一首歌，一点快乐。陪你慢慢长大。</view></view>
-    <button class="parenting-entry" style="width: 100%; display: block;" data-id="nursery-music" bindtap="openFeature" hover-class="feature-pressed" aria-label="打开儿歌多多音乐播放器，浏览歌单和播放音乐">
-      <view class="music-poster" aria-hidden="true">
-        <view class="music-poster-top"><text>LITTLE MUSIC BOX</text><text>SIDE A / 陪伴</text></view>
-        <view class="music-drawing">
-          <text class="music-note music-note-one">♪</text><text class="music-note music-note-two">♫</text><text class="music-spark">✳</text>
-          <view class="cassette"><view class="cassette-label"><text class="cassette-caption">今日份的小快乐</text><text class="cassette-title serif">唱给你听。</text></view><view class="cassette-window"><view class="cassette-reel"><view></view></view><view class="cassette-tape"></view><view class="cassette-reel"><view></view></view></view><view class="cassette-bottom"><view></view><text>BRCLIO / VOL. 01</text><view></view></view></view>
-        </view>
-        <view class="music-poster-bottom"><text>给每一天，配一段小旋律。</text><text>PRESS PLAY →</text></view>
-      </view>
-      <view class="music-details"><view class="entry-topline"><text class="feature-title serif">儿歌多多</text><text class="small-label">儿歌 · 轻音乐</text></view><view class="game-copy">把喜欢的歌，放进每天的陪伴。</view><view class="music-open"><text>打开音乐播放器</text><text aria-hidden="true">↗</text></view></view>
+    <view class="section-intro"><view class="intro-topline"><text class="eyebrow">GROW TOGETHER</text><text class="issue-number">04 / 育儿</text></view><view class="intro-title serif">读懂孩子，<view><text class="word-highlight">一起成长。</text></view></view><view class="intro-copy">从日常的小问题开始，慢慢学会更好的陪伴。</view></view>
+    <button class="parenting-guide-entry" style="width: 100%; display: block; margin: 0;" data-id="parenting-guide" bindtap="openFeature" hover-class="feature-pressed" aria-label="阅读悦创育儿宝典文字专栏">
+      <view class="guide-entry-topline"><text class="guide-entry-label">PARENTING NOTES</text><text class="guide-entry-format">文字专栏</text></view>
+      <view class="guide-entry-title serif">悦创育儿宝典</view>
+      <view class="guide-entry-copy">了解孩子的成长，也找到适合自己的养育方式。</view>
+      <view class="guide-entry-topics">智力发展 · 情绪管理 · 亲子沟通</view>
+      <view class="guide-entry-bottom"><text>打开专栏目录</text><text aria-hidden="true">→</text></view>
     </button>
-    <view class="music-scenes" aria-label="听歌情景">
-      <button class="music-scene" style="display: flex; flex: 1;" data-id="nursery-music" bindtap="openFeature" hover-class="button-pressed" aria-label="儿歌陪伴，打开音乐播放器"><text class="scene-symbol" aria-hidden="true">♪</text><view><view class="scene-title serif">儿歌陪伴</view><view class="scene-copy">清醒时，一起听。</view></view><text class="scene-arrow" aria-hidden="true">↗</text></button>
-      <button class="music-scene music-scene-sleep" style="display: flex; flex: 1;" data-id="nursery-music" data-scene="sleep" bindtap="openFeature" hover-class="button-pressed" aria-label="睡前轻听，打开睡前音乐歌单"><text class="scene-symbol" aria-hidden="true">☾</text><view><view class="scene-title serif">睡前轻听</view><view class="scene-copy">夜晚，轻轻陪伴。</view></view><text class="scene-arrow" aria-hidden="true">↗</text></button>
-    </view>
-    <view class="parenting-note"><text class="note-symbol" aria-hidden="true">✳</text><view><view class="parenting-note-title serif">最好的节奏，是陪伴。</view><view class="entry-copy">和孩子一起听，跟着旋律轻轻唱。</view></view></view>
+    <view class="parenting-source">悦创育儿宝典 · 文字整理版</view>
+    <view class="parenting-links"><button class="nursery-text-link" style="width: auto; display: flex; margin: 0;" data-id="nursery-music" bindtap="openFeature" hover-class="button-pressed" aria-label="儿歌陪伴，打开音乐播放器">儿歌陪伴 →</button></view>
   </view>
 
   <view wx:else class="tab-content">

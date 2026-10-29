@@ -1,6 +1,6 @@
 # Brclio 悦创
 
-`0.1.13` 微信普通小程序，提供「摄影 / 放松 / 悦学 / 育儿 / 我的」五个原生栏目及博客入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
+`0.1.14` 微信普通小程序，提供「摄影 / 放松 / 悦学 / 育儿 / 我的」五个原生栏目及博客入口。AppID：`wx59aa532fbf6fa540`；主体：莆田市荔城区黄家蓉宝电脑店。
 
 摄影、挑战与学习界面均使用小程序原生代码，不加载外部网页。摄影包含正确来源 [FirstSight_Online](https://github.com/AndersonHJB/FirstSight_Online) 的 8 组婚纱、1 组孕期影像，共 169 张实际照片；放松提供 ReadyGoDuel 同屏双人反应挑战；悦学接入 [LingoTiles「词了个词」](https://github.com/Brclio/brclio-lingotiles)，保留经典主题与 10 万词分级学习，重新设计手机界面。「我的」支持邮箱验证注册、邮箱验证码登录、邮箱或账号密码登录，小程序另外提供微信一键登录与注册，已有账号登录后可一键绑定微信，后续直接用微信进入同一账号。网页与小程序共用账号，挑战和学习记录先存本机，登录后自动同步。部署与微信发布分别验收。
 
@@ -20,6 +20,7 @@
 
 `0.1.8` 修复原生头像选择网格在小屏下溢出、选中边框过宽和关闭按钮占位问题，见 [布局修复与上传记录](docs/AVATAR_LAYOUT_RELEASE.md)。此前 `0.1.7` 将 1000 个内置头像全部替换为逐张使用 imagegen 生成的独立创意作品，按 20 个主题交错展示。本次核查与发布阶段见 [AVATAR_REDESIGN_RELEASE.md](docs/AVATAR_REDESIGN_RELEASE.md)。此前头像功能见 [AVATAR_RELEASE.md](docs/AVATAR_RELEASE.md)。此前 `0.1.5` 儿歌收藏同步和微信绑定见 [SONG_SYNC_RELEASE.md](docs/SONG_SYNC_RELEASE.md)。
 
+- 育儿文字专栏：新增「悦创育儿宝典」，本地收录 191 篇、9 个分类的文字内容；依用户要求仅在导入副本替换名称，原始课程目录保持只读。支持分类、标题搜索、全文阅读与前后篇切换；两个原生分包按需加载，不引入课程音频、视频和图片。首页儿歌仅保留一行文字入口。导入来源、内容校验与维护方法见 [育儿宝典说明](docs/PARENTING_GUIDE.md)。
 - 育儿（0.1.4）：原生儿歌播放器接入 [Erge-Duoduo](https://github.com/Brclio/Erge-Duoduo) 固定提交的 47 首现有 MP3，直接使用 `erge-duoduo.bornforthis.cn` 音频，不打包音乐或加载网页。每首配有独立生成的 256×256 插画封面，播放器与图片按需加载育儿分包。提供蹦跳／睡前筛选、搜索、收藏、进度拖动、顺序／随机／单曲循环和 15／30／60 分钟前台定时停止。收藏在登录后自动同步；播放模式和最近进度保存在各账号的本机缓存。域名配置建议、来源、后台播放限制与验收边界见 [育儿音乐说明](docs/NURSERY_MUSIC.md)。
 
 - 摄影：全部／婚纱／孕期筛选，9 本相册，原生详情、滑动切图、双击／按钮放大、双指缩放、拖动与关闭。
@@ -82,6 +83,8 @@ npm run deploy
 
 ## 发布与维护
 
+`0.1.14` 育儿文字专栏、原生布局修复及逐阶段发布结果见 [育儿宝典发布记录](docs/PARENTING_GUIDE_RELEASE.md)。
+
 当前准确状态见 [VERIFICATION.md](docs/VERIFICATION.md)，发布步骤见 [RELEASE.md](docs/RELEASE.md)。开发包上传、网页部署、微信审核与正式发布分别记录。内置竞技玩法仍须按实际内容核对微信类目，不能仅凭「放松」栏目名称推断可审核通过。
 
 `0.1.4` 育儿栏目、47 首儿歌与独立封面的核查和发布状态见 [NURSERY_RELEASE.md](docs/NURSERY_RELEASE.md)。封面生成使用内置 `image_gen`，逐首提示词与压缩记录见 [封面清单](design/nursery-covers/manifest.json)。
@@ -92,6 +95,8 @@ npm run deploy
 miniprogram/pages/          原生首页、图库、挑战、悦学、育儿、关于、隐私与旧链接转接
 miniprogram/photo-*/        自动生成的摄影分包：相册页、本包数据、展示图片
 miniprogram/nursery/        育儿分包：原生音乐播放器、47 张压缩歌曲封面
+miniprogram/parenting/      育儿宝典：目录与部分文字正文
+miniprogram/parenting-extra/ 育儿宝典：其余文字正文
 miniprogram/data/           原生目录与图片来源清单
 native/album/              原生相册页唯一维护模板
 minigame/lib/              共享挑战逻辑与本机存储

@@ -1,0 +1,27 @@
+/* Native editorial reading layout · Brclio Design System. */
+.guide-reader-shell { padding-top: 0; }
+/* Override native v2 button:not([size=mini]) width:184px and auto margins. */
+.guide-reader-shell button { box-sizing: border-box; display: flex; flex: none; align-items: center; justify-content: center; width: auto; min-width: 0; max-width: 100%; height: auto; min-height: 44px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font-size: inherit; font-weight: 400; line-height: 1.65; overflow: visible; }
+.guide-reader-shell button::after { border: 0; }
+.guide-reader-nav { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding: 8rpx 0; background: #fefcf6; border-bottom: 1rpx solid #dedbd2; }
+.guide-reader-nav > text { color: #75716a; font-size: 21rpx; }
+.guide-reader-shell .guide-reader-back { width: auto; min-height: 44px; margin: 0; padding: 14rpx 0; text-align: left; background: transparent; color: #2b7fd8; font-size: 24rpx; display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0; }
+.guide-reader-header { padding: 40rpx 0 34rpx; border-bottom: 1rpx solid #dedbd2; }
+.guide-reader-title { margin-top: 18rpx; font-size: 39rpx; font-weight: 700; line-height: 1.55; overflow-wrap: anywhere; }
+.guide-reader-meta { display: flex; gap: 14rpx; color: #75716a; margin-top: 24rpx; font-size: 22rpx; }
+.guide-reader-body { padding-top: 30rpx; }
+.guide-text-block { display: block; margin: 0 0 26rpx; font-size: 30rpx; line-height: 1.95; color: #33333f; white-space: pre-wrap; overflow-wrap: anywhere; }
+.guide-text-heading { margin: 44rpx 0 22rpx; font-size: 33rpx; font-weight: 700; color: #1a1a2e; line-height: 1.65; }
+.guide-text-quote { padding: 24rpx; background: #faf6eb; color: #5d5749; }
+.guide-text-list { padding: 6rpx 0 6rpx 16rpx; }
+.guide-text-divider { height: 1rpx; margin: 40rpx 0; background: #dedbd2; }
+.guide-reader-end { margin: 44rpx 0 24rpx; font-size: 22rpx; color: #817d76; }
+.guide-reader-source { padding: 24rpx 0; border-top: 1rpx solid #dedbd2; font-size: 21rpx; line-height: 1.9; color: #75716a; }
+.guide-reader-pagination { margin-top: 20rpx; border-top: 1rpx solid #dedbd2; }
+.guide-reader-shell .guide-neighbor { width: 100%; display: block; min-height: 44px; margin: 0; padding: 26rpx 0; border-bottom: 1rpx solid #dedbd2; background: transparent; text-align: left; color: #4a4a5a; font-size: 25rpx; line-height: 1.8; overflow-wrap: anywhere; }
+.guide-neighbor-label { color: #2b7fd8; font-size: 21rpx; }
+.guide-neighbor > view { margin-top: 7rpx; }
+.guide-reader-shell .guide-reader-directory { width: 100%; display: flex; min-height: 44px; margin: 28rpx 0 0; padding: 20rpx 0; background: transparent; color: #2b7fd8; font-size: 24rpx; align-items: center; justify-content: center; }
+.guide-reader-error { color: #9f3947; font-size: 25rpx; line-height: 1.8; margin: 30rpx 0; }
+.guide-reader-signature { margin-top: 24rpx; color: #817d76; font-size: 20rpx; text-align: center; }
+@media (min-width: 900px) { .guide-reader-title { font-size: 32px; } .guide-text-block { font-size: 20px; } .guide-text-heading { font-size: 24px; } }

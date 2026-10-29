@@ -66,6 +66,21 @@
         "pages/list/index",
         "pages/article/index"
       ]
+    },
+    {
+      "root": "parenting",
+      "name": "parenting",
+      "pages": [
+        "pages/list/index",
+        "pages/article/index"
+      ]
+    },
+    {
+      "root": "parenting-extra",
+      "name": "parenting-extra",
+      "pages": [
+        "pages/article/index"
+      ]
     }
   ],
   "preloadRule": {

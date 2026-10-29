@@ -1,0 +1,26 @@
+<view class="page-shell guide-reader-shell">
+  <view class="guide-reader-nav"><button class="guide-reader-back" style="width: auto; display: flex; margin: 0;" bindtap="openList" hover-class="button-pressed">‹ 专栏目录</button><text>悦创育儿宝典</text></view>
+  <view wx:if="{{error}}" class="guide-reader-error" role="alert">{{error}}</view>
+  <block wx:if="{{article}}">
+    <view class="guide-reader-header">
+      <text class="eyebrow">{{article.sectionTitle}}</text>
+      <view class="guide-reader-title serif" selectable="true">{{article.title}}</view>
+      <view class="guide-reader-meta">文字整理版<text>·</text>约 {{article.readingMinutes}} 分钟阅读</view>
+    </view>
+    <view class="guide-reader-body">
+      <block wx:for="{{blocks}}" wx:key="key">
+        <view wx:if="{{item.type === 'divider'}}" class="guide-text-divider" aria-hidden="true"></view>
+        <text wx:else class="guide-text-block guide-text-{{item.type}} {{item.type === 'heading' ? 'serif' : ''}}" user-select="true" selectable="true">{{item.text}}</text>
+      </block>
+    </view>
+    <view class="guide-reader-end">读到这里，给自己一点思考的时间。</view>
+    <view class="guide-reader-source">本文为文字整理版，文中部分名称已替换。</view>
+    <view class="guide-reader-pagination">
+      <button wx:if="{{article.previous}}" class="guide-neighbor" style="width: 100%; display: block; margin: 0;" data-direction="previous" bindtap="openNeighbor" hover-class="button-pressed"><text class="guide-neighbor-label">← 上一篇</text><view>{{article.previous.title}}</view></button>
+      <button wx:if="{{article.next}}" class="guide-neighbor" style="width: 100%; display: block; margin: 0;" data-direction="next" bindtap="openNeighbor" hover-class="button-pressed"><text class="guide-neighbor-label">下一篇 →</text><view>{{article.next.title}}</view></button>
+    </view>
+  </block>
+  <view wx:if="{{navigationError}}" class="guide-reader-error" role="alert">{{navigationError}}</view>
+  <button class="guide-reader-directory" style="width: 100%; display: flex; margin: 28rpx 0 0;" bindtap="openList" hover-class="button-pressed">返回专栏目录</button>
+  <view class="guide-reader-signature">Brclio 悦创 · 文字阅读</view>
+</view>
