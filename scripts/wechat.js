@@ -30,7 +30,7 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：新增悦创育儿宝典文字专栏，191篇、9个主题，支持标题搜索、分类筛选、全文阅读及前后篇切换；优化原生目录与阅读布局，儿歌入口调整为简洁文字链接。保留摄影、放松、悦学、账号与博客功能。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
+    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：移除博客评论区、评论入口和计数，保留文章阅读、搜索、分享、点赞与收藏，更新相关隐私说明。保留摄影、放松、悦学、育儿和账号功能。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');

@@ -84,7 +84,7 @@ test('web editor and native account client share draft, publication, interaction
 
   const writer = await browser(ORIGIN + '/blog/?view=write', client => register(client, 'aiyuechuang@gmail.com', 'blog_writer'));
   await until(() => writer.get('#editor-form'), 'authorized web writing form');
-  writer.input('title', '网页落笔，小程序接着读'); writer.input('content', '## 共同的文章\n\n两端共享同一份内容与讨论。');
+  writer.input('title', '网页落笔，小程序接着读'); writer.input('content', '## 共同的文章\n\n两端共享同一份内容与收藏。');
   writer.input('category', '开发记录'); writer.input('tags', '博客,跨端'); writer.click('[data-save="draft"]');
   await until(() => new URL(writer.window.location.href).searchParams.has('edit') && !writer.get('[data-save="draft"]').disabled, 'draft saved through editor');
   const id = new URL(writer.window.location.href).searchParams.get('edit'), guest = nativeClient();
@@ -108,16 +108,17 @@ test('web editor and native account client share draft, publication, interaction
   assert.notEqual(session.user.id, writer.runtime.client.getCachedUser().id);
   await member.blogRequest('/posts/' + id + '/like', 'PUT', { active: true });
   await member.blogRequest('/posts/' + id + '/favorite', 'PUT', { active: true });
-  await member.blogRequest('/posts/' + id + '/comments', 'POST', { content: '在小程序留下的第一条评论。' });
+  await assert.rejects(member.blogRequest('/posts/' + id + '/comments', 'POST', { content: '旧客户端评论' }), { status: 404, code: 'not_found' });
   assert.equal((await member.blogRequest('/posts?saved=1')).posts[0].id, id);
   const reader = await browser(ORIGIN + '/blog/?post=' + id);
-  await until(() => reader.get('.comment-body') && reader.get('#post-title'), 'native comment visible in actual web reader');
+  await until(() => reader.get('#post-title'), 'published article visible in actual web reader');
   assert.equal(reader.get('#post-title').textContent, '网页落笔，小程序接着读');
   assert.equal(reader.get('#article-content h2').textContent, '共同的文章');
-  assert.equal(reader.get('.comment-body').textContent, '在小程序留下的第一条评论。');
+  assert.equal(reader.get('.comment-body'), null);
+  assert.equal(reader.get('#comment-form'), null);
   assert.match(reader.get('[data-reaction="like"]').textContent, /1/);
   assert.match(reader.get('[data-reaction="favorite"]').textContent, /1/);
-  assert.equal(reader.get('#comments-count').textContent, '1 条留言');
+  assert.equal(reader.get('#comments-count'), null);
 
   writer.click('[data-save="draft"]');
   assert.equal(writer.get('#confirm-dialog').open, true);

@@ -6,8 +6,7 @@
   'use strict';
   const DAY = 86400000;
   const POST = /^\/posts\/([A-Za-z0-9_-]{1,80})$/;
-  const COMMENTS = /^\/posts\/([A-Za-z0-9_-]{1,80})\/comments$/;
-  const ACTION = /^\/posts\/([A-Za-z0-9_-]{1,80})\/(view|like|favorite|comments)(?:\/[A-Za-z0-9_-]{1,80})?$/;
+  const ACTION = /^\/posts\/([A-Za-z0-9_-]{1,80})\/(view|like|favorite)$/;
   const ADMIN = /^\/admin\/posts(?:\/[A-Za-z0-9_-]{1,80})?$/;
   function copy(value) { return value === undefined ? undefined : JSON.parse(JSON.stringify(value)); }
   function byteLength(value) {
@@ -36,7 +35,7 @@
       return { route, key: route + (normalized ? '?' + normalized : ''), query: normalized };
     } catch (_) { return { route, key: path, query }; }
   }
-  function readable(route) { return route === '/me' || route === '/posts' || route === '/admin/posts' || POST.test(route) || COMMENTS.test(route); }
+  function readable(route) { return route === '/me' || route === '/posts' || route === '/admin/posts' || POST.test(route); }
   function list(route) { return route === '/posts' || route === '/admin/posts'; }
   function canceled() { const error = new Error('账号已变化，请重试。'); error.code = 'operation_canceled'; error.canceled = true; return error; }
   function createBlogCache(settings) {
@@ -84,13 +83,12 @@
       const action = ACTION.exec(address.route);
       if (!action) return;
       const id = action[1];
-      invalidate(item => related(id, item) || (action[2] === 'comments' && item.route === '/posts/' + id + '/comments'));
+      invalidate(item => related(id, item));
     }
     function metrics(id, kind, result) {
       // Reads already in flight may contain pre-mutation counters. Never allow
       // them to replace these updated snapshots after their reply arrives.
       invalidate(item => related(id, item), true);
-      if (kind === 'comments') invalidate(item => item.route === '/posts/' + id + '/comments');
       if (kind === 'favorite') invalidate(item => list(item.route) && /(?:^|&)saved=1(?:&|$)/.test(item.query));
       const changes = [];
       entries.forEach((entry, key) => {
@@ -103,7 +101,7 @@
           const counts = post.counts || {};
           // Only the operation's own counter may decrease. Other counters can
           // have newer values from another in-flight operation (especially view).
-          const field = { like: 'likes', favorite: 'favorites', comments: 'comments' }[kind];
+          const field = { like: 'likes', favorite: 'favorites' }[kind];
           if (field && Number.isFinite(result.counts[field])) counts[field] = result.counts[field];
           if (Number.isFinite(result.counts.views)) counts.views = Math.max(counts.views || 0, result.counts.views);
           post.counts = counts;

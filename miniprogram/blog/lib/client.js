@@ -19,7 +19,6 @@ function date(value) {
   return Number.isFinite(d.getTime()) ? d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') : '';
 }
 function post(value) { return { ...value, dateText: date(value.publishedAt || value.updatedAt) }; }
-function comment(value) { return { ...value, dateText: date(value.createdAt) }; }
 function visitorId() {
   if (memoryVisitor) return memoryVisitor;
   try { const value = wx.getStorageSync(VISITOR_KEY); if (typeof value === 'string' && /^[a-zA-Z0-9_-]{16,80}$/.test(value)) return (memoryVisitor = value); } catch (_) {}
@@ -30,6 +29,6 @@ function visitorId() {
 function login() { wx.navigateTo({ url: '/pages/account/index' }); }
 function isAuthError(error) { return error && (error.status === 401 || error.code === 'session_expired' || error.code === 'unauthorized'); }
 function message(error) { return error && error.code === 'operation_canceled' ? '' : error && error.message || '连接失败，请稍后重试。'; }
-module.exports = { account, id, query, request, post, comment, visitorId, login, isAuthError, message, enter,
+module.exports = { account, id, query, request, post, visitorId, login, isAuthError, message, enter,
   reset: session.reset, revision: session.revision, peek: session.peek,
   writingUrl: config.webOrigin + '/blog/?view=write' };

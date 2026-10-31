@@ -15,7 +15,7 @@
     <button class="category-tab {{activeTab === 'mine' ? 'category-tab-active' : ''}}" data-tab="mine" bindtap="switchTab" hover-class="button-pressed" aria-label="{{activeTab === 'mine' ? '我的，当前栏目' : '切换到我的栏目'}}"><text>我的</text><text class="tab-english">ME</text></button>
   </view>
 
-  <button class="blog-home-entry" style="width: 100%; display: flex;" data-id="blog" bindtap="openFeature" hover-class="button-pressed" aria-label="打开 Brclio 博客，阅读文章、评论、点赞和收藏"><view class="blog-home-mark serif" aria-hidden="true">✳</view><view class="blog-home-body"><view class="blog-home-title serif">博客 · 把想法写下来</view><view class="blog-home-copy">读一篇文章，留一点思考。</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
+  <button class="blog-home-entry" style="width: 100%; display: flex;" data-id="blog" bindtap="openFeature" hover-class="button-pressed" aria-label="打开 Brclio 博客，阅读文章、点赞和收藏"><view class="blog-home-mark serif" aria-hidden="true">✳</view><view class="blog-home-body"><view class="blog-home-title serif">博客 · 把想法写下来</view><view class="blog-home-copy">读一篇文章，留一点思考。</view></view><text class="entry-arrow" aria-hidden="true">↗</text></button>
 
   <view wx:if="{{activeTab === 'photo'}}" class="tab-content">
     <view class="section-intro">

@@ -16,7 +16,7 @@ const SHARDS = '0123456789abcdef'.split('');
 const FETCH_BUDGET = 45;
 const HEADERS = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
 const ALLOWED_ORIGINS = new Set(['https://pocket.bornforthis.cn', 'https://pocket.brclio.com']);
-const LIMITS = Object.freeze({ posts: 500, content: 100000, contentLines: 5000, title: 120, excerpt: 300, category: 40, tags: 8, tag: 24, comment: 1000, comments: 1000, reactions: 5000, viewsPerDay: 10000 });
+const LIMITS = Object.freeze({ posts: 500, content: 100000, contentLines: 5000, title: 120, excerpt: 300, category: 40, tags: 8, tag: 24, reactions: 5000, viewsPerDay: 10000 });
 class BlogError extends Error {
   constructor(status, code, message, retryAfter) { super(message); this.status = status; this.code = code; this.retryAfter = retryAfter; }
 }
@@ -30,7 +30,7 @@ async function hmac(secret, value) {
 }
 function fields(body, names) { if (Object.keys(body).some(key => !names.includes(key))) fail(400, 'invalid_fields', '请求包含不支持的字段。'); }
 function text(value, maximum, required = false) {
-  if (typeof value !== 'string' || value.length > maximum || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value) || required && !value.trim()) fail(400, 'invalid_article', '请检查文章或评论内容及长度。');
+  if (typeof value !== 'string' || value.length > maximum || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value) || required && !value.trim()) fail(400, 'invalid_article', '请检查文章内容及长度。');
   return value.trim();
 }
 function cover(value = '') {
@@ -50,8 +50,9 @@ function articleInput(body, updating = false) {
   if (!Array.isArray(body.tags || []) || (body.tags || []).length > LIMITS.tags) fail(400, 'invalid_article', '标签最多 8 个，每个最多 24 字。');
   const tags = [...new Set((body.tags || []).map(value => text(value, LIMITS.tag, true)))];
   const status = body.status || 'draft';
-  if (!['draft', 'published'].includes(status) || body.commentsEnabled !== undefined && typeof body.commentsEnabled !== 'boolean') fail(400, 'invalid_article', '文章状态或评论设置错误。');
-  return { title, content, excerpt: excerpt || content.replace(/[#*`>\[\]]/g, '').replace(/\s+/g, ' ').slice(0, LIMITS.excerpt), category, tags, coverUrl: cover(body.coverUrl), status, commentsEnabled: body.commentsEnabled !== false };
+  // Accept the legacy boolean without allowing an older editor to restore comments.
+  if (!['draft', 'published'].includes(status) || body.commentsEnabled !== undefined && typeof body.commentsEnabled !== 'boolean') fail(400, 'invalid_article', '文章字段格式错误。');
+  return { title, content, excerpt: excerpt || content.replace(/[#*`>\[\]]/g, '').replace(/\s+/g, ' ').slice(0, LIMITS.excerpt), category, tags, coverUrl: cover(body.coverUrl), status, commentsEnabled: false };
 }
 async function readBody(request, maximum = 8192) {
   if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get('Content-Type') || '')) fail(415, 'json_required', '请使用 JSON 请求。');
@@ -86,12 +87,14 @@ function admin(user, env) {
 function requireAdmin(user, env) { if (!user) fail(401, 'unauthorized', '请先登录。'); if (!admin(user, env)) fail(403, 'writer_required', '当前账号没有博客管理权限。'); }
 function requireUser(user) { if (!user) fail(401, 'unauthorized', '请先登录后再操作。'); }
 function summary(post) { const { content, ...value } = post; return value; }
+// Keep the v1 storage shape while disabling the retired feature for old clients.
+function clientPost(post) { return { ...post, commentsEnabled: false }; }
 function recordKind(path) {
   if (/^blog\/v1\/catalog\/[a-f0-9]\.json$/.test(path)) return 'catalog';
   if (/^blog\/v1\/users\/[a-f0-9]{32}\/favorites\.json$/.test(path)) return 'favorites';
-  if (/^blog\/v1\/rates\/\d+\/[a-f0-9]{64}(?:-comment)?\.json$/.test(path)) return 'rate';
-  const file = /^blog\/v1\/posts\/[a-f0-9]{32}\/(article|reactions|comments|comment-[a-f0-9]{32}|views-\d+)\.json$/.exec(path)?.[1];
-  return file?.startsWith('comment-') ? 'comment' : file?.startsWith('views-') ? 'views' : file || '';
+  if (/^blog\/v1\/rates\/\d+\/[a-f0-9]{64}\.json$/.test(path)) return 'rate';
+  const file = /^blog\/v1\/posts\/[a-f0-9]{32}\/(article|reactions|views-\d+)\.json$/.exec(path)?.[1];
+  return file?.startsWith('views-') ? 'views' : file || '';
 }
 function structuredTransaction(tx) {
   return {
@@ -100,7 +103,7 @@ function structuredTransaction(tx) {
       const value = await tx.get(path);
       if (value === null) return null;
       validateBlogRecord(kind, value);
-      if (kind === 'article' && value.id !== path.split('/')[3] || kind === 'comment' && value.id !== path.split('/').at(-1).slice(8, -5) || kind === 'catalog' && value.posts.some(post => post.id[0] !== path.split('/').at(-1)[0])) throw new BlogSchemaError();
+      if (kind === 'article' && value.id !== path.split('/')[3] || kind === 'catalog' && value.posts.some(post => post.id[0] !== path.split('/').at(-1)[0])) throw new BlogSchemaError();
       return value;
     },
     put(path, value) { const kind = recordKind(path); if (!kind) throw new BlogSchemaError(); tx.put(path, validateBlogRecord(kind, value)); },
@@ -160,8 +163,6 @@ function methodFor(route) {
   if (/^\/posts\/[a-f0-9]{32}$/.test(route)) return 'GET';
   if (/^\/posts\/[a-f0-9]{32}\/view$/.test(route)) return 'POST';
   if (/^\/posts\/[a-f0-9]{32}\/(like|favorite)$/.test(route)) return 'PUT';
-  if (/^\/posts\/[a-f0-9]{32}\/comments$/.test(route)) return 'GET,POST';
-  if (/^\/posts\/[a-f0-9]{32}\/comments\/[a-f0-9]{32}$/.test(route)) return 'DELETE';
   return '';
 }
 
@@ -202,17 +203,17 @@ export function createBlogApi({ storeFactory = createGitHubStore, fetchImpl = (.
       const isAdminRoute = route.startsWith('/admin/');
       if (isAdminRoute) requireAdmin(user, env);
       const isList = route === '/posts' || route === '/admin/posts';
-      if (request.method === 'GET') queryFields(url, isList ? ['q', 'category', 'tag', 'page', 'pageSize', 'saved'] : route.endsWith('/comments') ? ['page', 'pageSize'] : []);
+      if (request.method === 'GET') queryFields(url, isList ? ['q', 'category', 'tag', 'page', 'pageSize', 'saved'] : []);
       else queryFields(url, []);
       if (url.searchParams.has('saved') && url.searchParams.get('saved') !== '1') fail(400, 'invalid_query', '收藏筛选参数错误。');
       if (url.searchParams.has('saved')) requireUser(user);
       const store = storeFactory(env, { repository: 'blog', fetchImpl: requestFetch });
       const id = route.match(/\/posts\/([a-f0-9]{32})/)?.[1];
       const write = !['GET', 'HEAD'].includes(request.method);
-      const body = write && !(request.method === 'DELETE' && route.includes('/comments/')) ? await readBody(request, isAdminRoute && request.method !== 'DELETE' ? 512000 : 8192) : null;
+      const body = write ? await readBody(request, isAdminRoute && request.method !== 'DELETE' ? 512000 : 8192) : null;
       const ipKey = write ? await hmac(env.ACCOUNT_HMAC_SECRET, 'blog-rate:v1:' + (request.headers.get('CF-Connecting-IP') || 'unknown')) : '';
       const userKey = write && user ? await hmac(env.ACCOUNT_HMAC_SECRET, 'blog-user-rate:v1:' + user.id) : '';
-      const createdId = request.method === 'POST' && (route === '/admin/posts' || route.endsWith('/comments')) ? randomId() : null;
+      const createdId = request.method === 'POST' && route === '/admin/posts' ? randomId() : null;
       const result = await store.transaction(async rawTx => {
         const tx = structuredTransaction(rawTx);
         if (isList && request.method === 'GET') {
@@ -229,7 +230,7 @@ export function createBlogApi({ storeFactory = createGitHubStore, fetchImpl = (.
             posts = posts.filter(post => saved.ids.includes(post.id));
           }
           posts.sort((a, b) => (isAdminRoute ? b.updatedAt - a.updatedAt : b.publishedAt - a.publishedAt) || a.id.localeCompare(b.id));
-          return { posts: posts.slice((page - 1) * pageSize, page * pageSize), total: posts.length, page, pageSize, categories, tags };
+          return { posts: posts.slice((page - 1) * pageSize, page * pageSize).map(clientPost), total: posts.length, page, pageSize, categories, tags };
         }
         if (route === '/admin/posts' && request.method === 'POST') {
           const input = articleInput(body);
@@ -240,8 +241,7 @@ export function createBlogApi({ storeFactory = createGitHubStore, fetchImpl = (.
           tx.put(postPath(post.id), post); await updateSummary(tx, post);
           return { post };
         }
-        const moderatingDraft = request.method === 'DELETE' && route.includes('/comments/') && admin(user, env);
-        const post = await loadPost(tx, id, user, env, !isAdminRoute && request.method !== 'GET' && !moderatingDraft);
+        const post = await loadPost(tx, id, user, env, !isAdminRoute && request.method !== 'GET');
         if (isAdminRoute && request.method === 'PUT') {
           if (!Number.isSafeInteger(body.revision) || body.revision !== post.revision) fail(409, 'revision_conflict', '文章已在其他页面更新，请重新载入后再保存。');
           const input = articleInput(body, true);
@@ -255,14 +255,7 @@ export function createBlogApi({ storeFactory = createGitHubStore, fetchImpl = (.
           const rate = await takeRate(tx, userKey, at, 120, HOUR); if (rate) return rate;
           tx.delete(postPath(id)); await updateSummary(tx, post, true); return { deleted: true };
         }
-        if (route === '/posts/' + id) return { post, interaction: await interaction(tx, id, user), canEdit: admin(user, env) };
-        if (route.endsWith('/comments') && request.method === 'GET') {
-          const { page, pageSize } = pageOptions(url);
-          const index = await tx.get(postPath(id, 'comments')) || { schemaVersion: BLOG_SCHEMA_VERSION, items: [] };
-          const selected = index.items.slice((page - 1) * pageSize, page * pageSize);
-          const comments = (await Promise.all(selected.map(item => tx.get(postPath(id, 'comment-' + item.id))))).filter(Boolean).map(comment => ({ ...comment, canDelete: Boolean(user && (user.id === comment.author.id || admin(user, env))) }));
-          return { comments, total: index.items.length, page, pageSize };
-        }
+        if (route === '/posts/' + id) return { post: clientPost(post), interaction: await interaction(tx, id, user), canEdit: admin(user, env) };
         if (route.endsWith('/view')) {
           fields(body, ['visitorId']);
           if (typeof body.visitorId !== 'string' || !/^[A-Za-z0-9_-]{16,100}$/.test(body.visitorId)) fail(400, 'invalid_visitor', '访问标识错误。');
@@ -299,34 +292,13 @@ export function createBlogApi({ storeFactory = createGitHubStore, fetchImpl = (.
           tx.put(postPath(id), post); await updateSummary(tx, post);
           return { interaction: { liked: reactions.likes.includes(user.id), favorited: reactions.favorites.includes(user.id) }, counts: post.counts };
         }
-        if (route.endsWith('/comments') && request.method === 'POST') {
-          fields(body, ['content']); const content = text(body.content, LIMITS.comment, true);
-          if (!post.commentsEnabled) fail(403, 'comments_closed', '作者已关闭这篇文章的评论。');
-          const index = await tx.get(postPath(id, 'comments')) || { schemaVersion: BLOG_SCHEMA_VERSION, items: [] };
-          if (index.items.length >= LIMITS.comments) fail(409, 'comment_capacity', '评论数量已达当前容量。');
-          const userRate = await takeRate(tx, userKey + '-comment', at, 10, HOUR); if (userRate) return userRate;
-          const ipRate = await takeRate(tx, ipKey + '-comment', at, 30, HOUR); if (ipRate) return ipRate;
-          const comment = { schemaVersion: BLOG_SCHEMA_VERSION, id: createdId, content, author: publicAuthor(user), createdAt: at };
-          index.items.unshift({ id: comment.id }); post.counts.comments = index.items.length;
-          tx.put(postPath(id, 'comment-' + comment.id), comment); tx.put(postPath(id, 'comments'), index); tx.put(postPath(id), post); await updateSummary(tx, post);
-          return { comment: { ...comment, canDelete: true }, counts: post.counts };
-        }
-        if (request.method === 'DELETE' && route.includes('/comments/')) {
-          const commentId = route.split('/').at(-1), path = postPath(id, 'comment-' + commentId), comment = await tx.get(path);
-          if (!comment) fail(404, 'comment_not_found', '评论已删除或不存在。');
-          if (comment.author.id !== user.id && !admin(user, env)) fail(403, 'comment_forbidden', '只能删除自己的评论。');
-          const rate = await takeRate(tx, userKey, at, 120, HOUR); if (rate) return rate;
-          const index = await tx.get(postPath(id, 'comments')) || { schemaVersion: BLOG_SCHEMA_VERSION, items: [] };
-          index.items = index.items.filter(item => item.id !== commentId); post.counts.comments = index.items.length;
-          tx.delete(path); tx.put(postPath(id, 'comments'), index); tx.put(postPath(id), post); await updateSummary(tx, post); return { deleted: true, counts: post.counts };
-        }
         fail(404, 'not_found', '接口不存在。');
       });
       if (result?.failure) {
         const { status, retryAfter, ...failure } = result.failure;
         return json({ ...failure, ...(retryAfter ? { retryAfter } : {}) }, status, { ...originHeaders, ...(retryAfter ? { 'Retry-After': String(retryAfter) } : {}) });
       }
-      return json(result, request.method === 'POST' && (route === '/admin/posts' || route.endsWith('/comments')) ? 201 : 200, originHeaders);
+      return json(result, request.method === 'POST' && route === '/admin/posts' ? 201 : 200, originHeaders);
     } catch (error) {
       if (budgetExhausted && !['GET', 'HEAD'].includes(request.method)) return json({ error: 'storage_conflict', message: '同时操作较多，请重新载入并稍后重试。' }, 409, originHeaders);
       if (error instanceof BlogError) return json({ error: error.code, message: error.message, ...(error.retryAfter ? { retryAfter: error.retryAfter } : {}) }, error.status, originHeaders);

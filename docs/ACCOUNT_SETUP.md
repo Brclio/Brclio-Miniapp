@@ -30,7 +30,7 @@ App 实际安装范围为 `repository_selection: all`，用户明确授权保留
 | `GITHUB_USERDATA_BRANCH` | 可选普通变量；默认 `main` |
 | `GITHUB_DATA_BRANCH` | 可选普通变量；学习、挑战和儿歌业务库分支，默认 `main` |
 | `GITHUB_BLOG_BRANCH` | 可选普通变量；独立博客库分支，默认 `main` |
-| `BLOG_ADMIN_EMAILS` / `BLOG_ADMIN_USER_IDS` | 非密钥管理员白名单；博客写作与评论管理权限 |
+| `BLOG_ADMIN_EMAILS` / `BLOG_ADMIN_USER_IDS` | 非密钥管理员白名单；博客写作管理权限 |
 | `EMAIL_PROVIDER` | 普通变量；本轮使用 `gmail`；也保留 Resend 路径 |
 | `SMTP_USERNAME` | 邮件发件 Gmail 完整地址；后端配置 |
 | `SMTP_APP_PASSWORD` | Secret；上述 Gmail 的应用专用密码，不是普通账号密码 |

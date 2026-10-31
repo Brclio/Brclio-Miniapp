@@ -12,7 +12,6 @@ const markdown = require('../miniprogram/lib/blog-content');
 const counts = { views: 3, likes: 0, favorites: 0, comments: 1 };
 const author = { id: 'a'.repeat(32), displayName: '作者', avatarUrl: '' };
 const article = { id: 'post_1', title: '认真写下一点想法', content: '# 小标题\n\n**开始阅读** <script>alert(1)</script>', status: 'published', category: '随笔', tags: ['生活'], excerpt: '一篇文章', commentsEnabled: true, publishedAt: 1793066400000, readingMinutes: 1, author, counts, revision: 1 };
-const comment = { id: 'comment_1', content: '很有启发', author, createdAt: 1793066400000, canDelete: true };
 const event = data => ({ currentTarget: { dataset: data } });
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
@@ -25,9 +24,6 @@ function host(kind, options = {}) {
     if (route === '/posts/post_1') return { post: structuredClone(article), interaction: { liked: false, favorited: false }, canEdit: !!cached };
     if (route.endsWith('/view')) return { counts: { ...counts, views: 4 } };
     if (route.endsWith('/like') || route.endsWith('/favorite')) return { counts: { ...counts, views: 4, likes: payload.active ? 1 : 0 }, interaction: { liked: payload.active, favorited: false } };
-    if (method === 'POST') return { comment, counts: { ...counts, comments: 2 } };
-    if (method === 'DELETE') return { counts: { ...counts, comments: 0 } };
-    if (route.includes('/comments?')) return { comments: [comment], total: 1, page: 1, pageSize: 20 };
     throw new Error('Unexpected route ' + route);
   });
   const cache = options.cache || createBlogCache({
@@ -119,27 +115,26 @@ test('article uses sanitized native rich-text, records a view and sends guests t
   assert.equal(h.page.onShareAppMessage().path, '/blog/pages/article/index?id=post_1'); h.page.onUnload();
 });
 
-test('authenticated article reactions and comments use explicit state and deletion requires confirmation', async () => {
+test('authenticated article reactions use explicit state without loading comments', async () => {
   const h = host('article', { user: author }); await h.page.onShow();
   await h.page.react(event({ type: 'like' }));
   assert.equal(h.page.data.interaction.liked, true);
   assert.equal(h.calls.at(-1).payload.active, true);
-  h.page.inputComment({ detail: { value: ' 谢谢分享 ' } }); await h.page.submitComment();
-  assert.equal(h.calls.find(call => call.method === 'POST' && call.route.endsWith('/comments')).payload.content, '谢谢分享');
-  assert.equal(h.page.data.commentText, ''); assert.equal(h.page.data.post.counts.comments, 2);
-  h.page.deleteComment(event({ id: 'comment_1' })); assert.equal(h.calls.some(call => call.method === 'DELETE'), false);
-  h.modals.at(-1).success({ confirm: false }); await flush(); assert.equal(h.calls.some(call => call.method === 'DELETE'), false);
-  h.page.deleteComment(event({ id: 'comment_1' })); await h.modals.at(-1).success({ confirm: true });
-  assert.equal(h.page.data.post.counts.comments, 0); h.page.onUnload();
+  await h.page.react(event({ type: 'like' }));
+  assert.equal(h.page.data.interaction.liked, false);
+  assert.equal(h.calls.at(-1).payload.active, false);
+  assert.equal(h.calls.some(call => call.route.includes('/comments')), false);
+  h.page.onUnload();
 });
 
-test('switching accounts invalidates article responses and clears the prior account comment draft', async () => {
+
+test('switching accounts invalidates article responses and clears prior permissions', async () => {
   const h = host('article', { user: author }); await h.page.onShow();
-  h.page.inputComment({ detail: { value: 'private unfinished draft' } });
   h.page.onHide(); h.setUser({ ...author, id: 'b'.repeat(32) });
-  assert.equal(h.page.data.commentText, ''); assert.equal(h.page.data.comments.length, 0); assert.equal(h.page.data.canEdit, false);
+  assert.equal(h.page.data.post, null); assert.equal(h.page.data.canEdit, false);
   await h.page.onShow(); assert.equal(h.page.data.user.id, 'b'.repeat(32)); h.page.onUnload();
 });
+
 
 test('blog pages are native subpackage routes and every WXML event has a handler', () => {
   const app = JSON.parse(fs.readFileSync(path.join(root, 'app.json')));
@@ -159,7 +154,6 @@ test('long native articles transfer balanced chunks without sending source and H
   const long = { ...article, content: ('短段落。\n\n').repeat(16000).slice(0, 100000) };
   const h = host('article', { request: async route => {
     if (route === '/posts/post_1') return { post: long, interaction: { liked: false, favorited: false }, canEdit: false };
-    if (route.includes('/comments?')) return { comments: [], total: 0, page: 1, pageSize: 20 };
     return { counts };
   } });
   await h.page.onShow(); await flush();
@@ -178,7 +172,6 @@ test('returning from a cached article preserves loaded list pages and updates co
     if (route === '/posts/post_1') return { post: structuredClone(article), interaction: { liked: false, favorited: false }, canEdit: true };
     if (route.endsWith('/view')) return { counts: { ...counts, views: 4 } };
     if (route.endsWith('/like')) return { counts: { ...counts, views: 4, likes: 1 }, interaction: { liked: true, favorited: false } };
-    if (route.includes('/comments?')) return { comments: [comment], total: 1, page: 1, pageSize: 20 };
     throw Error('Unexpected ' + route + ' ' + method + ' ' + payload);
   } });
   await list.page.onShow(); await list.page.loadMore(); list.page.onHide();
@@ -190,7 +183,7 @@ test('returning from a cached article preserves loaded list pages and updates co
   assert.equal(list.page.data.page, 2); assert.deepEqual(Array.from(list.page.data.posts, post => post.id), ['post_1', 'post_2']);
   assert.equal(list.page.data.posts[0].counts.likes, 1); assert.equal(list.page.data.posts[0].counts.views, 4);
   list.page.onHide(); await reader.page.onShow();
-  assert.equal(list.calls.length, before, 'returning to the reader keeps cached content and comments');
+  assert.equal(list.calls.length, before, 'returning to the reader keeps cached content');
   assert.equal(reader.page.data.interaction.liked, true);
   reader.page.onUnload(); list.page.onUnload();
 });
@@ -206,24 +199,22 @@ test('native refresh bypasses cache while filters and repeated opens reuse the s
   const reader = host('article', { internal: true, cache: list.cache }); await reader.page.onShow(); await flush();
   const once = list.calls.length;
   reader.page.onHide(); await reader.page.onShow(); assert.equal(list.calls.length, once);
-  reader.page.inputComment({ detail: { value: '未发送的想法' } });
   await reader.page.onPullDownRefresh(); await flush();
-  assert.equal(list.calls.length, once + 2, 'article and first comments are refreshed; successful daily view is reused');
-  assert.equal(reader.page.data.commentText, '未发送的想法');
+  assert.equal(list.calls.length, once + 1, 'article is refreshed; successful daily view is reused');
   reader.page.onUnload(); list.page.onUnload();
 });
 
-test('a new visit or expired native cache fetches fresh data without dropping a draft', async () => {
+test('a new visit or expired native cache fetches fresh article data', async () => {
   let now = 0;
   const reader = host('article', { now: () => now }); await reader.page.onShow(); await flush();
-  reader.page.inputComment({ detail: { value: '还在思考' } }); reader.page.onHide();
+  reader.page.onHide();
   const initial = reader.calls.length; now += 5 * 60 * 1000 + 1;
   await reader.page.onShow(); await flush();
-  assert.equal(reader.calls.length, initial + 2); assert.equal(reader.page.data.commentText, '还在思考');
+  assert.equal(reader.calls.length, initial + 1);
   reader.page.onHide(); reader.cache.reset();
   const beforeReturn = reader.calls.length; await reader.page.onShow(); await flush();
-  assert.equal(reader.calls.length, beforeReturn + 3, 'foreground visit reset reads article, comments and daily view anew');
-  assert.equal(reader.page.data.commentText, '还在思考'); reader.page.onUnload();
+  assert.equal(reader.calls.length, beforeReturn + 2, 'foreground visit reset reads article and daily view anew');
+  reader.page.onUnload();
 });
 
 test('returning to invalidated saved results fetches membership again and keeps ordinary list cache', async () => {
@@ -257,24 +248,16 @@ test('native blog navigation shares a visit internally and resets it when enteri
   module.exports.enter(); assert.equal(resets, 2);
 });
 
-test('a returning article keeps all cached comment pages and does not retransmit its rich text', async () => {
-  const reader = host('article', { request: async route => {
-    if (route === '/posts/post_1') return { post: structuredClone(article), interaction: { liked: false, favorited: false }, canEdit: false };
-    if (route.endsWith('/view')) return { counts };
-    if (route.includes('/comments?')) {
-      const page = Number(new URL('https://example.test' + route).searchParams.get('page'));
-      return { comments: Array.from({ length: page === 3 ? 1 : 20 }, (_, index) => ({ ...comment, id: 'comment_' + page + '_' + index })), total: 41, page, pageSize: 20 };
-    }
-    throw Error('Unexpected ' + route);
-  } });
-  await reader.page.onShow(); await reader.page.moreComments(); await reader.page.moreComments(); await flush();
-  assert.equal(reader.page.data.comments.length, 41); assert.equal(reader.page.data.commentPage, 3);
+test('a returning article keeps cached content without retransmitting its rich text', async () => {
+  const reader = host('article');
+  await reader.page.onShow(); await flush();
   const requests = reader.calls.length, richTextPatches = reader.patches.filter(patch => Object.keys(patch).some(key => key.startsWith('htmlChunks'))).length;
   reader.page.onHide(); await reader.page.onShow(); await flush();
-  assert.equal(reader.calls.length, requests); assert.equal(reader.page.data.comments.length, 41); assert.equal(reader.page.data.commentPage, 3);
+  assert.equal(reader.calls.length, requests);
   assert.equal(reader.patches.filter(patch => Object.keys(patch).some(key => key.startsWith('htmlChunks'))).length, richTextPatches);
   reader.page.onUnload();
 });
+
 
 test('returning to the cached list clears a failed load-more message without another request', async () => {
   const list = host('list', { request: async route => {
@@ -290,36 +273,26 @@ test('returning to the cached list clears a failed load-more message without ano
   list.page.onUnload();
 });
 
-test('cached comments clear an old pagination error on return while retaining the unfinished comment', async () => {
-  const reader = host('article', { request: async route => {
-    if (route === '/posts/post_1') return { post: structuredClone(article), interaction: { liked: false, favorited: false }, canEdit: false };
-    if (route.endsWith('/view')) return { counts };
-    if (route.includes('page=2')) throw Error('comments offline');
-    return { comments: [comment], total: 21, page: 1, pageSize: 20 };
-  } });
-  await reader.page.onShow(); reader.page.inputComment({ detail: { value: '写到一半的想法' } }); await reader.page.moreComments();
-  assert.equal(reader.page.data.commentsError, 'comments offline');
-  const before = reader.calls.length; reader.page.onHide(); await reader.page.onShow(); await flush();
-  assert.equal(reader.calls.length, before); assert.equal(reader.page.data.commentsError, ''); assert.equal(reader.page.data.commentsLoading, false);
-  assert.equal(reader.page.data.commentText, '写到一半的想法'); assert.equal(reader.page.data.comments.length, 1); assert.equal(reader.page.data.commentsMore, true);
-  reader.page.onUnload();
-});
-
 test('the article list link returns to an existing list and only opens a new list for direct entries', () => {
   const returning = host('article', { pages: [{ route: 'blog/pages/list/index' }, { route: 'blog/pages/article/index' }] });
-  returning.page.inputComment({ detail: { value: '没有发送的评论' } }); returning.page.openList();
-  assert.equal(returning.navigations.at(-1), 'back:1'); assert.equal(returning.page.data.commentText, '没有发送的评论');
+  returning.page.openList();
+  assert.equal(returning.navigations.at(-1), 'back:1');
   returning.page.onUnload();
   const direct = host('article', { pages: [{ route: 'blog/pages/article/index' }] }); direct.page.openList();
   assert.equal(direct.navigations.at(-1), '/blog/pages/list/index'); direct.page.onUnload();
 });
 
-test('the reading toolbar scrolls to the real comment input and focuses it without losing its draft', async () => {
-  const reader = host('article'); await reader.page.onShow();
-  reader.page.inputComment({ detail: { value: '先留下一点想法' } }); reader.page.focusComments();
-  assert.equal(reader.scrolls.at(-1).selector, '#comment-compose'); assert.equal(reader.page.data.commentFocused, true);
-  assert.equal(reader.page.data.commentText, '先留下一点想法'); reader.page.blurComment(); assert.equal(reader.page.data.commentFocused, false);
-  reader.page.data.post.commentsEnabled = false; reader.page.focusComments();
-  assert.equal(reader.scrolls.at(-1).selector, '#comments-section'); assert.equal(reader.page.data.commentFocused, false);
+test('native blog hides legacy comment metadata and keeps share, favorite and like actions', async () => {
+  const reader = host('article'); await reader.page.onShow(); await flush();
+  for (const kind of ['list', 'article']) {
+    const wxml = fs.readFileSync(path.join(root, 'blog/pages', kind, 'index.wxml'), 'utf8');
+    assert.doesNotMatch(wxml, /comment|评论|回应/);
+  }
+  const articleWxml = fs.readFileSync(path.join(root, 'blog/pages/article/index.wxml'), 'utf8');
+  assert.match(articleWxml, /open-type="share"/);
+  assert.match(articleWxml, /data-type="favorite"/);
+  assert.match(articleWxml, /data-type="like"/);
+  assert.equal(reader.calls.some(call => call.route.includes('/comments')), false);
+  assert.equal(Object.hasOwn(reader.page.data, 'commentText'), false);
   reader.page.onUnload();
 });

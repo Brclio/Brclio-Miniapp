@@ -79,7 +79,7 @@ test('blog shares read-only session authentication and fails closed for writer p
   error(await h.call('/me', undefined, { token: h.reader.token }), 401, 'unauthorized');
 });
 
-test('drafts stay private across detail, list, comments and engagement endpoints', async () => {
+test('drafts stay private across detail, list and engagement endpoints', async () => {
   const h = await harness(), post = await h.create({ status: 'draft', title: '私密草稿' });
   assert.equal((await h.call('/posts')).value.total, 0);
   assert.equal((await h.call('/admin/posts', undefined, { token: h.writer.token })).value.total, 1);
@@ -88,7 +88,6 @@ test('drafts stay private across detail, list, comments and engagement endpoints
   assert.equal(adminDetail.value.canEdit, true);
   for (const token of [undefined, h.reader.token]) {
     error(await h.call('/posts/' + post.id, undefined, { token }), 404, 'post_not_found');
-    error(await h.call('/posts/' + post.id + '/comments', undefined, { token }), 404, 'post_not_found');
     error(await h.call('/posts/' + post.id + '/view', { visitorId: 'private-visitor-12345' }, { token }), 404, 'post_not_found');
     error(await h.call('/posts/' + post.id + '/like', { active: true }, { token, method: 'PUT' }), 404, 'post_not_found');
   }
@@ -180,42 +179,62 @@ test('view counts dedupe visitors and logged-in accounts per day without storing
   error(await h.call(path, { visitorId: '../not-valid' }), 400, 'invalid_visitor');
 });
 
-test('comments require login, allow only owners or admin to remove, and keep accurate counts', async () => {
-  const h = await harness(), post = await h.create(), path = '/posts/' + post.id + '/comments';
-  error(await h.call(path, { content: 'hello' }), 401, 'unauthorized');
-  const posted = await h.call(path, { content: '<script>alert(1)</script>\n认真阅读了。' }, { token: h.reader.token });
-  assert.equal(posted.status, 201); assert.equal(posted.value.counts.comments, 1);
-  assert.equal(posted.value.comment.content, '<script>alert(1)</script>\n认真阅读了。', 'comments are plain text; clients escape them');
-  const commentId = posted.value.comment.id;
-  const publicList = await h.call(path);
-  assert.equal(publicList.value.comments[0].canDelete, false);
-  assert.equal(JSON.stringify(publicList.value).includes(h.reader.email), false);
-  assert.equal((await h.call(path, undefined, { token: h.reader.token })).value.comments[0].canDelete, true);
-  assert.equal((await h.call(path, undefined, { token: h.writer.token })).value.comments[0].canDelete, true);
-  error(await h.call(path + '/' + commentId, undefined, { method: 'DELETE', token: h.other.token }), 403, 'comment_forbidden');
-  const removed = await h.call(path + '/' + commentId, undefined, { method: 'DELETE', token: h.writer.token });
-  assert.equal(removed.value.counts.comments, 0);
-  assert.equal((await h.call(path)).value.total, 0);
-  error(await h.call(path + '/' + commentId, undefined, { method: 'DELETE', token: h.reader.token }), 404, 'comment_not_found');
+test('retired comment endpoints reject every client before authentication or storage access', async () => {
+  const h = await harness(), post = await h.create(), commentId = 'd'.repeat(32);
+  const root = 'blog/v1/posts/' + post.id + '/';
+  h.state.blog.get(root + 'article.json').commentsEnabled = true;
+  h.state.blog.get(root + 'article.json').counts.comments = 1;
+  h.state.blog.set(root + 'comments.json', { schemaVersion: 1, items: [{ id: commentId }] });
+  h.state.blog.set(root + 'comment-' + commentId + '.json', { schemaVersion: 1, id: commentId, content: '历史评论', author: { id: h.reader.id, displayName: '读者', avatarUrl: '' }, createdAt: h.at });
+  const before = structuredClone(h.state), accesses = h.accessed.length;
+  for (const token of [undefined, h.reader.token, h.writer.token, 'invalid-session']) {
+    for (const id of [post.id, 'f'.repeat(32)]) {
+      const path = '/posts/' + id + '/comments';
+      error(await h.call(path + '?page=1&pageSize=20', undefined, { token }), 404, 'not_found');
+      error(await h.call(path, { content: '不可提交' }, { token }), 404, 'not_found');
+      error(await h.call(path + '/' + commentId, undefined, { token, method: 'DELETE' }), 404, 'not_found');
+      error(await h.call(path, undefined, { token, method: 'OPTIONS' }), 404, 'not_found');
+    }
+  }
+  assert.equal(h.accessed.length, accesses, 'retired routes never authenticate or open a store');
+  assert.deepEqual(h.state, before, 'legacy comments, counters and account records are untouched');
 });
 
-test('comment closing preserves existing comments and stops new submissions', async () => {
-  const h = await harness(), post = await h.create(), path = '/posts/' + post.id + '/comments';
-  await h.call(path, { content: '已有评论' }, { token: h.reader.token });
-  await h.call('/admin/posts/' + post.id, { ...article({ commentsEnabled: false }), revision: 1 }, { token: h.writer.token, method: 'PUT' });
-  error(await h.call(path, { content: '新评论' }, { token: h.reader.token }), 403, 'comments_closed');
-  assert.equal((await h.call(path)).value.total, 1);
-  assert.equal((await h.call('/posts/' + post.id)).value.post.counts.comments, 1);
+test('legacy comment settings cannot enable the feature and existing articles remain readable and editable', async () => {
+  const h = await harness();
+  for (const commentsEnabled of [undefined, true, false]) {
+    const post = await h.create({ commentsEnabled });
+    assert.equal(post.commentsEnabled, false);
+    assert.equal(h.state.blog.get('blog/v1/posts/' + post.id + '/article.json').commentsEnabled, false);
+  }
+  const post = await h.create(), root = 'blog/v1/posts/' + post.id + '/';
+  const stored = h.state.blog.get(root + 'article.json');
+  stored.commentsEnabled = true; stored.counts.comments = 7;
+  const catalogEntry = h.state.blog.get('blog/v1/catalog/' + post.id[0] + '.json').posts.find(item => item.id === post.id);
+  catalogEntry.commentsEnabled = true; catalogEntry.counts.comments = 7;
+  const detail = await h.call('/posts/' + post.id);
+  assert.equal(detail.status, 200); assert.equal(detail.value.post.commentsEnabled, false);
+  assert.equal(detail.value.post.counts.comments, 7, 'historical counters retain the v1 record shape');
+  for (const route of ['/posts', '/admin/posts']) {
+    const list = await h.call(route, undefined, { token: h.writer.token });
+    assert.equal(list.value.posts.find(item => item.id === post.id).commentsEnabled, false);
+  }
+  assert.equal(h.state.blog.get(root + 'article.json').commentsEnabled, true, 'reading does not migrate persisted records');
+  const updated = await h.call('/admin/posts/' + post.id, { ...article({ commentsEnabled: true }), revision: 1 }, { token: h.writer.token, method: 'PUT' });
+  assert.equal(updated.status, 200); assert.equal(updated.value.post.commentsEnabled, false);
+  assert.equal(updated.value.post.counts.comments, 7);
+  assert.equal(h.state.blog.get(root + 'article.json').commentsEnabled, false);
+  assert.equal(h.state.blog.get('blog/v1/catalog/' + post.id[0] + '.json').posts.find(item => item.id === post.id).commentsEnabled, false);
 });
 
-test('comment rate limits persist across requests and relax after their window', async () => {
-  const h = await harness(), post = await h.create(), path = '/posts/' + post.id + '/comments';
-  for (let i = 0; i < 10; i += 1) assert.equal((await h.call(path, { content: '评论 ' + i }, { token: h.reader.token })).status, 201);
-  const limited = await h.call(path, { content: '过快评论' }, { token: h.reader.token });
+test('remaining view rate limits persist across requests and relax after their window', async () => {
+  const h = await harness(), post = await h.create(), path = '/posts/' + post.id + '/view';
+  for (let i = 0; i < 120; i += 1) assert.equal((await h.call(path, { visitorId: 'rate-limit-visitor-' + i })).status, 200);
+  const limited = await h.call(path, { visitorId: 'rate-limit-overflow-visitor' });
   error(limited, 429, 'rate_limited'); assert.ok(Number(limited.headers.get('Retry-After')) > 0);
-  assert.equal((await h.call(path)).value.total, 10);
+  assert.equal((await h.call('/posts/' + post.id)).value.post.counts.views, 120);
   h.advance(3600000);
-  assert.equal((await h.call(path, { content: '之后评论' }, { token: h.reader.token })).status, 201);
+  assert.equal((await h.call(path, { visitorId: 'rate-limit-overflow-visitor' })).status, 200);
 });
 
 test('article fields, URL schemes, request sizes and query fields are validated', async () => {
@@ -251,16 +270,12 @@ test('provider failures return no paths or diagnostics to clients', async () => 
   assert.equal(response.status, 503); assert.equal((await response.text()).includes('secret-provider'), false);
 });
 
-test('admin can moderate a withdrawn article while draft engagement remains blocked', async () => {
+test('withdrawn articles reject engagement even for the administrator', async () => {
   const h = await harness(), post = await h.create(), path = '/posts/' + post.id;
-  const comment = (await h.call(path + '/comments', { content: '已有评论' }, { token: h.reader.token })).value.comment;
   await h.call('/admin/posts/' + post.id, { ...article({ status: 'draft' }), revision: 1 }, { token: h.writer.token, method: 'PUT' });
-  error(await h.call(path + '/comments/' + comment.id, undefined, { token: h.reader.token, method: 'DELETE' }), 404, 'post_not_found');
-  error(await h.call(path + '/comments', { content: '草稿新评论' }, { token: h.writer.token }), 404, 'post_not_found');
   error(await h.call(path + '/like', { active: true }, { token: h.writer.token, method: 'PUT' }), 404, 'post_not_found');
+  error(await h.call(path + '/favorite', { active: true }, { token: h.writer.token, method: 'PUT' }), 404, 'post_not_found');
   error(await h.call(path + '/view', { visitorId: 'admin-draft-viewer-1234' }, { token: h.writer.token }), 404, 'post_not_found');
-  const deleted = await h.call(path + '/comments/' + comment.id, undefined, { token: h.writer.token, method: 'DELETE' });
-  assert.equal(deleted.status, 200); assert.equal(deleted.value.counts.comments, 0);
 });
 
 test('article line count is bounded after CRLF/CR normalization to limit native markup amplification', async () => {
@@ -286,7 +301,6 @@ test('all structured blog writes stay in the dedicated blog repository and never
   h.state.data.set('users/v1/ordinary.json', original);
   const post = await h.create();
   for (const [route, body] of [['like', { active: true }], ['favorite', { active: true }]]) assert.equal((await h.call('/posts/' + post.id + '/' + route, body, { token: h.reader.token, method: 'PUT' })).status, 200);
-  assert.equal((await h.call('/posts/' + post.id + '/comments', { content: '结构化留言' }, { token: h.reader.token })).status, 201);
   assert.equal((await h.call('/posts/' + post.id + '/view', { visitorId: 'structured-visitor-12345' })).status, 200);
   assert.equal(h.accessed.includes('data'), false);
   assert.deepEqual([...h.state.data], [['users/v1/ordinary.json', original]]);
@@ -298,12 +312,11 @@ test('all structured blog writes stay in the dedicated blog repository and never
   }
 });
 
-test('malformed or unexpected persisted fields never escape article, summary, comment or interaction reads', async () => {
+test('malformed or unexpected persisted fields never escape article, summary or interaction reads', async () => {
   const cases = [
     async (h, post) => { h.state.blog.get('blog/v1/posts/' + post.id + '/article.json').credentials = 'private-extra'; return '/posts/' + post.id; },
     async (h, post) => { h.state.blog.get('blog/v1/catalog/' + post.id[0] + '.json').posts[0].author.email = 'private-extra'; return '/posts'; },
     async (h, post) => { h.state.blog.get('blog/v1/posts/' + post.id + '/article.json').counts.views = 'private-extra'; return '/posts/' + post.id; },
-    async (h, post) => { const result = await h.call('/posts/' + post.id + '/comments', { content: '正常留言' }, { token: h.reader.token }); h.state.blog.get('blog/v1/posts/' + post.id + '/comment-' + result.value.comment.id + '.json').password = 'private-extra'; return '/posts/' + post.id + '/comments'; },
     async (h, post) => { h.state.blog.set('blog/v1/posts/' + post.id + '/reactions.json', { schemaVersion: 1, likes: [h.reader.id, h.reader.id], favorites: [] }); return '/posts/' + post.id; },
     async (h, post) => { h.state.blog.get('blog/v1/posts/' + post.id + '/article.json').schemaVersion = 2; return '/posts/' + post.id; }
   ];

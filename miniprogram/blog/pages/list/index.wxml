@@ -30,7 +30,7 @@
         <view class="post-card-body"><view class="post-card-title serif">{{item.title}}</view><view wx:if="{{item.excerpt}}" class="post-card-excerpt">{{item.excerpt}}</view></view>
       </view>
       <view class="post-card-details"><text>{{item.dateText}}</text><text class="meta-dot">·</text><text>{{item.category || '随笔'}}</text><text class="post-card-minutes">{{item.readingMinutes}} 分钟</text></view>
-      <view class="post-card-stats"><view><text class="stat-label">阅读</text><text>{{item.counts.views}}</text></view><view><text class="stat-label">点赞</text><text>{{item.counts.likes}}</text></view><view><text class="stat-label">评论</text><text>{{item.counts.comments}}</text></view><view><text class="stat-label">收藏</text><text>{{item.counts.favorites}}</text></view></view>
+      <view class="post-card-stats"><view><text class="stat-label">阅读</text><text>{{item.counts.views}}</text></view><view><text class="stat-label">点赞</text><text>{{item.counts.likes}}</text></view><view><text class="stat-label">收藏</text><text>{{item.counts.favorites}}</text></view></view>
     </view>
   </view>
   <view wx:if="{{loading}}" class="blog-state" aria-live="polite">正在找来文字…</view>

@@ -65,16 +65,24 @@ async function fixture({ conflict = false, comments = 0 } = {}) {
     }), env);
     return { status: response.status, value: await response.json() };
   }
-  return { call, calls, postId };
+  return { call, calls, postId, files };
 }
 
-test('cold authenticated maximum comment page fits Workers Free subrequest ceiling with the real GitHub store', async () => {
-  const h = await fixture({ comments: 30 });
-  const result = await h.call('/posts/' + h.postId + '/comments?pageSize=30');
+test('retired comments do not access GitHub and legacy articles stay readable within the fetch budget', async () => {
+  const h = await fixture({ comments: 30 }), before = structuredClone(h.files);
+  for (const body of [undefined, { content: '不可新增评论' }]) {
+    const result = await h.call('/posts/' + h.postId + '/comments', body);
+    assert.equal(result.status, 404); assert.equal(result.value.error, 'not_found');
+  }
+  assert.equal(h.calls.length, 0, 'retired routes make no external requests');
+  const result = await h.call('/posts/' + h.postId);
   assert.equal(result.status, 200, JSON.stringify(result.value));
-  assert.equal(result.value.comments.length, 30);
+  assert.equal(result.value.post.commentsEnabled, false);
+  assert.equal(result.value.post.counts.comments, 30, 'legacy schema remains readable');
   assert.ok(h.calls.length <= 45, 'reserve headroom under Cloudflare 50-external-fetch ceiling');
-  assert.equal(h.calls.some(call => call.method === 'PATCH'), false, 'public comment read creates no commits');
+  assert.equal(h.calls.some(call => call.url.includes('/comment')), false, 'article reads do not fetch historical comments');
+  assert.equal(h.calls.some(call => call.method === 'PATCH'), false, 'article read creates no commits');
+  assert.deepEqual(h.files, before);
 });
 
 test('real GitHub transaction conflict retries stop before platform subrequest exhaustion', async () => {

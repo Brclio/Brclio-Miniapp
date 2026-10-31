@@ -5,8 +5,8 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const { createBlogCache } = require('../miniprogram/lib/blog-cache');
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
-const post = { id: 'article_1', title: '文章', content: '正文', status: 'published', counts: { views: 3, likes: 2, favorites: 1, comments: 4 } };
-const DETAIL = '/posts/article_1', COMMENTS = DETAIL + '/comments?page=1&pageSize=20';
+const post = { id: 'article_1', title: '文章', content: '正文', status: 'published', counts: { views: 3, likes: 2, favorites: 1 } };
+const DETAIL = '/posts/article_1';
 function host(options = {}) {
   let at = Date.UTC(2026, 9, 27, 6), identity = 'writer';
   const calls = [];
@@ -17,7 +17,6 @@ function host(options = {}) {
       if (options.request) return options.request(path, method, data);
       if (path === '/me') return Promise.resolve({ user: { id: identity }, canWrite: true });
       if (path.startsWith('/posts?') || path.startsWith('/admin/posts?')) return Promise.resolve({ posts: [structuredClone(post)], total: 1 });
-      if (path.includes('/comments')) return Promise.resolve({ comments: [{ id: 'comment_1', content: '留言' }], total: 1 });
       return Promise.resolve({ post: structuredClone(post), interaction: { liked: false, favorited: false } });
     }
   });
@@ -128,6 +127,8 @@ test('failed reads and unsupported read routes are never cached', async () => {
   failed = false; await h.cache.request('/posts?page=1'); await h.cache.request('/posts?page=1'); assert.equal(h.calls.length, 2);
   await h.cache.request('/posts/article_1/comments/comment_1'); await h.cache.request('/posts/article_1/comments/comment_1');
   assert.equal(h.calls.length, 4); assert.equal(h.cache.peek('/posts/article_1/comments/comment_1'), undefined);
+  await h.cache.request(DETAIL + '/comments'); await h.cache.request(DETAIL + '/comments');
+  assert.equal(h.calls.length, 6); assert.equal(h.cache.peek(DETAIL + '/comments'), undefined);
 });
 
 test('likes update article and list snapshots without mutating callers or extending TTL', async () => {
@@ -153,39 +154,24 @@ test('favorite writes invalidate all saved pages while preserving other list sna
   assert.equal(h.cache.peek('/posts?page=1').posts[0].counts.favorites, 0);
 });
 
-test('comment writes expire every comments page and repair list and detail counters', async () => {
-  const h = host({ request(path, method) {
-    if (method === 'POST' || method === 'DELETE') return Promise.resolve({ counts: { ...post.counts, comments: method === 'POST' ? 5 : 3 } });
-    if (path === DETAIL) return Promise.resolve({ post: structuredClone(post) });
-    return Promise.resolve(path.indexOf('/comments') >= 0 ? { comments: [{ id: 'comment_1' }], total: 4 } : { posts: [structuredClone(post)] });
-  } });
-  await h.cache.request(DETAIL); await h.cache.request('/posts?page=1'); await h.cache.request(COMMENTS); await h.cache.request(DETAIL + '/comments?page=2');
-  await h.cache.request(DETAIL + '/comments', 'POST', { content: '新留言' });
-  assert.equal(h.cache.peek(COMMENTS), undefined); assert.equal(h.cache.peek(DETAIL + '/comments?page=2'), undefined);
-  assert.equal(h.cache.peek(DETAIL).post.counts.comments, 5); assert.equal(h.cache.peek('/posts?page=1').posts[0].counts.comments, 5);
-  await h.cache.request(DETAIL + '/comments/comment_1', 'DELETE');
-  assert.equal(h.cache.peek(DETAIL).post.counts.comments, 3);
-});
-
 test('editor writes clear public and private content reads but preserve account metadata', async () => {
   const h = host();
-  await h.cache.request('/me'); await h.cache.request('/posts?page=1'); await h.cache.request('/admin/posts?page=1'); await h.cache.request(DETAIL); await h.cache.request(COMMENTS);
+  await h.cache.request('/me'); await h.cache.request('/posts?page=1'); await h.cache.request('/admin/posts?page=1'); await h.cache.request(DETAIL);
   await h.cache.request('/admin/posts/article_1', 'PUT', { title: '新版', revision: 1 });
-  for (const path of ['/posts?page=1', '/admin/posts?page=1', DETAIL, COMMENTS]) assert.equal(h.cache.peek(path), undefined);
+  for (const path of ['/posts?page=1', '/admin/posts?page=1', DETAIL]) assert.equal(h.cache.peek(path), undefined);
   assert.equal(h.cache.peek('/me').user.id, 'writer');
 });
 
-test('reads overlapping a write cannot backfill pre-mutation counters or comments', async () => {
-  const oldDetail = deferred(), oldComments = deferred();
+test('reads overlapping a write cannot backfill pre-mutation counters', async () => {
+  const oldDetail = deferred(), oldList = deferred();
   const h = host({ request(path, method) {
     if (method === 'PUT') return Promise.resolve({ counts: { ...post.counts, likes: 3 }, interaction: { liked: true } });
-    if (method === 'POST') return Promise.resolve({ counts: { ...post.counts, comments: 5 } });
-    return path === DETAIL ? oldDetail.promise : oldComments.promise;
+    return path === DETAIL ? oldDetail.promise : oldList.promise;
   } });
-  const before = h.cache.request(DETAIL), commentsBefore = h.cache.request(COMMENTS);
-  await h.cache.request(DETAIL + '/like', 'PUT', { active: true }); await h.cache.request(DETAIL + '/comments', 'POST', { content: '文字' });
-  oldDetail.resolve({ post }); oldComments.resolve({ comments: [], total: 0 }); await Promise.all([before, commentsBefore]);
-  assert.equal(h.cache.peek(DETAIL), undefined); assert.equal(h.cache.peek(COMMENTS), undefined);
+  const before = h.cache.request(DETAIL), listBefore = h.cache.request('/posts?page=1');
+  await h.cache.request(DETAIL + '/like', 'PUT', { active: true });
+  oldDetail.resolve({ post }); oldList.resolve({ posts: [post] }); await Promise.all([before, listBefore]);
+  assert.equal(h.cache.peek(DETAIL), undefined); assert.equal(h.cache.peek('/posts?page=1'), undefined);
 });
 
 test('view requests share in-flight work and successful UTC-day dedupe resets on a new visit or day', async () => {
@@ -200,18 +186,18 @@ test('view requests share in-flight work and successful UTC-day dedupe resets on
   h.account('reader'); await h.cache.request(DETAIL + '/view', 'POST', {}); assert.equal(h.calls.length, 4);
 });
 
-test('late view replies update only views and preserve newer reaction and comment counts', async () => {
+test('late view replies update only views and preserve newer reaction counts', async () => {
   const view = deferred();
   const h = host({ request(path, method) {
     if (path.endsWith('/view')) return view.promise;
     if (path.endsWith('/like')) return Promise.resolve({ counts: { ...post.counts, likes: 3, views: 4 }, interaction: { liked: true } });
-    if (path.endsWith('/comments') && method === 'POST') return Promise.resolve({ counts: { ...post.counts, comments: 5, views: 4 } });
+    if (path.endsWith('/favorite')) return Promise.resolve({ counts: { ...post.counts, favorites: 2, views: 4 }, interaction: { favorited: true } });
     return Promise.resolve({ post: structuredClone(post), interaction: { liked: false, favorited: false } });
   } });
   await h.cache.request(DETAIL); const pending = h.cache.request(DETAIL + '/view', 'POST', {});
-  await h.cache.request(DETAIL + '/like', 'PUT', { active: true }); await h.cache.request(DETAIL + '/comments', 'POST', { content: '评论' });
-  view.resolve({ counts: { views: 5, likes: 2, favorites: 1, comments: 4 } }); await pending;
-  assert.deepEqual(h.cache.peek(DETAIL).post.counts, { views: 5, likes: 3, favorites: 1, comments: 5 });
+  await h.cache.request(DETAIL + '/like', 'PUT', { active: true }); await h.cache.request(DETAIL + '/favorite', 'PUT', { active: true });
+  view.resolve({ counts: { views: 5, likes: 2, favorites: 1 } }); await pending;
+  assert.deepEqual(h.cache.peek(DETAIL).post.counts, { views: 5, likes: 3, favorites: 2 });
 });
 
 test('parallel reaction replies patch only their own interaction and counter fields', async () => {
@@ -233,11 +219,11 @@ test('failed writes expire affected snapshots and failed views can retry', async
   let failed = false;
   const h = host({ request(path, method) {
     if (method !== 'GET') return failed ? Promise.reject(Error('response lost')) : Promise.resolve({ counts: { ...post.counts, views: 4 } });
-    return Promise.resolve(path === DETAIL ? { post } : path.includes('/comments') ? { comments: [] } : { posts: [post] });
+    return Promise.resolve(path === DETAIL ? { post } : { posts: [post] });
   } });
-  await h.cache.request(DETAIL); await h.cache.request('/posts?page=1'); await h.cache.request(COMMENTS); failed = true;
-  await assert.rejects(h.cache.request(DETAIL + '/comments', 'POST', { content: '文字' }), /response lost/);
-  assert.equal(h.cache.peek(DETAIL), undefined); assert.equal(h.cache.peek('/posts?page=1'), undefined); assert.equal(h.cache.peek(COMMENTS), undefined);
+  await h.cache.request(DETAIL); await h.cache.request('/posts?page=1'); failed = true;
+  await assert.rejects(h.cache.request(DETAIL + '/like', 'PUT', { active: true }), /response lost/);
+  assert.equal(h.cache.peek(DETAIL), undefined); assert.equal(h.cache.peek('/posts?page=1'), undefined);
   await assert.rejects(h.cache.request(DETAIL + '/view', 'POST', {}), /response lost/);
   failed = false; await h.cache.request(DETAIL + '/view', 'POST', {});
   assert.equal(h.calls.filter(call => call.path.endsWith('/view')).length, 2);

@@ -25,7 +25,7 @@ const report = { schemaVersion: 1, kind: KIND, runId, startedAt, passed: false, 
 const marker = { kind: KIND, runId, nonce: randomBytes(16).toString('hex') };
 const title = '上线验收（自动清理） ' + runId;
 const articleFields = { title, excerpt: '自动验收临时文章，将在核实后撤回并删除。', category: '上线验收',
-  tags: ['自动清理', 'qa-' + runId], coverUrl: '', status: 'draft', commentsEnabled: true,
+  tags: ['自动清理', 'qa-' + runId], coverUrl: '', status: 'draft',
   content: '# 博客上线验收\n\n这是自动清理的临时测试文章。\n\n' + JSON.stringify(marker) };
 let env, users, blog, oldData, owner, post, postOwnershipVerified = false, outputReady = false;
 let ownerSessionAttempted = false, readerSeedAttempted = false, postCreateAttempted = false;
@@ -232,36 +232,27 @@ async function verifyWorkflow() {
   checked('favorites_isolated', !(await call(ORIGINS[0], '/posts?saved=1', { token: b.token })).posts.some(item => item.id === post.id));
   await call(ORIGINS[0], '/posts/' + post.id + '/like', { method: 'PUT', data: { active: true }, expected: 401 });
 
-  phase('verify comments, authorization, closure and moderation');
-  const commentText = '上线验收 ' + runId + ' <script>不会执行</script>';
-  const comment = await call(ORIGINS[0], '/posts/' + post.id + '/comments', { method: 'POST', token: a.token, data: { content: commentText }, expected: 201 });
-  commentIds.add(comment.comment.id); await manifest();
-  const publicComments = await call(ORIGINS[1], '/posts/' + post.id + '/comments', { publicIdentity: true });
-  checked('comment_reads_cross_domain_as_text', publicComments.comments.some(item => item.id === comment.comment.id && item.content === commentText && !item.canDelete));
-  await call(ORIGINS[1], '/posts/' + post.id + '/comments/' + comment.comment.id, { method: 'DELETE', token: b.token, expected: 403 });
-  await updateArticle({ status: 'published', commentsEnabled: false });
-  await call(ORIGINS[1], '/posts/' + post.id + '/comments', { method: 'POST', token: b.token, data: { content: '评论关闭后不应保存' }, expected: 403 });
-  checked('closed_comments_remain_readable', (await call(ORIGINS[0], '/posts/' + post.id + '/comments')).total === 1);
-  checked('comment_author_can_delete', (await call(ORIGINS[1], '/posts/' + post.id + '/comments/' + comment.comment.id, { method: 'DELETE', token: a.token })).counts.comments === 0);
-  await updateArticle({ status: 'published', commentsEnabled: true });
-  const second = await call(ORIGINS[1], '/posts/' + post.id + '/comments', { method: 'POST', token: b.token, data: { content: '管理员可在撤回后管理本条验收评论 ' + runId }, expected: 201 });
-  commentIds.add(second.comment.id); await manifest();
+  phase('verify removed comment routes reject old clients');
+  for (const origin of ORIGINS) {
+    await call(origin, '/posts/' + post.id + '/comments', { expected: 404 });
+    await call(origin, '/posts/' + post.id + '/comments', { method: 'POST', token: a.token, data: { content: '旧客户端评论不可保存' }, expected: 404 });
+    await call(origin, '/posts/' + post.id + '/comments/' + '0'.repeat(32), { method: 'DELETE', token: owner.token, expected: 404 });
+  }
   const persisted = await blog.read(articlePath(post.id));
-  checked('published_structured_counts_match', ownsPost(persisted) && persisted.counts.likes === 2 && persisted.counts.favorites === 1 && persisted.counts.views === 1 && persisted.counts.comments === 1);
+  checked('published_structured_counts_match', ownsPost(persisted) && persisted.counts.likes === 2 && persisted.counts.favorites === 1 && persisted.counts.views === 1 && persisted.counts.comments === 0 && persisted.commentsEnabled === false);
   noPrivateFields(persisted, true);
   const reactions = await blog.read(articlePath(post.id, 'reactions'));
   checked('structured_reactions_match_accounts', same(new Set(reactions.likes).size, 2) && reactions.likes.includes(a.id) && reactions.likes.includes(b.id) && same(reactions.favorites, [a.id]));
   report.blogRecord = { repository: REPOSITORIES.blog, postId: post.id, articlePath: articlePath(post.id),
     revision: persisted.revision, counts: persisted.counts, keys: Object.keys(persisted).sort(), observedHead: heads[REPOSITORIES.blog] || null };
 
-  phase('withdraw, hide saved entries and moderate withdrawn comments');
+  phase('withdraw and hide saved entries');
   await updateArticle({ status: 'draft' });
   for (const origin of ORIGINS) {
     await call(origin, '/posts/' + post.id, { expected: 404 });
     await call(origin, '/posts/' + post.id, { token: a.token, expected: 404 });
     checked('withdrawn_hidden_from_saved_' + new URL(origin).hostname, !(await call(origin, '/posts?saved=1', { token: a.token })).posts.some(item => item.id === post.id));
   }
-  checked('admin_can_delete_withdrawn_comment', (await call(ORIGINS[0], '/posts/' + post.id + '/comments/' + second.comment.id, { method: 'DELETE', token: owner.token })).counts.comments === 0);
   checked('owner_profile_unchanged', hash(JSON.stringify(await users.read(owner.profilePath))) === owner.profileSnapshotHash);
   phase('delete disposable article through the live administrator API');
   const deleted = await call(ORIGINS[0], '/admin/posts/' + post.id, { method: 'DELETE', token: owner.token, data: { revision: post.revision } });

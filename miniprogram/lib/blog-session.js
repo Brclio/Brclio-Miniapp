@@ -3,7 +3,7 @@ const account = require('./account');
 const { createBlogCache } = require('./blog-cache');
 
 // One memory-only reading visit is shared by the main app and blog subpackage.
-// No article, comment, role or session token is persisted to device storage.
+// No article, role or session token is persisted to device storage.
 const cache = createBlogCache({
   request: (path, method, data) => account.blogRequest(path, method, data),
   getIdentity: () => (account.getCachedUser() || {}).id || ''

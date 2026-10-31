@@ -11,7 +11,6 @@
     eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
     heart: '<path d="m12 20-8.1-7.7a5.1 5.1 0 0 1 7.2-7.2l.9.9.9-.9a5.1 5.1 0 0 1 7.2 7.2Z"/>',
     bookmark: '<path d="M6 3h12v18l-6-4-6 4Z"/>',
-    message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-1 1v-9.5a9 9 0 1 1 18 0Z"/><path d="M7 10h10M7 14h6"/>',
     share: '<path d="M12 16V3m-5 5 5-5 5 5M5 13v7h14v-7"/>',
     refresh: '<path d="M20 11a8 8 0 0 0-14-5L3 9m0-6v6h6M4 13a8 8 0 0 0 14 5l3-3m0 6v-6h-6"/>',
     back: '<path d="m14 5-7 7 7 7"/>',
@@ -20,7 +19,7 @@
   const icon = name => '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + (icons[name] || '') + '</svg>';
   const fields = ['title', 'excerpt', 'category', 'tags', 'coverUrl', 'content'];
   let runtime = null, user = null, canWrite = false, generation = 0, stopped = false, busy = false;
-  let currentPost = null, interaction = { liked: false, favorited: false }, commentPage = 1, commentsRequest = 0, readerMutationPending = false;
+  let currentPost = null, interaction = { liked: false, favorited: false }, readerMutationPending = false;
   let editor = null, autosaveTimer = null, dirty = false, loadedDraft = null;
   let pendingConfirmation = null;
   let cache = null, accountUnsubscribe = null, refreshing = false, listReturn = null;
@@ -103,7 +102,7 @@
     return values;
   }
   function counts(value = {}) {
-    return [['eye', 'views', '次阅读'], ['message', 'comments', '评论'], ['heart', 'likes', '赞'], ['bookmark', 'favorites', '收藏']].map(([name, field, label]) => '<span class="stat-item" aria-label="' + number(value[field]) + ' ' + label + '">' + icon(name) + '<span aria-hidden="true">' + number(value[field]) + '<span class="stat-label"> ' + label + '</span></span></span>').join('');
+    return [['eye', 'views', '次阅读'], ['heart', 'likes', '赞'], ['bookmark', 'favorites', '收藏']].map(([name, field, label]) => '<span class="stat-item" aria-label="' + number(value[field]) + ' ' + label + '">' + icon(name) + '<span aria-hidden="true">' + number(value[field]) + '<span class="stat-label"> ' + label + '</span></span></span>').join('');
   }
   function postRow(post, admin = false) {
     const cover = safeImage(post.coverUrl), url = link({ post: post.id });
@@ -144,19 +143,14 @@
     const avatar = safeImage(author?.avatarUrl), initial = Array.from(author?.displayName || '读')[0];
     return avatar ? '<img class="' + className + '" alt="" src="' + escape(avatar) + '" referrerpolicy="no-referrer">' : '<span class="' + className + ' author-initial" aria-hidden="true">' + escape(initial) + '</span>';
   }
-  function commentRow(comment) {
-    const name = comment.author?.displayName || '悦创读者', isAuthor = !!comment.author?.id && comment.author.id === currentPost?.author?.id;
-    return '<article class="comment">' + authorAvatar(comment.author, 'comment-avatar') + '<div class="comment-main"><div class="comment-heading"><div class="comment-author"><div><strong>' + escape(name) + '</strong>' + (isAuthor ? '<span class="comment-author-badge">作者</span>' : '') + '</div><time>' + escape(date(comment.createdAt)) + '</time></div>' + (comment.canDelete ? '<button type="button" class="text-button" data-delete-comment="' + escape(comment.id) + '">删除</button>' : '') + '</div><p class="comment-body">' + escape(comment.content) + '</p></div></article>';
-  }
   function renderReader(result) {
     const post = result.post; currentPost = post; interaction = result.interaction || { liked: false, favorited: false };
     title(post.title);
     const cover = safeImage(post.coverUrl);
-    $('#blog-reader').innerHTML = '<div class="reader-nav"><a class="text-button reader-back" href="' + escape(link(listReturn?.values || {})) + '" data-action="back-list">' + icon('back') + '文章列表</a><div class="reader-nav-tools"><button class="text-button icon-button" type="button" data-action="refresh-reader" aria-label="刷新文章与留言" title="刷新文章与留言">' + icon('refresh') + '</button>' + (result.canEdit ? '<a class="text-button" href="' + escape(link({ view: 'write', edit: post.id })) + '" data-edit="' + escape(post.id) + '">' + icon('edit') + '编辑</a>' : '') + '</div></div><div class="reader-wrap"><div><article><header class="article-header"><div class="post-topline"><span class="category-label">' + escape(post.category || '未分类') + '</span>' + (post.status === 'draft' ? '<span class="status-badge">草稿 · 仅管理员可见</span>' : '') + '<span>' + number(post.readingMinutes || 1) + ' 分钟阅读</span></div><div class="author-line">' + authorAvatar(post.author, 'author-avatar') + '<div class="author-detail"><span>' + escape(post.author?.displayName || 'Brclio') + '</span><time>' + escape(date(post.publishedAt || post.updatedAt)) + '</time></div></div><h1 id="post-title">' + escape(post.title) + '</h1>' + (post.excerpt ? '<p class="article-description">' + escape(post.excerpt) + '</p>' : '') + '</header>' + (cover ? '<img class="article-cover" alt="文章封面" src="' + escape(cover) + '" referrerpolicy="no-referrer">' : '') + '<div class="article-content" id="article-content"></div><div class="tag-list">' + (post.tags || []).map(tag => '<a class="tag" href="' + escape(link({ tag })) + '" data-tag="' + escape(tag) + '">#' + escape(tag) + '</a>').join('') + '</div><div class="reader-end"><div class="reaction-actions"><button type="button" class="secondary" data-reaction="like" aria-pressed="false"></button><button type="button" class="secondary" data-reaction="favorite" aria-pressed="false"></button><button type="button" class="secondary" data-action="copy-link">' + icon('share') + '分享</button></div><p class="reading-count" id="view-count"></p></div></article><section class="comments-section" aria-labelledby="comments-title"><div class="section-heading"><h2 id="comments-title">评论</h2><span class="small-note" id="comments-count"></span></div><div id="comment-compose"></div><div id="comments" aria-live="polite"></div><div class="comment-pagination" id="comment-pagination"></div></section></div><aside class="reader-aside"><h2>这篇文章的路标</h2><nav id="toc" class="toc" aria-label="文章目录"></nav></aside></div><nav class="reader-dock" aria-label="文章互动"><button class="dock-comment" type="button" data-action="jump-comments">' + icon('message') + '<span class="dock-comment-text">写下你的想法…</span><span id="dock-comments-count" class="dock-comment-count"></span></button><button class="dock-action" type="button" data-reaction="like" aria-pressed="false"></button><button class="dock-action" type="button" data-reaction="favorite" aria-pressed="false"></button><button class="dock-action" type="button" data-action="copy-link" aria-label="分享文章链接">' + icon('share') + '<span class="action-label">分享</span></button></nav>';
+    $('#blog-reader').innerHTML = '<div class="reader-nav"><a class="text-button reader-back" href="' + escape(link(listReturn?.values || {})) + '" data-action="back-list">' + icon('back') + '文章列表</a><div class="reader-nav-tools"><button class="text-button icon-button" type="button" data-action="refresh-reader" aria-label="刷新文章" title="刷新文章">' + icon('refresh') + '</button>' + (result.canEdit ? '<a class="text-button" href="' + escape(link({ view: 'write', edit: post.id })) + '" data-edit="' + escape(post.id) + '">' + icon('edit') + '编辑</a>' : '') + '</div></div><div class="reader-wrap"><div><article><header class="article-header"><div class="post-topline"><span class="category-label">' + escape(post.category || '未分类') + '</span>' + (post.status === 'draft' ? '<span class="status-badge">草稿 · 仅管理员可见</span>' : '') + '<span>' + number(post.readingMinutes || 1) + ' 分钟阅读</span></div><div class="author-line">' + authorAvatar(post.author, 'author-avatar') + '<div class="author-detail"><span>' + escape(post.author?.displayName || 'Brclio') + '</span><time>' + escape(date(post.publishedAt || post.updatedAt)) + '</time></div></div><h1 id="post-title">' + escape(post.title) + '</h1>' + (post.excerpt ? '<p class="article-description">' + escape(post.excerpt) + '</p>' : '') + '</header>' + (cover ? '<img class="article-cover" alt="文章封面" src="' + escape(cover) + '" referrerpolicy="no-referrer">' : '') + '<div class="article-content" id="article-content"></div><div class="tag-list">' + (post.tags || []).map(tag => '<a class="tag" href="' + escape(link({ tag })) + '" data-tag="' + escape(tag) + '">#' + escape(tag) + '</a>').join('') + '</div><div class="reader-end"><div class="reaction-actions"><button type="button" class="secondary" data-reaction="like" aria-pressed="false"></button><button type="button" class="secondary" data-reaction="favorite" aria-pressed="false"></button><button type="button" class="secondary" data-action="copy-link">' + icon('share') + '分享</button></div><p class="reading-count" id="view-count"></p></div></article></div><aside class="reader-aside"><h2>这篇文章的路标</h2><nav id="toc" class="toc" aria-label="文章目录"></nav></aside></div><nav class="reader-dock" aria-label="文章互动"><button class="dock-action" type="button" data-reaction="like" aria-pressed="false"></button><button class="dock-action" type="button" data-reaction="favorite" aria-pressed="false"></button><button class="dock-action" type="button" data-action="copy-link" aria-label="分享文章链接">' + icon('share') + '<span class="action-label">分享</span></button></nav>';
     $('#article-content').innerHTML = window.BrclioBlogContent.renderMarkdown(post.content || '');
     $('#article-content').querySelectorAll('h1,h2,h3').forEach((heading, index) => { heading.id = 'section-' + index; const anchor = document.createElement('a'); anchor.href = '#' + heading.id; anchor.textContent = heading.textContent; $('#toc').appendChild(anchor); });
     renderCounts();
-    $('#comment-compose').innerHTML = post.commentsEnabled === false ? '<p class="small-note">作者暂时关闭了新评论，已发表的评论仍可阅读。</p>' : !user ? '<p class="small-note"><a class="text-button" href="/?category=mine">登录后，写下你的想法 ↗</a></p>' : '<form class="comment-form" id="comment-form"><label class="small-note" for="comment-content">分享你的想法，保持友善。</label><textarea id="comment-content" name="content" maxlength="1000" required placeholder="读到这里，你有什么想法？"></textarea><div class="comment-form-footer"><span class="small-note">最多 1000 字 · 公开展示昵称与评论</span><button class="primary" type="submit">发表留言 ↗</button></div></form>';
   }
   function renderCounts() {
     if (!currentPost || !$('#view-count')) return;
@@ -168,45 +162,28 @@
       });
     }
     $('#view-count').textContent = number(currentPost.counts?.views) + ' 次阅读';
-    $('#comments-count').textContent = number(currentPost.counts?.comments) + ' 条留言';
-    $('#dock-comments-count').textContent = number(currentPost.counts?.comments);
-    $('.dock-comment-text').textContent = currentPost.commentsEnabled === false ? '查看留言' : user ? '写下你的想法…' : '看看大家怎么说';
   }
   async function loadReader(id, epoch) {
-    $('#blog-reader').innerHTML = empty('翻开这一篇…', '正在加载文章与留言。');
+    $('#blog-reader').innerHTML = empty('翻开这一篇…', '正在加载文章。');
     try {
-      const result = await api('/posts/' + encodeURIComponent(id), {}, epoch); renderReader(result); commentPage = 1;
-      void loadComments(epoch);
+      const result = await api('/posts/' + encodeURIComponent(id), {}, epoch); renderReader(result);
       if (result.post.status === 'published') api('/posts/' + encodeURIComponent(id) + '/view', { method: 'POST', data: { visitorId: visitorId() } }, epoch).then(value => { if (value.counts) currentPost.counts = { ...currentPost.counts, views: Math.max(currentPost.counts?.views || 0, value.counts.views || 0) }; renderCounts(); }).catch(() => {});
     } catch (error) { if (epoch === generation) { title('文章暂不可读'); $('#blog-reader').innerHTML = empty('这篇文章暂时无法阅读。', error.message || '文章可能已经撤回，请稍后再试。', true) + '<a class="text-button" href="/blog/" data-view="list">← 返回文章列表</a>'; } }
-  }
-  async function loadComments(epoch = generation, fresh = false) {
-    if (!currentPost || !$('#comments')) return;
-    const id = currentPost.id, request = ++commentsRequest; $('#comments').textContent = '正在加载留言…';
-    try {
-      const result = await api('/posts/' + encodeURIComponent(id) + '/comments?page=' + commentPage + '&pageSize=20', { fresh }, epoch);
-      if (request !== commentsRequest || currentPost?.id !== id) return;
-      $('#comments').innerHTML = result.comments?.length ? result.comments.map(commentRow).join('') : '<p class="small-note">还没有留言，第一份想法也许来自你。</p>';
-      const pages = Math.max(1, Math.ceil((result.total || 0) / (result.pageSize || 20))); commentPage = result.page || commentPage;
-      setReaderMutationPending(readerMutationPending);
-      $('#comment-pagination').innerHTML = pages > 1 ? '<button class="text-button" data-comment-page="' + (commentPage - 1) + '" ' + (commentPage === 1 ? 'disabled' : '') + '>← 上一页</button><span>' + commentPage + ' / ' + pages + '</span><button class="text-button" data-comment-page="' + (commentPage + 1) + '" ' + (commentPage === pages ? 'disabled' : '') + '>下一页 →</button>' : '';
-    } catch (error) { if (request === commentsRequest && epoch === generation && $('#comments')) $('#comments').innerHTML = '<p class="small-note">留言加载失败。<button type="button" class="text-button" data-action="retry-comments">再试一次 ↗</button></p>'; }
   }
   function draftKey(id) { return 'brclio.blog-draft.v1:' + user.id + ':' + (id || 'new'); }
   function readEditor() {
     const form = $('#editor-form');
-    return { title: form.elements.title.value, excerpt: form.elements.excerpt.value, category: form.elements.category.value, tags: form.elements.tags.value.split(/[,，]/).map(value => value.trim()).filter(Boolean), coverUrl: form.elements.coverUrl.value.trim(), content: form.elements.content.value, commentsEnabled: form.elements.commentsEnabled.checked };
+    return { title: form.elements.title.value, excerpt: form.elements.excerpt.value, category: form.elements.category.value, tags: form.elements.tags.value.split(/[,，]/).map(value => value.trim()).filter(Boolean), coverUrl: form.elements.coverUrl.value.trim(), content: form.elements.content.value };
   }
   function writeEditor(values) {
     const form = $('#editor-form');
     fields.forEach(name => { form.elements[name].value = name === 'tags' ? (values.tags || []).join(', ') : values[name] || ''; });
-    form.elements.commentsEnabled.checked = values.commentsEnabled !== false;
     $('#editor-preview').innerHTML = window.BrclioBlogContent.renderMarkdown(values.content || ''); updateWordCount();
   }
   function updateWordCount() { const value = $('#editor-form')?.elements.content.value || ''; $('#word-count').textContent = number(value.length) + ' 字符 · 约 ' + number(window.BrclioBlogContent.readingMinutes(value)) + ' 分钟阅读'; }
   function renderEditor(post = {}) {
     editor = { ...post }; dirty = false; title(post.id ? '编辑文章' : '写篇文章');
-    $('#blog-editor').innerHTML = '<div class="page-heading editor-heading"><div><p class="eyebrow">THE WRITING ROOM</p><h1 id="editor-title">' + (post.id ? '接着，把它写好。' : '让一个想法，有处落笔。') + '</h1><p class="intro-description">用 Markdown 安静书写，随时预览。发布后，文字就会抵达网页和小程序。</p></div><span class="heading-mark" aria-hidden="true">✎</span></div><div id="draft-recovery" class="recovery" hidden><p id="draft-recovery-text"></p><button type="button" class="text-button" data-action="restore-draft">恢复文字</button><button type="button" class="text-button" data-action="discard-draft">丢弃本机草稿</button></div><form id="editor-form" class="editor-form"><div class="editor-fields"><label class="editor-field full">文章标题<input name="title" maxlength="120" required placeholder="给这一篇，取个好名字"></label><label class="editor-field full">内容摘要<textarea name="excerpt" maxlength="300" placeholder="用一两句话介绍这篇文章，留空则从正文提取。"></textarea></label><label class="editor-field">分类<input name="category" maxlength="40" placeholder="例如：编程、学习、生活"></label><label class="editor-field">标签<input name="tags" maxlength="210" placeholder="用逗号分隔，最多 8 个"><small>每个标签最多 24 字。</small></label><label class="editor-field full">封面图片链接<input name="coverUrl" type="url" maxlength="2048" placeholder="https://…（选填）"><small>支持 HTTPS 图片；正文可使用 ![图片说明](https://…) 插入配图。</small></label></div><div class="editor-toolbar"><div class="format-actions" role="group" aria-label="Markdown 格式"><button type="button" data-format="heading" title="插入二级标题">标题</button><button type="button" data-format="bold" title="加粗选中文字"><strong>B</strong></button><button type="button" data-format="italic" title="倾斜选中文字"><em>I</em></button><button type="button" data-format="link">链接</button><button type="button" data-format="image">图片</button><button type="button" data-format="list">列表</button><button type="button" data-format="quote">引用</button><button type="button" data-format="code">代码</button></div><div class="editor-mode" role="group" aria-label="编辑模式"><button type="button" data-editor-mode="write" aria-pressed="true">编写</button><button type="button" data-editor-mode="preview" aria-pressed="false">预览</button></div></div><label for="article-body" class="small-note">文章正文（Markdown）</label><textarea id="article-body" name="content" maxlength="100000" required placeholder="从这里开始…\n\n## 小标题\n\n记下一点值得分享的事。"></textarea><div id="editor-preview" class="editor-preview article-content" hidden></div><div class="editor-status-line"><span id="draft-status" class="small-note">' + (post.id ? '云端版本 ' + number(post.revision) + ' · ' + escape(date(post.updatedAt)) : '输入后自动保存在当前账号的本机草稿中。') + '</span><span id="word-count" class="small-note"></span></div><label class="editor-checkbox"><input name="commentsEnabled" type="checkbox" checked>允许读者评论</label><div class="editor-actions"><button class="secondary" type="button" data-save="draft">' + (post.status === 'published' ? '撤回为草稿' : '保存草稿') + '</button><button class="primary" type="button" data-save="published">' + (post.status === 'published' ? '更新已发布文章 ↗' : '发布文章 ↗') + '</button><button class="text-button" type="button" data-action="back-admin">返回管理</button>' + (post.id ? '<button class="danger" type="button" data-action="delete-post">删除文章</button>' : '') + '</div></form>';
+    $('#blog-editor').innerHTML = '<div class="page-heading editor-heading"><div><p class="eyebrow">THE WRITING ROOM</p><h1 id="editor-title">' + (post.id ? '接着，把它写好。' : '让一个想法，有处落笔。') + '</h1><p class="intro-description">用 Markdown 安静书写，随时预览。发布后，文字就会抵达网页和小程序。</p></div><span class="heading-mark" aria-hidden="true">✎</span></div><div id="draft-recovery" class="recovery" hidden><p id="draft-recovery-text"></p><button type="button" class="text-button" data-action="restore-draft">恢复文字</button><button type="button" class="text-button" data-action="discard-draft">丢弃本机草稿</button></div><form id="editor-form" class="editor-form"><div class="editor-fields"><label class="editor-field full">文章标题<input name="title" maxlength="120" required placeholder="给这一篇，取个好名字"></label><label class="editor-field full">内容摘要<textarea name="excerpt" maxlength="300" placeholder="用一两句话介绍这篇文章，留空则从正文提取。"></textarea></label><label class="editor-field">分类<input name="category" maxlength="40" placeholder="例如：编程、学习、生活"></label><label class="editor-field">标签<input name="tags" maxlength="210" placeholder="用逗号分隔，最多 8 个"><small>每个标签最多 24 字。</small></label><label class="editor-field full">封面图片链接<input name="coverUrl" type="url" maxlength="2048" placeholder="https://…（选填）"><small>支持 HTTPS 图片；正文可使用 ![图片说明](https://…) 插入配图。</small></label></div><div class="editor-toolbar"><div class="format-actions" role="group" aria-label="Markdown 格式"><button type="button" data-format="heading" title="插入二级标题">标题</button><button type="button" data-format="bold" title="加粗选中文字"><strong>B</strong></button><button type="button" data-format="italic" title="倾斜选中文字"><em>I</em></button><button type="button" data-format="link">链接</button><button type="button" data-format="image">图片</button><button type="button" data-format="list">列表</button><button type="button" data-format="quote">引用</button><button type="button" data-format="code">代码</button></div><div class="editor-mode" role="group" aria-label="编辑模式"><button type="button" data-editor-mode="write" aria-pressed="true">编写</button><button type="button" data-editor-mode="preview" aria-pressed="false">预览</button></div></div><label for="article-body" class="small-note">文章正文（Markdown）</label><textarea id="article-body" name="content" maxlength="100000" required placeholder="从这里开始…\n\n## 小标题\n\n记下一点值得分享的事。"></textarea><div id="editor-preview" class="editor-preview article-content" hidden></div><div class="editor-status-line"><span id="draft-status" class="small-note">' + (post.id ? '云端版本 ' + number(post.revision) + ' · ' + escape(date(post.updatedAt)) : '输入后自动保存在当前账号的本机草稿中。') + '</span><span id="word-count" class="small-note"></span></div><div class="editor-actions"><button class="secondary" type="button" data-save="draft">' + (post.status === 'published' ? '撤回为草稿' : '保存草稿') + '</button><button class="primary" type="button" data-save="published">' + (post.status === 'published' ? '更新已发布文章 ↗' : '发布文章 ↗') + '</button><button class="text-button" type="button" data-action="back-admin">返回管理</button>' + (post.id ? '<button class="danger" type="button" data-action="delete-post">删除文章</button>' : '') + '</div></form>';
     writeEditor(post);
     try {
       const cached = JSON.parse(window.localStorage.getItem(draftKey(post.id)) || 'null');
@@ -251,7 +228,7 @@
   }
   async function route() {
     closeConfirmation();
-    const epoch = ++generation; commentsRequest += 1; notice(); currentPost = null; editor = null; commentPage = 1; readerMutationPending = false;
+    const epoch = ++generation; notice(); currentPost = null; editor = null; readerMutationPending = false;
     const mode = view(); setTab(mode);
     document.body.dataset.view = mode;
     $('#channel-profile').hidden = !['list', 'saved', 'admin'].includes(mode);
@@ -269,8 +246,7 @@
   }
   function setReaderMutationPending(value) {
     readerMutationPending = value;
-    $('#blog-reader').querySelectorAll('[data-reaction],[data-delete-comment],#comment-form button,#comment-form textarea').forEach(element => { element.disabled = value; });
-    $('#comment-form')?.setAttribute('aria-busy', String(value));
+    $('#blog-reader').querySelectorAll('[data-reaction]').forEach(element => { element.disabled = value; });
   }
   async function mutateReader(action) {
     if (readerMutationPending || !currentPost) return;
@@ -296,16 +272,6 @@
     if (target.dataset.category !== undefined) { state.category = target.dataset.category; navigate({ ...listQuery(1), category: state.category }); return; }
     if (target.dataset.tag !== undefined) { event.preventDefault(); state.tag = state.tag === target.dataset.tag ? '' : target.dataset.tag; navigate({ ...(view() === 'post' ? {} : listQuery(1)), tag: state.tag }); return; }
     if (target.dataset.reaction) { await react(target.dataset.reaction); return; }
-    if (target.dataset.commentPage) { commentPage = Number(target.dataset.commentPage); void loadComments(); return; }
-    if (target.dataset.deleteComment) {
-      if (readerMutationPending || !currentPost) return;
-      const post = currentPost, epoch = generation;
-      if (!await confirmAction({ heading: '删除这条留言？', message: '删除后，这条留言将不再展示。此操作无法撤销。', accept: '删除留言', danger: true }) || currentPost !== post || epoch !== generation || readerMutationPending) return;
-      await mutateReader(async () => {
-        const result = await api('/posts/' + encodeURIComponent(currentPost.id) + '/comments/' + encodeURIComponent(target.dataset.deleteComment), { method: 'DELETE' });
-        currentPost.counts = result.counts; renderCounts(); await loadComments();
-      }); return;
-    }
     if (target.dataset.save) { await saveArticle(target.dataset.save); return; }
     if (target.dataset.format) {
       const textarea = $('#editor-form').elements.content, start = textarea.selectionStart, end = textarea.selectionEnd, selected = textarea.value.slice(start, end);
@@ -319,13 +285,7 @@
     }
     switch (target.dataset.action) {
       case 'retry': cache?.reset(); void route(); break;
-      case 'retry-comments': void loadComments(generation, true); break;
       case 'refresh-reader': $('#refresh-blog').click(); break;
-      case 'jump-comments': {
-        const field = $('#comment-content'), section = $('.comments-section'), reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        (field || section)?.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
-        if (field && !field.disabled) field.focus({ preventScroll: true }); break;
-      }
       case 'back-list': event.preventDefault(); navigate(listReturn?.values || {}, { scroll: listReturn?.scroll || 0 }); break;
       case 'back-admin': navigate({ view: 'admin' }); break;
       case 'copy-link':
@@ -360,15 +320,7 @@
   });
   document.addEventListener('input', event => { if (event.target.closest('#editor-form')) inputChanged(); });
   document.addEventListener('change', event => { if (event.target.closest('#editor-form')) inputChanged(); });
-  document.addEventListener('submit', async event => {
-    if (event.target.id === 'editor-form') { event.preventDefault(); return; }
-    if (event.target.id !== 'comment-form') return;
-    event.preventDefault(); const form = event.target, content = form.elements.content.value.trim(); if (!content || readerMutationPending || pendingConfirmation) return;
-    await mutateReader(async () => {
-      const result = await api('/posts/' + encodeURIComponent(currentPost.id) + '/comments', { method: 'POST', data: { content } });
-      form.elements.content.value = ''; currentPost.counts = result.counts; renderCounts(); commentPage = 1; await loadComments(); notice('留言已发表。');
-    });
-  });
+  document.addEventListener('submit', event => { if (event.target.id === 'editor-form') event.preventDefault(); });
   window.addEventListener('beforeunload', event => { if (dirty) { rememberDraft(); event.preventDefault(); event.returnValue = ''; } });
   window.addEventListener('pagehide', () => { rememberDraft(); stopped = true; closeConfirmation(); cache?.reset(); clearTimeout(autosaveTimer); });
   window.addEventListener('pageshow', event => { if (event.persisted) { stopped = false; cache?.reset(); void initialize(); } });
