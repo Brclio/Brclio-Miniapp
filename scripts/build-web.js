@@ -54,11 +54,6 @@ fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });
 for (const file of ['index.html', 'style.css', 'catalog.js', 'main.js', 'projects.json', 'account.js', 'account-widget.css']) fs.copyFileSync(path.join(portal, file), path.join(output, file));
 esbuild.buildSync({ entryPoints: [path.join(root, 'web/account-browser.js')], outfile: path.join(output, 'account-runtime.js'), bundle: true, format: 'iife', platform: 'browser', target: ['es2020'], legalComments: 'eof' });
-fs.cpSync(path.join(root, 'web/blog'), path.join(output, 'blog'), { recursive: true });
-fs.copyFileSync(path.join(root, 'miniprogram/lib/blog-content.js'), path.join(output, 'blog/content.js'));
-fs.copyFileSync(path.join(root, 'miniprogram/lib/blog-cache.js'), path.join(output, 'blog/cache.js'));
-fs.mkdirSync(path.join(output, 'schemas'), { recursive: true });
-fs.copyFileSync(path.join(root, 'docs/blog-storage.schema.json'), path.join(output, 'schemas/blog-storage-v1.json'));
 for (const project of published) {
   const folder = path.join(output, 'projects', project.id);
   const source = sourcePath(project.source);
@@ -116,6 +111,6 @@ for (const item of fs.readdirSync(publicRoot, { withFileTypes: true })) {
 fs.writeFileSync(path.join(output, '404.html'), '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>页面未找到 · Brclio 悦创</title><body style="background:#fefcf6;color:#303128;padding:48px;font-family:system-ui"><p>页面未找到。</p><a href="/" style="color:inherit">返回内容空间</a></body></html>');
 for (const file of ['bundle.js', 'runtime.js', 'sync.js', 'config.js']) fs.writeFileSync(path.join(output, file), retired);
 esbuild.buildSync({ entryPoints: [path.join(root, 'web/pages-worker.mjs')], outfile: path.join(output, '_worker.js'), bundle: true, format: 'esm', target: ['es2020'], external: ['cloudflare:sockets'], define: { __BRCLIO_ACTIVE_PROJECTS__: JSON.stringify(published.map(function (item) { return item.id; })), __BRCLIO_FIRSTSIGHT_ASSETS__: JSON.stringify(firstsightAssetPaths), __BRCLIO_VERSION__: JSON.stringify(version) } });
-fs.writeFileSync(path.join(output, '_routes.json'), JSON.stringify({ version: 1, include: ['/api/*', '/projects/*'], exclude: [] }));
+fs.writeFileSync(path.join(output, '_routes.json'), JSON.stringify({ version: 1, include: ['/api/*', '/projects/*', '/blog', '/blog/*', '/schemas/blog-storage-v1.json'], exclude: [] }));
 fs.writeFileSync(path.join(output, '_headers'), '/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n  Cache-Control: public, no-cache, no-transform\n/projects.json\n  Cache-Control: no-store, no-transform\n');
 console.log('Built one content portal and ' + published.length + ' published projects in ' + output);

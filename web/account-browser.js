@@ -42,9 +42,9 @@ function samePrincipal(first, second) {
   const a = principal(first), b = principal(second);
   return a !== undefined && b !== undefined && (a === null && b === null || a && b && a.id === b.id && a.token === b.token);
 }
-function errorBody(value, status, blog) {
+function errorBody(value, status) {
   const error = value && /^[a-z][a-z0-9_]{0,79}$/.test(value.error || '') ? value.error : 'request_failed';
-  const message = (blog && typeof value?.message === 'string' && value.message.length <= 180 ? value.message : '') || safeMessages[error] || (status === 401 ? '登录已失效，请重新登录。' : status === 400 ? '请求内容格式错误，请检查后重试。' : '账号服务暂不可用，请稍后重试。');
+  const message = safeMessages[error] || (status === 401 ? '登录已失效，请重新登录。' : status === 400 ? '请求内容格式错误，请检查后重试。' : '账号服务暂不可用，请稍后重试。');
   const retryAfter = Number(value?.retryAfter);
   return { error, message, ...(Number.isFinite(retryAfter) && retryAfter > 0 ? { retryAfter: Math.min(86400, Math.ceil(retryAfter)) } : {}) };
 }
@@ -121,8 +121,7 @@ function createBrowserAccount(host, options = {}) {
         url = new URL(request.url, origin);
         const route = url.pathname.slice('/api/account'.length);
         const accountRoute = url.pathname.startsWith('/api/account/') && API_ROUTES.has(route) && !url.search;
-        const blogRoute = /^\/api\/blog\/(?:me|(?:admin\/)?posts(?:\/[a-f0-9]{32}(?:\/(?:view|like|favorite|comments(?:\/[a-f0-9]{32})?))?)?)$/.test(url.pathname) && url.search.length <= 3000 && Array.from(url.searchParams.keys()).every(key => ['q', 'category', 'tag', 'page', 'pageSize', 'saved'].includes(key));
-        if (url.origin !== origin || url.protocol !== 'https:' || (!accountRoute && !blogRoute) || url.hash || url.username || url.password || !fetchImpl || destroyed || changingAccount) throw new Error();
+        if (url.origin !== origin || url.protocol !== 'https:' || !accountRoute || url.hash || url.username || url.password || !fetchImpl || destroyed || changingAccount) throw new Error();
       } catch (_) { request.fail?.({ errMsg: 'request:fail' }); return { abort() {} }; }
       const controller = new (options.AbortController || host.AbortController || AbortController)();
       const timeout = Math.min(REQUEST_TIMEOUT, Math.max(1, Number(request.timeout) || REQUEST_TIMEOUT));
@@ -152,7 +151,7 @@ function createBrowserAccount(host, options = {}) {
         let data;
         try { data = JSON.parse(text); } catch (_) { throw new Error(); }
         if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error();
-        finish('success', { statusCode: response.status, data: response.status >= 200 && response.status < 300 ? data : errorBody(data, response.status, url.pathname.startsWith('/api/blog/')) });
+        finish('success', { statusCode: response.status, data: response.status >= 200 && response.status < 300 ? data : errorBody(data, response.status) });
       }).catch(() => finish('fail', { errMsg: 'request:fail' }));
       return { abort() { controller.abort(); finish('fail', { errMsg: 'request:fail' }); } };
     }
@@ -286,7 +285,6 @@ function createBrowserAccount(host, options = {}) {
   }
   const runtime = {
     client: account, sync, storage: sync.storage, avatars,
-    requestBlog(path, settings = {}) { return account.blogRequest(path, settings.method || 'GET', settings.data); },
     ready: null, prepare, startModule, prepareModule: startModule,
     getScope: () => sync.getScope(), getGuestOwner: () => sync.getGuestOwner(),
     subscribe: listener => sync.subscribe(listener),

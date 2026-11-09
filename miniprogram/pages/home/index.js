@@ -66,8 +66,6 @@ Page({
     wx.navigateTo({ url: catalog.getFeatureRoute(id) + query });
   },
 
-  openBlogFavorites() { wx.navigateTo({ url: '/blog/pages/list/index?saved=1' }); },
-
   openAbout() {
     wx.navigateTo({ url: '/pages/about/index' });
   },

@@ -4,17 +4,29 @@ const fs = require('node:fs');
 const path = require('node:path');
 const load = import('../web/pages-worker.mjs');
 
-test('blog requests reach the blog service and never fall through to static assets', async () => {
+test('retired blog APIs reject all methods before reaching storage or static assets', async () => {
   const { createPagesWorker } = await load;
   const worker = createPagesWorker();
-  let assets = 0;
-  const env = { ASSETS: { fetch() { assets++; return new Response('asset'); } } };
-  const response = await worker.fetch(new Request('https://pocket.bornforthis.cn/api/blog/posts'), env);
-  assert.equal(response.status, 503);
-  assert.equal((await response.json()).error, 'blog_unavailable');
-  assert.equal(assets, 0);
-  assert.equal((await worker.fetch(new Request('https://pocket.bornforthis.cn/blog/'), env)).status, 200);
-  assert.equal(assets, 1);
+  for (const path of ['/api/blog', '/api/blog/me', '/api/blog/posts', '/api/blog/admin/posts', '/api/blog/posts/123/like']) {
+    for (const method of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD']) {
+      const response = await worker.fetch(new Request('https://pocket.example' + path, { method }), {});
+      assert.equal(response.status, 404, method + ' ' + path);
+      assert.equal(response.headers.get('Cache-Control'), 'no-store');
+      if (method !== 'HEAD') assert.deepEqual(await response.json(), { error: 'not_found' });
+    }
+  }
+});
+
+test('retired blog pages, scripts and schema bypass cached assets and the portal fallback', async () => {
+  const { createPagesWorker } = await load;
+  const worker = createPagesWorker();
+  const env = { ASSETS: { fetch: () => assert.fail('retired asset reached the static binding') } };
+  for (const path of ['/blog', '/blog/', '/blog/?view=admin', '/blog/index.html', '/blog/main.js', '/blog/style.css', '/blog/content.js', '/blog/cache.js', '/bl%6fg/', '/blog%2Fmain.js', '/schemas/blog-storage-v1.json']) {
+    const response = await worker.fetch(new Request('https://pocket.example' + path), env);
+    assert.equal(response.status, 404, path);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    assert.equal(await response.text(), 'Not found');
+  }
 });
 
 test('single-project health identifies the release and storage remains disabled', async () => {

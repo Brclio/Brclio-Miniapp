@@ -30,14 +30,34 @@ if (!cli) {
     open: ['open', '--project', root],
     login: ['login', '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-login.png')],
     preview: ['preview', '--project', root, '--qr-format', 'image', '--qr-output', path.join(root, 'artifacts/wechat-preview.png'), '--info-output', path.join(root, 'artifacts/wechat-preview.json')],
-    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：移除博客评论区、评论入口和计数，保留文章阅读、搜索、分享、点赞与收藏，更新相关隐私说明。保留摄影、放松、悦学、育儿和账号功能。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
+    upload: ['upload', '--project', root, '--version', version, '--desc', 'Brclio 悦创 ' + version + '：下线博客阅读、写作、文章收藏及相关入口，更新隐私说明。摄影、放松、悦学、育儿和账号功能照常使用。', '--info-output', path.join(root, 'artifacts/wechat-upload-' + version + '.json')]
   };
   if (!commands[command]) {
     console.error('支持的命令：doctor、open、login、preview、upload');
     process.exitCode = 1;
   } else {
-    const result = spawnSync(cli, commands[command], { cwd: root, stdio: 'inherit' });
+    const args = commands[command];
+    const infoIndex = args.indexOf('--info-output');
+    const report = infoIndex >= 0 ? args[infoIndex + 1] : '';
+    // DevTools can exit zero after an authentication failure. Only accept a new package report.
+    const pending = report && report + '.' + require('node:crypto').randomUUID() + '.json';
+    if (report) args[infoIndex + 1] = pending;
+    const result = spawnSync(cli, args, { cwd: root, stdio: 'inherit' });
     if (result.error) console.error(result.error.message);
     process.exitCode = result.status === null ? 1 : result.status;
+    if (report) {
+      try {
+        if (!process.exitCode) {
+          const size = JSON.parse(fs.readFileSync(pending, 'utf8')).size;
+          if (!(size?.total > 0) || !size.packages?.some(pkg => pkg.name === 'main' && pkg.size > 0)) throw Error('invalid package report');
+          fs.renameSync(pending, report);
+        }
+      } catch {
+        console.error('微信开发者工具未返回本次有效的代码包报告，请查看上方官方结果。');
+        process.exitCode = 1;
+      } finally {
+        fs.rmSync(pending, { force: true });
+      }
+    }
   }
 }

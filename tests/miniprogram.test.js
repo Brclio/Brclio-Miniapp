@@ -23,7 +23,6 @@ function loadPage(file, extra) {
 }
 const routes = [
   ['content-hub', '/pages/home/index'],
-  ['blog', '/blog/pages/list/index'],
   ['firstsight', '/pages/gallery/index'],
   ['relax', '/pages/home/index?tab=relax'],
   ['learn', '/pages/home/index?tab=learn'],
@@ -47,7 +46,7 @@ test('all product features resolve to registered native pages, including old sha
 });
 test('unknown and prototype IDs cannot open a route or leak arbitrary URLs', () => {
   const c = catalogFor('https://pocket.example.com');
-  for (const id of ['unknown', '__proto__', 'constructor', 'toString', '', null, undefined, {}, 'ready-go-duel&url=https://evil.example']) {
+  for (const id of ['blog', 'unknown', '__proto__', 'constructor', 'toString', '', null, undefined, {}, 'ready-go-duel&url=https://evil.example']) {
     assert.equal(c.getFeature(id), null);
     assert.equal(c.getFeatureRoute(id), '');
     assert.equal(c.getFeatureUrl(id), '');
@@ -56,6 +55,9 @@ test('unknown and prototype IDs cannot open a route or leak arbitrary URLs', () 
     assert.equal(calls.length, 0);
     assert.ok(page.data.errorTitle);
     assert.equal(page.onShareAppMessage().path, '/pages/home/index');
+    page.goHome();
+    assert.equal(calls[0].method, 'reLaunch');
+    assert.equal(calls[0].data.url, '/pages/home/index');
   }
 });
 test('homepage opens photography, games, learning and parenting locally and validates selected tabs', () => {
@@ -119,6 +121,24 @@ test('each native route exists in the main or photography code package', () => {
   const pages = config.pages.concat((config.subPackages || []).flatMap(pack => pack.pages.map(page => pack.root + '/' + page)));
   for (const [, route] of routes) assert.ok(pages.includes(route.slice(1).split('?')[0]));
   for (const page of pages) for (const ext of ['.js', '.json', '.wxml', '.wxss']) assert.ok(fs.existsSync(path.join(root, page + ext)));
+});
+
+test('retired blog shares return to the registered homepage without using the old query', () => {
+  const app = JSON.parse(fs.readFileSync(path.join(root, 'app.json')));
+  assert.ok(app.pages.includes('pages/home/index'));
+  assert.ok(!app.subPackages.some(pack => pack.root === 'blog'));
+  const home = fs.readFileSync(path.join(root, 'pages/home/index.wxml'), 'utf8');
+  assert.doesNotMatch(home, /data-id="blog"|openBlogFavorites|我收藏的文章/);
+  let definition;
+  const calls = [];
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'app.js'), 'utf8'), {
+    App(value) { definition = value; }, require() { return {}; },
+    wx: { reLaunch({ url }) { calls.push(url); } }
+  });
+  for (const route of ['blog/pages/list/index', 'blog/pages/article/index']) {
+    definition.onPageNotFound({ path: route, query: { id: 'old_article', saved: '1' }, isEntryPage: true });
+  }
+  assert.deepEqual(calls, ['/pages/home/index', '/pages/home/index']);
 });
 
 test('old parenting shares move to the package while preserving only known scenes and songs', () => {

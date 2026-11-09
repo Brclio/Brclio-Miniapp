@@ -60,14 +60,6 @@
       ]
     },
     {
-      "root": "blog",
-      "name": "blog",
-      "pages": [
-        "pages/list/index",
-        "pages/article/index"
-      ]
-    },
-    {
       "root": "parenting",
       "name": "parenting",
       "pages": [

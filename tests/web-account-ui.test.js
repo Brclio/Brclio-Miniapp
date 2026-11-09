@@ -180,6 +180,9 @@ test('account forms provide narrow-screen layout rules and the same username lim
   assert.match(css, /@media\(max-width:350px\)/); assert.match(css, /\.account-code-row input\{flex:1;width:0\}/);
   assert.match(widgetCss, /max-width:calc\(100vw - 16px\)/); assert.match(widgetCss, /\.brclio-widget-panel/);
   assert.doesNotMatch(document.querySelector('.account-links').textContent, /本机战绩/);
+  assert.deepEqual([...document.querySelectorAll('.main-nav a')].map(link => link.dataset.view), ['photography', 'relax', 'learn', 'mine']);
+  assert.equal(document.querySelector('[href*="/blog"], [src*="/blog"]'), null);
+  assert.doesNotMatch(document.body.textContent, /博客|文章收藏|文章写作台/);
 });
 
 

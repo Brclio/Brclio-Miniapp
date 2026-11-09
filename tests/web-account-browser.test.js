@@ -355,31 +355,15 @@ test('the real portal form works with the real browser bridge and shared native 
   assert.equal(h.window.document.body.innerHTML.includes(stored.token), false); h.close();
 });
 
-test('blog transport uses the private session and confines requests to the blog API', async () => {
-  const h = host({ session: session(A), fetchHook: async input => {
-    if (input.includes('/api/blog/')) return Response.json({ posts: [], marker: 'blog' });
-  } });
+test('account startup leaves retired writing data local and sends no blog requests', async () => {
+  const draftKey = 'brclio.blog-draft.v1:' + A + ':new';
+  const visitorKey = 'brclio.blog-visitor.v1';
+  const draft = JSON.stringify({ fields: { title: '未公开草稿' } });
+  const h = host({ session: session(A), initial: [[draftKey, draft], [visitorKey, A]] });
   await h.runtime.ready;
-  const result = await h.runtime.requestBlog('/posts?page=2&q=%E6%96%87%E7%AB%A0');
-  assert.equal(result.marker, 'blog');
-  assert.equal(h.calls.at(-1).headers.Authorization, 'Bearer ' + token(A));
-  assert.equal(h.calls.at(-1).url, 'https://pocket.bornforthis.cn/api/blog/posts?page=2&q=%E6%96%87%E7%AB%A0');
-  const before = h.calls.length;
-  for (const route of ['https://evil.test/posts', '//evil.test', '/../account/session', '/posts#secret', '/posts?next=https://evil.test']) await assert.rejects(h.runtime.requestBlog(route));
-  assert.equal(h.calls.length, before);
-  assert.equal(Object.hasOwn(h.runtime.client.getSessionSnapshot(), 'token'), false);
+  assert.equal(h.runtime.requestBlog, undefined);
+  assert.equal(h.window.localStorage.getItem(draftKey), draft);
+  assert.equal(h.window.localStorage.getItem(visitorKey), A);
+  assert.ok(h.calls.every(call => !call.url.includes('/api/blog/') && !call.body?.includes('未公开草稿')));
   h.close();
-});
-
-test('anonymous blog reads and view counting work, while member writes require login', async () => {
-  const h = host({ fetchHook: async input => input.includes('/api/blog/') ? Response.json({ counts: { views: 1 } }) : undefined });
-  await h.runtime.ready;
-  await h.runtime.requestBlog('/posts');
-  const id = 'c'.repeat(32);
-  await h.runtime.requestBlog('/posts/' + id + '/view', { method: 'POST', data: { visitorId: 'test-visitor-123456789' } });
-  assert.equal(h.calls.at(-1).headers.Authorization, undefined);
-  assert.deepEqual(JSON.parse(h.calls.at(-1).body), { visitorId: 'test-visitor-123456789' });
-  const before = h.calls.length;
-  await assert.rejects(h.runtime.requestBlog('/posts/' + id + '/like', { method: 'PUT', data: { active: true } }), { code: 'session_expired' });
-  assert.equal(h.calls.length, before); h.close();
 });

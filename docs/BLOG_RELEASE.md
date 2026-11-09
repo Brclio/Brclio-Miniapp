@@ -1,3 +1,7 @@
+# 0.1.16 博客下线
+
+网页与小程序移除阅读、作者写作台、管理、文章收藏和访问统计。原网页与 API 路径返回 404。历史文章、草稿和互动数据继续保存在原私有仓库。
+
 # 博客发布与核验记录
 
 ## 0.1.15：评论移除（2026-10-31）
@@ -30,7 +34,7 @@
 
 账号认证仍来自 `Brclio-Miniapp-UserData`；学习、挑战、儿歌业务仍使用 `Brclio-Miniapp-Data`；博客固定使用独立的 `Brclio-Miniapp-Blog-Data`，不回退到原业务库。三个仓库均通过现有 App 按单个仓库申请 token，不新增存储平台或付费资源。
 
-所有博客记录为带 `schemaVersion: 1` 的结构化 JSON。文章、摘要目录、评论、评论索引、点赞收藏关系、用户收藏、浏览去重和限流分别建模；读写均验证闭合字段、类型、长度、容量和关联 ID。正式结构见 [JSON Schema](blog-storage.schema.json)，部署路径为 `/schemas/blog-storage-v1.json`。
+所有博客记录为带 `schemaVersion: 1` 的结构化 JSON。文章、摘要目录、评论、评论索引、点赞收藏关系、用户收藏、浏览去重和限流分别建模；读写均验证闭合字段、类型、长度、容量和关联 ID。正式结构见 [0.1.15 JSON Schema](https://github.com/Brclio/Brclio-Miniapp/blob/5e6d63af05a6f915cd9b784cd20b3f57cefe0129/docs/blog-storage.schema.json)，部署路径为 `/schemas/blog-storage-v1.json`。
 
 ## 上线前核验
 

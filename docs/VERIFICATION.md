@@ -1,4 +1,6 @@
-> **当前 0.1.15 博客评论移除**：核查与逐阶段发布状态见 [BLOG_RELEASE.md](BLOG_RELEASE.md)。
+> **当前 0.1.16 博客下线**：本版核查与发布阶段见 [BLOG_RELEASE.md](BLOG_RELEASE.md)。
+
+> **此前 0.1.15 博客评论移除**：核查与逐阶段发布状态见 [BLOG_RELEASE.md](BLOG_RELEASE.md)。
 
 > **此前 0.1.14 育儿宝典**：本轮完整核查和 GitHub / 微信各阶段状态见 [PARENTING_GUIDE_RELEASE.md](PARENTING_GUIDE_RELEASE.md)。下方保留历史记录。
 
