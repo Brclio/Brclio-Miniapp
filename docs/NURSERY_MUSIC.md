@@ -2,6 +2,14 @@
 
 2026-10-24：`0.1.5` 加入登录后的儿歌收藏同步，以及账号密码登录后的微信一键绑定；新旧客户端同步能力保持兼容。发布版 `npm run build`、`npm test`（481/481）和 `npm run check:release` 均通过。GitHub、Pages、线上联调与微信开发版上传结果见 [SONG_SYNC_RELEASE.md](SONG_SYNC_RELEASE.md)，微信审核及正式发布分别记录。
 
+## 0.1.17 页面地址发布记录（2026-11-09）
+
+- 新路径为 `/nursery/pages/music-box/index`。微信开发者工具模拟器使用分享场景 1007 从新路径打开《小星星》，并分别从两条历史路径打开《小白兔白又白》和《小星星》。三次页面读回均为新路径，歌曲与场景匹配，均保持等待用户点击播放。
+- 播放器 WXML、WXSS 和页面配置与旧版逐字节一致。新分享卡片沿用原有文案、歌曲 ID 与封面；卡片内容通过代码回归验证。全量 651 项测试及 135 项发布检查通过，47 首音频的远程可用性检查全部通过。
+- 源码提交 [f6ac961](https://github.com/Brclio/Brclio-Miniapp/commit/f6ac9613d9ad58f286e775ed569132facb1ca6cd) 已推送 `main`。微信官方预览、开发版上传成功，上传回执主包 1,486,086 字节、育儿分包 598,089 字节、总包 11,004,034 字节。上传前后 479 个原生文件 SHA-256 一致。
+- 该路径属于原生小程序，网页维持已下线博客的 0.1.16。微信公众平台版本管理页面受浏览器访问策略限制，尚未取得 0.1.17 的提审、审核通过或正式发布回执。后台应选择本版本提审。
+- 本地证据为 `artifacts/nursery-route/0.1.17/` 中的 `native-simulator.json`、`tests.log`、`check.log`、`preview.json` 和 `upload.json`。
+
 ## 数据来源与远程资源
 
 - 来源仓库：[Brclio/Erge-Duoduo](https://github.com/Brclio/Erge-Duoduo)。
