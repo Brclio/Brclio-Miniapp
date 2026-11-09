@@ -6,7 +6,9 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '../miniprogram');
 function catalogFor(webOrigin) {
   const module = { exports: {} };
-  vm.runInNewContext(fs.readFileSync(path.join(root, 'data/catalog.js'), 'utf8'), { module, require(id) { return id === './photos' ? require('../miniprogram/data/photos') : { webOrigin }; } });
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'data/catalog.js'), 'utf8'), {
+    module, require(id) { return id === '../config' ? { webOrigin } : require(path.resolve(root, 'data', id)); }
+  });
   return module.exports;
 }
 function loadPage(file, extra) {
@@ -27,7 +29,7 @@ const routes = [
   ['relax', '/pages/home/index?tab=relax'],
   ['learn', '/pages/home/index?tab=learn'],
   ['lingotiles', '/pages/lingotiles/index'],
-  ['nursery-music', '/nursery/pages/player/index'],
+  ['nursery-music', '/nursery/pages/music-box/index'],
   ['parenting-guide', '/parenting/pages/list/index'],
   ['ready-go-duel', '/pages/duel/index'],
   ['wedding-inspiration', require('../miniprogram/data/photos').collections.find(item => item.id === 'pregnancy').nativePath]
@@ -91,10 +93,10 @@ test('parenting scenes use a native player and do not expose a broken public web
   assert.equal(c.getFeatureUrl('firstsight'), 'https://pocket.example.com/projects/firstsight/?entry=wechat');
   const { page, calls } = loadPage('pages/home/index.js');
   page.openFeature({ currentTarget: { dataset: { id: 'nursery-music', scene: 'sleep' } } });
-  assert.equal(calls.at(-1).data.url, '/nursery/pages/player/index?scene=sleep');
+  assert.equal(calls.at(-1).data.url, '/nursery/pages/music-box/index?scene=sleep');
   for (const scene of ['https://evil.example', 'sleep&url=https://evil.example', 'unknown']) {
     page.openFeature({ currentTarget: { dataset: { id: 'nursery-music', scene } } });
-    assert.equal(calls.at(-1).data.url, '/nursery/pages/player/index');
+    assert.equal(calls.at(-1).data.url, '/nursery/pages/music-box/index');
   }
 });
 test('native compatibility route offers retry on a navigation failure without using web-view', () => {
@@ -141,21 +143,34 @@ test('retired blog shares return to the registered homepage without using the ol
   assert.deepEqual(calls, ['/pages/home/index', '/pages/home/index']);
 });
 
-test('old parenting shares move to the package while preserving only known scenes and songs', () => {
-  const songs = require('../miniprogram/data/nursery-songs');
-  for (const query of [{ scene: 'sleep', song: songs.SONGS[0].id }, { scene: 'https://evil.test', song: '__proto__' }]) {
-    let definition;
-    const calls = [];
-    vm.runInNewContext(fs.readFileSync(path.join(root, 'pages/parenting/index.js'), 'utf8'), {
-      Page: value => { definition = value; }, require: () => songs,
-      wx: { redirectTo: value => calls.push(value) }
-    });
-    const page = { ...definition, data: {}, setData(value) { Object.assign(this.data, value); } };
-    page.onLoad(query);
-    assert.equal(calls[0].url, query.scene === 'sleep'
-      ? '/nursery/pages/player/index?scene=sleep&song=' + songs.SONGS[0].id
-      : '/nursery/pages/player/index');
-    calls[0].fail(); assert.equal(page.data.failed, true);
-    page.openPlayer(); assert.equal(page.data.failed, false);
+test('both old player routes forward only valid scenes and songs, including on retry', () => {
+  const { SONGS } = require('../miniprogram/data/nursery-songs');
+  const base = '/nursery/pages/music-box/index', song = SONGS[0].id;
+  const examples = [
+    [{ scene: 'sleep', song }, '?scene=sleep&song=' + song],
+    [{ scene: 'favorites', song: '__proto__' }, '?scene=favorites'],
+    [{ scene: 'https://evil.test', song }, '?song=' + song],
+    [{ scene: 'sleep&url=other', url: 'https://evil.test' }, ''],
+    [{}, '']
+  ];
+  const app = JSON.parse(fs.readFileSync(path.join(root, 'app.json')));
+  assert.ok(app.pages.includes('pages/parenting/index'));
+  const nursery = app.subPackages.find(pack => pack.root === 'nursery');
+  for (const name of ['pages/player/index', 'pages/music-box/index']) assert.ok(nursery.pages.includes(name));
+  for (const pagePath of ['pages/parenting/index.js', 'nursery/pages/player/index.js']) {
+    for (const [query, suffix] of examples) {
+      const calls = [];
+      const { page } = loadPage(pagePath, {
+        require(id) { return require(path.resolve(root, path.dirname(pagePath), id)); },
+        wx: { redirectTo(options) { calls.push(options); } }
+      });
+      page.onLoad(query);
+      assert.equal(calls.length, 1);
+      assert.equal(calls[0].url, base + suffix);
+      assert.equal(page.onShareAppMessage().path, base + suffix);
+      calls[0].fail(); assert.equal(page.data.failed, true);
+      page.openPlayer(); assert.equal(page.data.failed, false);
+      assert.equal(calls[1].url, base + suffix);
+    }
   }
 });

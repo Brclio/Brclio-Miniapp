@@ -1,4 +1,6 @@
-> **当前 0.1.16 博客下线**：本版核查与发布阶段见 [BLOG_RELEASE.md](BLOG_RELEASE.md)。
+> **0.1.17 儿歌播放器新地址**：小程序发布阶段见 [NURSERY_MUSIC.md](NURSERY_MUSIC.md)。
+
+> **0.1.16 博客下线**：本版核查与发布阶段见 [BLOG_RELEASE.md](BLOG_RELEASE.md)。
 
 > **此前 0.1.15 博客评论移除**：核查与逐阶段发布状态见 [BLOG_RELEASE.md](BLOG_RELEASE.md)。
 

@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const { SONGS } = require('../miniprogram/data/nursery-songs');
 const { createNurseryAudio, STORAGE_KEY } = require('../miniprogram/lib/nursery-audio');
 
-const pagePath = path.resolve(__dirname, '../miniprogram/nursery/pages/player');
+const pagePath = path.resolve(__dirname, '../miniprogram/nursery/pages/music-box');
 const event = values => ({ currentTarget: { dataset: values } });
 const input = value => ({ detail: { value } });
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -49,6 +49,7 @@ function host(options = {}) {
     Page: value => { definition = value; }, wx: api,
     require(id) {
       if (id === '../../../data/nursery-songs') return { SONGS };
+      if (id === '../../../lib/nursery-link') return require('../miniprogram/lib/nursery-link');
       if (id === '../../../lib/nursery-audio') return { getNurseryAudio: () => audio };
       throw new Error('Unexpected require ' + id);
     }
@@ -86,7 +87,7 @@ test('opening a shared song or bedtime scene selects content without starting na
   assert.equal(p.data.isPlaying, false);
   assert.equal(p.data.isLoading, false);
   const share = p.onShareAppMessage(), timeline = p.onShareTimeline();
-  assert.equal(share.path, '/pages/parenting/index?song=' + encodeURIComponent(song.id));
+  assert.equal(share.path, '/nursery/pages/music-box/index?song=' + encodeURIComponent(song.id));
   assert.equal(timeline.query, 'song=' + encodeURIComponent(song.id));
   assert.ok(share.title.includes(song.title));
   assert.equal(share.imageUrl, song.cover);

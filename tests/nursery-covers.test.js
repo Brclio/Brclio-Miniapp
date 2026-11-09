@@ -22,7 +22,7 @@ test('art inspection rejects truncated or mislabeled payloads', () => {
 
 test('photography rebuilds preserve the nursery package and unrelated preload rules', () => {
   const { registerPhotoPackages } = require('../scripts/prepare-native-photos');
-  const nursery = { root: 'nursery', name: 'nursery', pages: ['pages/player/index'] };
+  const nursery = { root: 'nursery', name: 'nursery', pages: ['pages/music-box/index', 'pages/player/index'] };
   const preload = { network: 'wifi', packages: ['nursery'] };
   const config = { subPackages: [{ root: 'photo-9', pages: ['old'] }, nursery], preloadRule: { 'pages/home/index': preload } };
   registerPhotoPackages(config, [{ root: 'photo-1' }, { root: 'photo-2' }]);

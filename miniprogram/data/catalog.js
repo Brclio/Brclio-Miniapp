@@ -1,5 +1,6 @@
 const config = require('../config');
 const photos = require('./photos');
+const { PLAYER_PATH } = require('../lib/nursery-link');
 
 const features = Object.freeze([
   Object.freeze({
@@ -99,7 +100,7 @@ function getFeatureRoute(id) {
     relax: '/pages/home/index?tab=relax',
     learn: '/pages/home/index?tab=learn',
     lingotiles: '/pages/lingotiles/index',
-    'nursery-music': '/nursery/pages/player/index',
+    'nursery-music': PLAYER_PATH,
     'parenting-guide': '/parenting/pages/list/index',
     'ready-go-duel': '/pages/duel/index',
     'wedding-inspiration': (photos.collections.find(function (album) { return album.id === 'pregnancy'; }) || {}).nativePath || '/pages/gallery/index'

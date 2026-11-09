@@ -16,7 +16,7 @@
 
 ## 原生播放与页面生命周期
 
-`0.1.4` 的播放器页面为 `/nursery/pages/player/index`，与 47 张封面一起放入 `nursery` 分包；首页使用原生 `navigateTo` 进入。旧 `/pages/parenting/index` 保留为兼容分享入口，只接受已知场景与歌曲 ID，然后转接新页面。
+0.1.17 的播放器页面为 `/nursery/pages/music-box/index`。首页和新发出的分享卡片直接打开该页面。旧地址 `/nursery/pages/player/index` 和 `/pages/parenting/index` 转接同一页面，保留合法的 `scene` 和 `song` 参数。播放器和 47 张封面仍在 `nursery` 分包内。
 
 `miniprogram/lib/nursery-audio.js` 优先使用 `wx.getBackgroundAudioManager()`，原生管理器不可用时降级到 `wx.createInnerAudioContext()`。页面通过 `getNurseryAudio()` 取得应用内单例，通过 `subscribe()` 订阅；离页只取消订阅，避免停止背景播放。`inner` 降级不具备背景播放保证。
 
